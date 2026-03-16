@@ -67,6 +67,7 @@ export interface User {
   name: string;
   role: UserRole;
   email: string;
+  passwordHash?: string;
 }
 
 export interface AppSettings {

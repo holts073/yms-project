@@ -4,6 +4,8 @@ import { Server } from "socket.io";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { getState, saveState } from "./db";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 async function startServer() {
   const app = express();
@@ -86,9 +88,9 @@ async function startServer() {
         { id: 'l1', timestamp: new Date().toISOString(), user: 'System', action: 'Database Seeded', details: 'Added 20 sample deliveries for demo.' }
       ],
       users: [
-        { id: 'admin', name: 'Admin User', role: 'admin', email: 'admin@example.com' },
-        { id: 'user1', name: 'Warehouse Staff', role: 'staff', email: 'staff@example.com' },
-        { id: 'elmer', name: 'Elmer Holtslag', role: 'admin', email: 'ElmerHoltslag@gmail.com' }
+        { id: 'admin', name: 'Admin User', role: 'admin', email: 'admin@example.com', passwordHash: bcrypt.hashSync('welkom123', 10) },
+        { id: 'user1', name: 'Warehouse Staff', role: 'staff', email: 'staff@example.com', passwordHash: bcrypt.hashSync('welkom123', 10) },
+        { id: 'elmer', name: 'Elmer Holtslag', role: 'admin', email: 'ElmerHoltslag@gmail.com', passwordHash: bcrypt.hashSync('welkom123', 10) }
       ],
       settings: {
         terms: {
@@ -107,6 +109,31 @@ async function startServer() {
   // API Routes
   app.get("/api/state", (req, res) => {
     res.json(state);
+  });
+
+  const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
+
+  app.post("/api/login", (req, res) => {
+    const { email, password } = req.body;
+    const user = state.users.find((u: any) => u.email === email);
+    
+    if (!user || (!user.passwordHash && password !== 'welkom123')) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const isValid = user.passwordHash 
+      ? bcrypt.compareSync(password, user.passwordHash)
+      : password === 'welkom123'; // Fallback for old unhashed users in case any exist
+
+    if (!isValid) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    
+    // Copy user to omit passwordHash in response
+    const { passwordHash, ...safeUser } = user;
+    res.json({ token, user: safeUser });
   });
 
   // Socket.io logic

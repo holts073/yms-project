@@ -5,7 +5,10 @@ import { AppState, User } from './types';
 interface SocketContextType {
   socket: Socket | null;
   state: AppState | null;
-  currentUser: User;
+  currentUser: User | null;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
   dispatch: (type: string, payload: any) => void;
 }
 
@@ -20,16 +23,28 @@ export const useSocket = () => {
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<AppState | null>(null);
-  
-  // Mock current user for demo
-  const [currentUser] = useState<User>({
-    id: 'elmer',
-    name: 'Elmer Holtslag',
-    role: 'admin',
-    email: 'ElmerHoltslag@gmail.com'
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  // Check local storage on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (token && userStr) {
+      setCurrentUser(JSON.parse(userStr));
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      if (socket) {
+        socket.close();
+        setSocket(null);
+      }
+      return;
+    }
+
     const newSocket = io();
     setSocket(newSocket);
 
@@ -44,16 +59,51 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       newSocket.close();
     };
-  }, []);
+  }, [isAuthenticated]);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setCurrentUser(data.user);
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Login error:', err);
+      return false;
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setState(null);
+    if (socket) {
+      socket.close();
+      setSocket(null);
+    }
+  };
 
   const dispatch = (type: string, payload: any) => {
-    if (socket) {
+    if (socket && currentUser) {
       socket.emit('action', { type, payload, user: currentUser });
     }
   };
 
   return (
-    <SocketContext.Provider value={{ socket, state, currentUser, dispatch }}>
+    <SocketContext.Provider value={{ socket, state, currentUser, isAuthenticated, login, logout, dispatch }}>
       {children}
     </SocketContext.Provider>
   );

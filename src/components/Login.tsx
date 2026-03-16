@@ -1,0 +1,151 @@
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { Package, Truck, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useSocket } from '../SocketContext';
+
+export const Login = () => {
+  const { login } = useSocket();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const success = await login(email, password);
+      if (!success) {
+        setError('Ongeldig e-mailadres of wachtwoord');
+      }
+    } catch (err) {
+      setError('Er is een fout opgetreden bij het inloggen');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-8 font-sans">
+      <div className="w-full max-w-6xl grid md:grid-cols-2 bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden min-h-[600px]">
+        
+        {/* Left Side - Form */}
+        <div className="p-8 sm:p-14 flex flex-col justify-center relative">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md w-full mx-auto"
+          >
+            <div className="flex items-center gap-3 mb-12">
+              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                <Package className="text-white" size={24} />
+              </div>
+              <span className="text-2xl font-black tracking-tight text-slate-900">ILG Foodgroup SCY/YMS</span>
+            </div>
+
+            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Welkom terug</h1>
+            <p className="text-slate-500 mb-10 text-lg">Log in om je leveringen te beheren.</p>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2 relative">
+                <label className="text-sm font-bold text-slate-700 ml-4">E-mailadres</label>
+                <div className="relative">
+                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="naam@ilgfood.com"
+                    className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 transition-shadow text-slate-700 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 relative">
+                <div className="flex justify-between items-center ml-4 mr-4">
+                  <label className="text-sm font-bold text-slate-700">Wachtwoord</label>
+                  <a href="#" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">Wachtwoord vergeten?</a>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 transition-shadow text-slate-700 font-medium font-mono"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="bg-red-50 text-red-600 px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2"
+                >
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  {error}
+                </motion.div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 group mt-8 disabled:opacity-70 disabled:hover:scale-100"
+              >
+                {isLoading ? 'Bezig met inloggen...' : 'Inloggen'}
+                {!isLoading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+              </button>
+            </form>
+          </motion.div>
+          
+          <div className="absolute bottom-8 left-14 text-sm font-bold text-slate-400 flex items-center gap-2">
+            <ShieldCheck size={16} className="text-emerald-500" />
+            Beveiligde SSL Verbinding
+          </div>
+        </div>
+
+        {/* Right Side - Visuals */}
+        <div className="hidden md:flex bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 p-14 flex-col justify-between text-white relative overflow-hidden">
+          {/* Decorative shapes */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative z-10">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold mb-8"
+            >
+              <Truck size={16} />
+              Yard Management System
+            </motion.div>
+            <h2 className="text-5xl font-black mb-6 leading-tight">
+              Grip op je hele <br/>supply chain.
+            </h2>
+            <p className="text-indigo-100 text-lg max-w-md opacity-90 leading-relaxed">
+              Beheer naadloos container en ex-works leveringen, volg statussen en optimaliseer je warehouse planning in één centraal overzicht.
+            </p>
+          </div>
+
+          {/* Floating UI Elements Demo */}
+          <div className="relative z-10 w-full aspect-video rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 p-6 flex flex-col gap-4 shadow-2xl">
+            <div className="w-full h-8 bg-white/10 rounded-lg animate-pulse" />
+            <div className="w-3/4 h-4 bg-white/5 rounded-full" />
+            <div className="flex gap-4 mt-auto">
+              <div className="flex-1 h-20 bg-emerald-500/20 rounded-xl border border-emerald-500/30 backdrop-blur-md" />
+              <div className="flex-1 h-20 bg-indigo-500/20 rounded-xl border border-indigo-500/30 backdrop-blur-md" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};

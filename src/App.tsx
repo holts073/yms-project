@@ -25,6 +25,7 @@ import AddressBook from './components/AddressBook';
 import Statistics from './components/Statistics';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
+import { Login } from './components/Login';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -97,10 +98,16 @@ const AppContent = () => {
     }
   };
 
+  const { isAuthenticated, logout } = useSocket();
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
   const canAccess = (tab: string) => {
-    if (currentUser.role === 'admin') return true;
+    if (currentUser?.role === 'admin') return true;
     if (tab === 'users') return false;
-    if (currentUser.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook')) return true; // View only handled in components
+    if (currentUser?.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook')) return true; // View only handled in components
     return true;
   };
 
@@ -169,7 +176,10 @@ const AppContent = () => {
               <p className="text-xs text-slate-500 truncate capitalize">{currentUser.role}</p>
             </div>
           </div>
-          <button className="flex items-center gap-4 px-6 py-3 w-full text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+          <button 
+            onClick={logout}
+            className="flex items-center gap-4 px-6 py-3 w-full text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+          >
             <LogOut size={20} />
             <span className="text-sm font-medium">Uitloggen</span>
           </button>
