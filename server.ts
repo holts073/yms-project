@@ -68,10 +68,7 @@ async function startServer() {
             { id: 'd4', name: 'Packing List', status: Math.random() > 0.5 ? 'received' : 'missing', required: false },
             { id: 'd5', name: 'Certificate of Origin', status: Math.random() > 0.5 ? 'received' : 'missing', required: false }
           ] : [
-            { id: 'd1', name: 'Transport Order', status: status >= 50 ? 'received' : 'missing', required: true },
-            { id: 'd2', name: 'Factuur', status: Math.random() > 0.5 ? 'received' : 'missing', required: false },
-            { id: 'd3', name: 'Packing List', status: Math.random() > 0.5 ? 'received' : 'missing', required: false },
-            { id: 'd4', name: 'Orderbevestiging', status: Math.random() > 0.5 ? 'received' : 'missing', required: false }
+            { id: 'd1', name: 'Transport Order', status: status >= 50 ? 'received' : 'missing', required: true }
           ])
         ],
         createdAt: new Date().toISOString(),

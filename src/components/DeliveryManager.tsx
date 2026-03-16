@@ -30,10 +30,7 @@ const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
 ];
 
 const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Transport Order', status: 'missing', required: true },
-  { name: 'Factuur', status: 'missing', required: false },
-  { name: 'Packing List', status: 'missing', required: false },
-  { name: 'Orderbevestiging', status: 'missing', required: false }
+  { name: 'Transport Order', status: 'missing', required: true }
 ];
 
 const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFilter?: string; initialSelectedId?: string }) => {
