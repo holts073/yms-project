@@ -46,13 +46,13 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
   </button>
 );
 
-const AppContent = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [searchFilter, setSearchFilter] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { state, currentUser } = useSocket();
-
-  const handleNavigate = (tab: string, reference?: string, id?: string) => {
+  const AppContent = () => {
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [searchFilter, setSearchFilter] = useState('');
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const { state, currentUser, isAuthenticated, logout } = useSocket();
+  
+    const handleNavigate = (tab: string, reference?: string, id?: string) => {
     setActiveTab(tab);
     if (id) {
       setSelectedId(id);
@@ -74,7 +74,11 @@ const AppContent = () => {
     }
   };
 
-  if (!state) {
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  if (!state || !currentUser) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
         <motion.div 
@@ -97,12 +101,6 @@ const AppContent = () => {
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
-
-  const { isAuthenticated, logout } = useSocket();
-
-  if (!isAuthenticated) {
-    return <Login />;
-  }
 
   const canAccess = (tab: string) => {
     if (currentUser?.role === 'admin') return true;

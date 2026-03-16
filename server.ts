@@ -115,7 +115,7 @@ async function startServer() {
 
   app.post("/api/login", (req, res) => {
     const { email, password } = req.body;
-    const user = state.users.find((u: any) => u.email === email);
+    const user = state.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
     
     if (!user || (!user.passwordHash && password !== 'welkom123')) {
       return res.status(401).json({ error: "Invalid credentials" });
