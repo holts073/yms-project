@@ -120,49 +120,59 @@ const AddressBook = () => {
         />
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {entries.map((entry) => (
-          <motion.div 
-            layout
-            key={entry.id}
-            className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="flex items-start justify-between mb-6">
-              <div className="p-4 bg-slate-50 text-slate-600 rounded-2xl group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                <Building2 size={24} />
-              </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => handleOpenModal(entry)}
-                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all">
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-
-            <h3 className="text-xl font-bold text-slate-900 mb-6">{entry.name}</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 text-slate-600">
-                <UserIcon size={18} className="text-slate-400 shrink-0" />
-                <span className="text-sm font-medium">{entry.contact}</span>
-              </div>
-              <div className="flex items-center gap-3 text-slate-600">
-                <Mail size={18} className="text-slate-400 shrink-0" />
-                <span className="text-sm font-medium truncate">{entry.email}</span>
-              </div>
-              <div className="flex items-center gap-3 text-slate-600">
-                <MapPin size={18} className="text-slate-400 shrink-0" />
-                <span className="text-sm font-medium leading-relaxed">{entry.address}</span>
-              </div>
-            </div>
-          </motion.div>
-        ))}
+      {/* List View */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 border-bottom border-slate-200">
+              <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Bedrijf</th>
+              <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Contact</th>
+              <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">E-mail</th>
+              <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Adres</th>
+              <th className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acties</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {entries.map((entry) => (
+              <tr key={entry.id} className="hover:bg-slate-50 transition-colors group">
+                <td className="px-8 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-slate-100 text-slate-600 rounded-lg group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+                      <Building2 size={16} />
+                    </div>
+                    <span className="font-bold text-slate-900">{entry.name}</span>
+                  </div>
+                </td>
+                <td className="px-8 py-4 text-sm text-slate-600">{entry.contact}</td>
+                <td className="px-8 py-4 text-sm text-slate-600">{entry.email}</td>
+                <td className="px-8 py-4 text-sm text-slate-600 truncate max-w-xs">{entry.address}</td>
+                <td className="px-8 py-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => handleOpenModal(entry)}
+                      className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button 
+                      onClick={() => dispatch('DELETE_ADDRESS', { category: activeTab, id: entry.id })}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {entries.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
+                  Geen contacten gevonden in deze categorie.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Modal */}

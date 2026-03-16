@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSocket } from '../SocketContext';
 import { 
   History, 
   User as UserIcon, 
   Calendar, 
   Info,
-  ArrowRight
+  ArrowRight,
+  Search
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -13,12 +14,30 @@ import { nl } from 'date-fns/locale';
 const AuditLog = () => {
   const { state } = useSocket();
   const { logs = [] } = state || {};
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredLogs = logs.filter(log => {
+    const searchStr = `${log.timestamp} ${log.user} ${log.action} ${log.details} ${log.reference || ''}`.toLowerCase();
+    return searchStr.includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="space-y-10">
-      <header>
-        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Audit Log</h2>
-        <p className="text-slate-500 mt-1">Een volledig overzicht van alle wijzigingen en acties binnen het systeem.</p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Audit Log</h2>
+          <p className="text-slate-500 mt-1">Een volledig overzicht van alle wijzigingen en acties binnen het systeem.</p>
+        </div>
+        <div className="relative w-96">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Zoek op tijd, gebruiker, actie, ref..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-full text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm"
+          />
+        </div>
       </header>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
@@ -29,11 +48,12 @@ const AuditLog = () => {
                 <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Tijdstip</th>
                 <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Gebruiker</th>
                 <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Actie</th>
+                <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Referentie</th>
                 <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {logs.length > 0 ? logs.map((log) => (
+              {filteredLogs.length > 0 ? filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50 transition-colors group">
                   <td className="px-10 py-6">
                     <div className="flex items-center gap-3 text-slate-600">
@@ -61,6 +81,9 @@ const AuditLog = () => {
                     </span>
                   </td>
                   <td className="px-10 py-6">
+                    <span className="text-sm font-bold text-indigo-600">{log.reference || '-'}</span>
+                  </td>
+                  <td className="px-10 py-6">
                     <div className="flex items-center gap-3 text-slate-600">
                       <Info size={16} className="text-slate-400 shrink-0" />
                       <span className="text-sm font-medium">{log.details}</span>
@@ -70,12 +93,12 @@ const AuditLog = () => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={4} className="px-10 py-20 text-center">
+                  <td colSpan={5} className="px-10 py-20 text-center">
                     <div className="flex flex-col items-center gap-4">
                       <div className="p-6 bg-slate-50 text-slate-300 rounded-full">
                         <History size={48} />
                       </div>
-                      <p className="text-slate-400 font-medium">Nog geen activiteiten gelogd.</p>
+                      <p className="text-slate-400 font-medium">Geen logs gevonden die voldoen aan de zoekterm.</p>
                     </div>
                   </td>
                 </tr>

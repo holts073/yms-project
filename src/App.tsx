@@ -75,7 +75,7 @@ const AppContent = () => {
 
   const canAccess = (tab: string) => {
     if (currentUser.role === 'admin') return true;
-    if (tab === 'users' || tab === 'logs') return false;
+    if (tab === 'users') return false;
     if (currentUser.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook')) return true; // View only handled in components
     return true;
   };

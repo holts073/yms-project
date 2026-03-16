@@ -20,17 +20,20 @@ async function startServer() {
     deliveries: [],
     addressBook: {
       suppliers: [
-        { id: '1', name: 'Global Tech Solutions', contact: 'John Doe', email: 'john@globaltech.com', address: '123 Tech Lane', type: 'supplier' },
-        { id: '2', name: 'Euro Logistics', contact: 'Jane Smith', email: 'jane@eurolog.com', address: '456 Port Road', type: 'transporter' }
+        { id: '1', name: 'Global Tech Solutions', contact: 'John Doe', email: 'john@globaltech.com', address: '123 Tech Lane, Shenzhen, China', type: 'supplier' },
+        { id: '2', name: 'Euro Logistics', contact: 'Jane Smith', email: 'jane@eurolog.com', address: '456 Port Road, Rotterdam, NL', type: 'supplier' },
+        { id: 's3', name: 'Nordic Manufacturing', contact: 'Sven G.', email: 'sven@nordic.se', address: 'Industrial Way 12, Stockholm', type: 'supplier' }
       ],
       transporters: [
-        { id: '3', name: 'Swift Shipping', contact: 'Mike Ross', email: 'mike@swift.com', address: '789 Ocean Ave', type: 'transporter' }
+        { id: '3', name: 'Swift Shipping', contact: 'Mike Ross', email: 'mike@swift.com', address: '789 Ocean Ave, Hamburg', type: 'transporter' },
+        { id: 't4', name: 'Maersk Line', contact: 'Lars P.', email: 'lars@maersk.com', address: 'Esplanaden 50, Copenhagen', type: 'transporter' }
       ]
     },
     logs: [],
     users: [
       { id: 'admin', name: 'Admin User', role: 'admin', email: 'admin@example.com' },
-      { id: 'user1', name: 'Warehouse Staff', role: 'staff', email: 'staff@example.com' }
+      { id: 'user1', name: 'Warehouse Staff', role: 'staff', email: 'staff@example.com' },
+      { id: 'elmer', name: 'Elmer Holtslag', role: 'admin', email: 'ElmerHoltslag@gmail.com' }
     ]
   };
 
@@ -55,22 +58,23 @@ async function startServer() {
         timestamp,
         user: user.name,
         action: "",
-        details: ""
+        details: "",
+        reference: payload?.reference || ""
       };
 
       const calculateRisk = (delivery: any) => {
         if (delivery.status === 100) return { risk: 'low', reason: 'Voltooid' };
         
         const now = new Date();
-        const eta = delivery.eta ? new Date(delivery.eta) : null;
+        const eta = delivery.etaWarehouse ? new Date(delivery.etaWarehouse) : (delivery.eta ? new Date(delivery.eta) : null);
         const missingRequired = delivery.documents.filter((d: any) => d.required && d.status === 'missing').length;
         
-        if (missingRequired > 2) return { risk: 'high', reason: 'Meerdere kritieke documenten ontbreken' };
+        if (missingRequired > 0) return { risk: 'high', reason: 'Kritieke documenten ontbreken' };
         
         if (eta) {
           const daysToEta = Math.ceil((eta.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysToEta < 3 && delivery.status < 50) return { risk: 'high', reason: 'ETA nabij met lage voortgang' };
-          if (daysToEta < 7 && missingRequired > 0) return { risk: 'medium', reason: 'ETA nadert met ontbrekende documenten' };
+          if (daysToEta < 3 && delivery.status < 80) return { risk: 'high', reason: 'Deadline nadert, actie vereist' };
+          if (daysToEta < 7 && delivery.status < 50) return { risk: 'medium', reason: 'Voortgang loopt achter op schema' };
         }
         
         return { risk: 'low', reason: 'Op schema' };
@@ -79,7 +83,12 @@ async function startServer() {
       switch (type) {
         case "ADD_DELIVERY":
           const riskInfo = calculateRisk(payload);
-          state.deliveries.push({ ...payload, delayRisk: riskInfo.risk, predictionReason: riskInfo.reason });
+          state.deliveries.push({ 
+            ...payload, 
+            delayRisk: riskInfo.risk, 
+            predictionReason: riskInfo.reason,
+            statusHistory: payload.statusHistory || []
+          });
           logEntry.action = "Created Delivery";
           logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
           break;

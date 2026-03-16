@@ -19,16 +19,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Delivery, DeliveryType, Document } from '../types';
 
 const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Bill of Lading', status: 'missing', required: true },
-  { name: 'Packing List', status: 'missing', required: true },
-  { name: 'Commercial Invoice', status: 'missing', required: true },
-  { name: 'Container Release', status: 'missing', required: false }
+  { name: 'Seaway Bill', status: 'missing', required: true },
+  { name: 'Notification of Arrival', status: 'missing', required: true },
+  { name: 'Packing List', status: 'missing', required: false },
+  { name: 'Invoice', status: 'missing', required: false },
+  { name: 'Certificate of Origin', status: 'missing', required: false }
 ];
 
 const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Collection Note', status: 'missing', required: true },
-  { name: 'Export Declaration', status: 'missing', required: true },
-  { name: 'Commercial Invoice', status: 'missing', required: true }
+  { name: 'Pickup Confirmation', status: 'missing', required: true }
 ];
 
 const DeliveryManager = () => {
@@ -38,24 +37,33 @@ const DeliveryManager = () => {
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
 
   // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     type: 'container' as DeliveryType,
     reference: '',
     supplierId: '',
     transporterId: '',
+    forwarderId: '',
     status: 0,
-    eta: ''
+    eta: '',
+    notes: '',
+    etd: '',
+    etaPort: '',
+    etaWarehouse: '',
+    portOfArrival: '',
+    billOfLading: '',
+    containerNumber: '',
+    palletCount: 0,
+    palletExchange: false,
+    loadingCountry: '',
+    loadingCity: '',
+    cargoType: 'Dry'
   });
 
   const handleOpenModal = (delivery?: Delivery) => {
     if (delivery) {
       setEditingDelivery(delivery);
       setFormData({
-        type: delivery.type,
-        reference: delivery.reference,
-        supplierId: delivery.supplierId,
-        transporterId: delivery.transporterId,
-        status: delivery.status,
+        ...delivery,
         eta: delivery.eta || ''
       });
     } else {
@@ -65,8 +73,21 @@ const DeliveryManager = () => {
         reference: '',
         supplierId: '',
         transporterId: '',
+        forwarderId: '',
         status: 0,
-        eta: ''
+        eta: '',
+        notes: '',
+        etd: '',
+        etaPort: '',
+        etaWarehouse: '',
+        portOfArrival: '',
+        billOfLading: '',
+        containerNumber: '',
+        palletCount: 0,
+        palletExchange: false,
+        loadingCountry: '',
+        loadingCity: '',
+        cargoType: 'Dry'
       });
     }
     setIsModalOpen(true);
@@ -96,14 +117,75 @@ const DeliveryManager = () => {
   };
 
   const toggleDocStatus = (delivery: Delivery, docId: string) => {
-    const updatedDocs = delivery.documents.map(doc => {
-      if (doc.id === docId) {
-        const nextStatus: any = doc.status === 'missing' ? 'received' : 'missing';
-        return { ...doc, status: nextStatus };
+    const doc = delivery.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    const newStatus = doc.status === 'missing' ? 'received' : 'missing';
+    const updatedDocs = delivery.documents.map(d => d.id === docId ? { ...d, status: newStatus } : d);
+    
+    let newStatusPct = delivery.status;
+    const history = [...(delivery.statusHistory || [])];
+
+    if (delivery.type === 'container') {
+      const swb = updatedDocs.find(d => d.name === 'Seaway Bill')?.status === 'received';
+      const noa = updatedDocs.find(d => d.name === 'Notification of Arrival')?.status === 'received';
+
+      if (newStatus === 'received') {
+        if (doc.name === 'Seaway Bill' && delivery.status < 33) {
+          history.push(delivery.status);
+          newStatusPct = 33;
+        } else if (doc.name === 'Notification of Arrival' && delivery.status < 66) {
+          history.push(delivery.status);
+          newStatusPct = 66;
+        }
+      } else {
+        // Undo logic for documents
+        if (doc.name === 'Seaway Bill' && !swb && delivery.status === 33) {
+          newStatusPct = 0;
+        } else if (doc.name === 'Notification of Arrival' && !noa && delivery.status === 66) {
+          newStatusPct = 33;
+        }
       }
-      return doc;
+    } else if (delivery.type === 'exworks') {
+      const pickup = updatedDocs.find(d => d.name === 'Pickup Confirmation')?.status === 'received';
+      if (newStatus === 'received' && doc.name === 'Pickup Confirmation' && delivery.status < 50) {
+        history.push(delivery.status);
+        newStatusPct = 50;
+      } else if (newStatus === 'missing' && doc.name === 'Pickup Confirmation' && delivery.status === 50) {
+        newStatusPct = 25;
+      }
+    }
+
+    dispatch('UPDATE_DELIVERY', { 
+      ...delivery, 
+      documents: updatedDocs, 
+      status: newStatusPct,
+      statusHistory: history,
+      updatedAt: new Date().toISOString()
     });
-    dispatch('UPDATE_DELIVERY', { ...delivery, documents: updatedDocs });
+  };
+
+  const setManualStatus = (delivery: Delivery, newStatus: number) => {
+    const history = [...(delivery.statusHistory || [])];
+    history.push(delivery.status);
+    dispatch('UPDATE_DELIVERY', { 
+      ...delivery, 
+      status: newStatus, 
+      statusHistory: history,
+      updatedAt: new Date().toISOString() 
+    });
+  };
+
+  const undoStatus = (delivery: Delivery) => {
+    const history = [...(delivery.statusHistory || [])];
+    if (history.length === 0) return;
+    const prevStatus = history.pop();
+    dispatch('UPDATE_DELIVERY', { 
+      ...delivery, 
+      status: prevStatus!, 
+      statusHistory: history,
+      updatedAt: new Date().toISOString() 
+    });
   };
 
   const canEdit = currentUser.role !== 'viewer';
@@ -160,8 +242,15 @@ const DeliveryManager = () => {
                     {delivery.type === 'container' ? <Package size={24} /> : <TruckIcon size={24} />}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">{delivery.reference}</h3>
-                    <p className="text-sm text-slate-500 capitalize">{delivery.type} levering</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-bold text-slate-900">{delivery.reference}</h3>
+                      {delivery.delayRisk === 'high' && (
+                        <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full animate-pulse">
+                          ACTIE NODIG
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500 capitalize">{delivery.type} levering • {delivery.containerNumber || delivery.cargoType || 'N/A'}</p>
                   </div>
                 </div>
                 {canEdit && (
@@ -183,10 +272,25 @@ const DeliveryManager = () => {
               </div>
 
               {/* Progress */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-bold text-slate-600">
-                  <span>Voortgang</span>
-                  <span>{delivery.status}%</span>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                      <span>Voortgang</span>
+                      <span className="px-2 py-0.5 bg-slate-100 rounded text-xs">{delivery.status}%</span>
+                    </div>
+                    <p className="text-xs text-slate-400 font-medium">
+                      Status: {getStatusLabel(delivery)}
+                    </p>
+                  </div>
+                  {canEdit && (delivery.statusHistory?.length || 0) > 0 && (
+                    <button 
+                      onClick={() => undoStatus(delivery)}
+                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider bg-indigo-50 px-2 py-1 rounded"
+                    >
+                      Stap Ongedaan Maken
+                    </button>
+                  )}
                 </div>
                 <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                   <motion.div 
@@ -195,6 +299,44 @@ const DeliveryManager = () => {
                     className="bg-indigo-600 h-full rounded-full"
                   />
                 </div>
+
+                {/* Manual Action Buttons */}
+                {canEdit && (
+                  <div className="flex flex-wrap gap-2">
+                    {delivery.type === 'container' && delivery.status === 66 && (
+                      <button 
+                        onClick={() => setManualStatus(delivery, 80)}
+                        className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all"
+                      >
+                        Naar Magazijn
+                      </button>
+                    )}
+                    {delivery.type === 'container' && delivery.status === 80 && (
+                      <button 
+                        onClick={() => setManualStatus(delivery, 100)}
+                        className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all"
+                      >
+                        Markeer als Afgeleverd
+                      </button>
+                    )}
+                    {delivery.type === 'exworks' && delivery.status === 0 && (
+                      <button 
+                        onClick={() => setManualStatus(delivery, 25)}
+                        className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all"
+                      >
+                        Transport Aanvragen
+                      </button>
+                    )}
+                    {delivery.type === 'exworks' && delivery.status === 50 && (
+                      <button 
+                        onClick={() => setManualStatus(delivery, 100)}
+                        className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all"
+                      >
+                        Markeer als Afgeleverd
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Documents */}
@@ -222,9 +364,28 @@ const DeliveryManager = () => {
               </div>
             </div>
             
-            <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
-              <span>ETA: {delivery.eta || 'N/A'}</span>
-              <span>Updated: {new Date(delivery.updatedAt).toLocaleDateString()}</span>
+            <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex flex-col gap-4">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span>ETA: {delivery.etaWarehouse || delivery.eta || 'N/A'}</span>
+                <span>Updated: {new Date(delivery.updatedAt).toLocaleDateString()}</span>
+              </div>
+              
+              {/* Local Log */}
+              <div className="space-y-2">
+                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recente Acties</h5>
+                <div className="space-y-1 max-h-24 overflow-y-auto">
+                  {(state.logs || []).filter(l => l.reference === delivery.reference).slice(0, 3).map(log => (
+                    <div key={log.id} className="flex items-center justify-between text-[10px] text-slate-500 bg-white p-2 rounded-lg border border-slate-100">
+                      <span className="font-semibold">{log.user}</span>
+                      <span className="flex-1 px-2 truncate">{log.action}</span>
+                      <span className="opacity-50">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  ))}
+                  {(state.logs || []).filter(l => l.reference === delivery.reference).length === 0 && (
+                    <p className="text-[10px] text-slate-400 italic">Geen acties gevonden voor deze levering.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -313,38 +474,109 @@ const DeliveryManager = () => {
                     </select>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">Transporteur</label>
-                    <select 
-                      required
-                      value={formData.transporterId}
-                      onChange={e => setFormData({ ...formData, transporterId: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
-                    >
-                      <option value="">Kies transporteur...</option>
-                      {addressBook?.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </div>
+                  {formData.type === 'container' ? (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Expediteur</label>
+                        <select 
+                          value={formData.forwarderId}
+                          onChange={e => setFormData({ ...formData, forwarderId: e.target.value })}
+                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                        >
+                          <option value="">Kies expediteur...</option>
+                          {addressBook?.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">ETD</label>
+                        <input type="date" value={formData.etd} onChange={e => setFormData({ ...formData, etd: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">ETA Port</label>
+                        <input type="date" value={formData.etaPort} onChange={e => setFormData({ ...formData, etaPort: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn</label>
+                        <input type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Port of Arrival</label>
+                        <input type="text" value={formData.portOfArrival} onChange={e => setFormData({ ...formData, portOfArrival: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Bill of Lading</label>
+                        <input type="text" value={formData.billOfLading} onChange={e => setFormData({ ...formData, billOfLading: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Containernummer</label>
+                        <input type="text" value={formData.containerNumber} onChange={e => setFormData({ ...formData, containerNumber: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Transporteur (Last Mile)</label>
+                        <select 
+                          value={formData.transporterId}
+                          onChange={e => setFormData({ ...formData, transporterId: e.target.value })}
+                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                        >
+                          <option value="">Kies transporteur...</option>
+                          {addressBook?.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn</label>
+                        <input type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Transporteur</label>
+                        <select 
+                          value={formData.transporterId}
+                          onChange={e => setFormData({ ...formData, transporterId: e.target.value })}
+                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                        >
+                          <option value="">Kies transporteur...</option>
+                          {addressBook?.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Aantal Pallets</label>
+                        <input type="number" value={formData.palletCount} onChange={e => setFormData({ ...formData, palletCount: parseInt(e.target.value) })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2 flex items-center gap-4 pt-8">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Pallet Ruil</label>
+                        <input type="checkbox" checked={formData.palletExchange} onChange={e => setFormData({ ...formData, palletExchange: e.target.checked })} className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Land van laden</label>
+                        <input type="text" value={formData.loadingCountry} onChange={e => setFormData({ ...formData, loadingCountry: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Stad van laden</label>
+                        <input type="text" value={formData.loadingCity} onChange={e => setFormData({ ...formData, loadingCity: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Soort lading</label>
+                        <select 
+                          value={formData.cargoType}
+                          onChange={e => setFormData({ ...formData, cargoType: e.target.value })}
+                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                        >
+                          <option value="Dry">Droog</option>
+                          <option value="Cool">Koel</option>
+                          <option value="Frozen">Vries</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">Status (%)</label>
-                    <input 
-                      type="number" 
-                      min="0"
-                      max="100"
-                      value={formData.status}
-                      onChange={e => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">ETA</label>
-                    <input 
-                      type="date" 
-                      value={formData.eta}
-                      onChange={e => setFormData({ ...formData, eta: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                  <div className="space-y-2 col-span-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">Opmerkingen</label>
+                    <textarea 
+                      value={formData.notes}
+                      onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
                     />
                   </div>
                 </div>
@@ -376,5 +608,21 @@ const DeliveryManager = () => {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
+const getStatusLabel = (delivery: Delivery) => {
+  if (delivery.type === 'container') {
+    if (delivery.status === 0) return 'Besteld';
+    if (delivery.status === 33) return 'Onderweg';
+    if (delivery.status === 66) return 'Douane';
+    if (delivery.status === 80) return 'Onderweg naar Magazijn';
+    if (delivery.status === 100) return 'Afgeleverd';
+  } else {
+    if (delivery.status === 0) return 'Besteld';
+    if (delivery.status === 25) return 'Transport Aangevraagd';
+    if (delivery.status === 50) return 'Onderweg';
+    if (delivery.status === 100) return 'Afgeleverd';
+  }
+  return 'In Behandeling';
+};
 
 export default DeliveryManager;

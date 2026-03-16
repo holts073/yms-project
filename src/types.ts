@@ -29,6 +29,24 @@ export interface Delivery {
   eta?: string;
   delayRisk?: 'low' | 'medium' | 'high';
   predictionReason?: string;
+  statusHistory?: number[];
+  notes?: string;
+  
+  // Container specific
+  forwarderId?: string;
+  etd?: string;
+  etaPort?: string;
+  etaWarehouse?: string;
+  portOfArrival?: string;
+  billOfLading?: string;
+  containerNumber?: string;
+
+  // Ex-Works specific
+  palletCount?: number;
+  palletExchange?: boolean;
+  loadingCountry?: string;
+  loadingCity?: string;
+  cargoType?: 'Dry' | 'Cool' | 'Frozen';
 }
 
 export interface LogEntry {
@@ -37,6 +55,7 @@ export interface LogEntry {
   user: string;
   action: string;
   details: string;
+  reference?: string;
 }
 
 export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer';
