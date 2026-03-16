@@ -11,7 +11,7 @@ import {
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
-const AuditLog = () => {
+const AuditLog = ({ onNavigate }: { onNavigate?: (tab: string, reference?: string) => void }) => {
   const { state } = useSocket();
   const { logs = [] } = state || {};
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,7 +81,27 @@ const AuditLog = () => {
                     </span>
                   </td>
                   <td className="px-10 py-6">
-                    <span className="text-sm font-bold text-indigo-600">{log.reference || '-'}</span>
+                    {log.reference ? (
+                      <div className="flex flex-col">
+                        <button 
+                          onClick={() => onNavigate?.('deliveries', log.reference)}
+                          className="text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition-all text-left"
+                        >
+                          {log.reference}
+                        </button>
+                        {(() => {
+                          const delivery = state?.deliveries.find(d => d.reference === log.reference);
+                          const supplier = state?.addressBook?.suppliers.find(s => s.id === delivery?.supplierId);
+                          return supplier?.otif ? (
+                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                              OTIF: {supplier.otif}%
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-slate-400">-</span>
+                    )}
                   </td>
                   <td className="px-10 py-6">
                     <div className="flex items-center gap-3 text-slate-600">

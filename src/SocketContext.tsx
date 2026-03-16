@@ -23,10 +23,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   // Mock current user for demo
   const [currentUser] = useState<User>({
-    id: 'admin',
-    name: 'Admin User',
+    id: 'elmer',
+    name: 'Elmer Holtslag',
     role: 'admin',
-    email: 'admin@example.com'
+    email: 'ElmerHoltslag@gmail.com'
   });
 
   useEffect(() => {

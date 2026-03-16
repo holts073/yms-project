@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSocket } from '../SocketContext';
 import { 
   Plus, 
@@ -13,7 +13,10 @@ import {
   FileText,
   Package,
   Truck as TruckIcon,
-  ChevronRight
+  ChevronRight,
+  MessageSquare,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Delivery, DeliveryType, Document } from '../types';
@@ -21,20 +24,110 @@ import { Delivery, DeliveryType, Document } from '../types';
 const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
   { name: 'Seaway Bill', status: 'missing', required: true },
   { name: 'Notification of Arrival', status: 'missing', required: true },
+  { name: 'Customs Release', status: 'missing', required: true },
   { name: 'Packing List', status: 'missing', required: false },
-  { name: 'Invoice', status: 'missing', required: false },
-  { name: 'Certificate of Origin', status: 'missing', required: false }
+  { name: 'Invoice', status: 'missing', required: false }
 ];
 
 const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Pickup Confirmation', status: 'missing', required: true }
+  { name: 'Pickup Confirmation', status: 'missing', required: true },
+  { name: 'Transport Order', status: 'missing', required: true }
 ];
 
-const DeliveryManager = () => {
+const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFilter?: string; initialSelectedId?: string }) => {
   const { state, dispatch, currentUser } = useSocket();
-  const { deliveries = [], addressBook } = state || {};
+  const { deliveries: allDeliveries = [], addressBook } = state || {};
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
+  const [showDelivered, setShowDelivered] = useState(false);
+  const [filter, setFilter] = useState(initialFilter);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'eta', direction: 'asc' });
+
+  // Sync filter with initialFilter if it changes
+  useEffect(() => {
+    setFilter(initialFilter);
+  }, [initialFilter]);
+
+  // Handle initialSelectedId
+  useEffect(() => {
+    if (initialSelectedId && allDeliveries.length > 0) {
+      const delivery = allDeliveries.find(d => d.id === initialSelectedId);
+      if (delivery) {
+        handleOpenModal(delivery);
+      }
+    }
+  }, [initialSelectedId, allDeliveries]);
+
+  const getStatusLabel = (delivery: Delivery) => {
+    if (delivery.status === 100) return 'Afgeleverd';
+    
+    if (delivery.type === 'container') {
+      if (delivery.status >= 75) return 'Onderweg naar Magazijn';
+      if (delivery.status >= 50) return 'Douane';
+      if (delivery.status >= 25) return 'In Transit';
+      return 'Besteld';
+    } else {
+      if (delivery.status >= 50) return 'Onderweg naar Magazijn';
+      if (delivery.status >= 25) return 'Transport aangevraagd';
+      return 'Besteld';
+    }
+  };
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const deliveries = useMemo(() => {
+    let list = allDeliveries.filter(d => 
+      d.reference.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    if (sortConfig) {
+      list = [...list].sort((a, b) => {
+        let aValue: any = a[sortConfig.key as keyof typeof a];
+        let bValue: any = b[sortConfig.key as keyof typeof b];
+
+        if (sortConfig.key === 'eta') {
+          aValue = a.etaWarehouse || a.eta || '';
+          bValue = b.etaWarehouse || b.eta || '';
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return list;
+  }, [allDeliveries, filter, sortConfig]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    const visibleIds = deliveries.filter(d => showDelivered || d.status < 100).map(d => d.id);
+    if (selectedIds.length === visibleIds.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(visibleIds);
+    }
+  };
+
+  const handleBulkStatusUpdate = (newStatus: number) => {
+    dispatch('BULK_UPDATE_DELIVERIES', {
+      ids: selectedIds,
+      updates: { status: newStatus }
+    });
+    setSelectedIds([]);
+  };
 
   // Form State
   const [formData, setFormData] = useState<any>({
@@ -116,6 +209,27 @@ const DeliveryManager = () => {
     setIsModalOpen(false);
   };
 
+  const getStatusSteps = (type: DeliveryType) => {
+    if (type === 'container') {
+      return ['Besteld', 'In Transit', 'Douane', 'Onderweg naar Magazijn', 'Afgeleverd'];
+    }
+    return ['Besteld', 'Transport aangevraagd', 'Onderweg naar Magazijn', 'Afgeleverd'];
+  };
+
+  const getStatusIndex = (delivery: Delivery) => {
+    if (delivery.status === 100) return delivery.type === 'container' ? 4 : 3;
+    if (delivery.type === 'container') {
+      if (delivery.status >= 75) return 3;
+      if (delivery.status >= 50) return 2;
+      if (delivery.status >= 25) return 1;
+      return 0;
+    } else {
+      if (delivery.status >= 50) return 2;
+      if (delivery.status >= 25) return 1;
+      return 0;
+    }
+  };
+
   const toggleDocStatus = (delivery: Delivery, docId: string) => {
     const doc = delivery.documents.find(d => d.id === docId);
     if (!doc) return;
@@ -129,30 +243,25 @@ const DeliveryManager = () => {
     if (delivery.type === 'container') {
       const swb = updatedDocs.find(d => d.name === 'Seaway Bill')?.status === 'received';
       const noa = updatedDocs.find(d => d.name === 'Notification of Arrival')?.status === 'received';
+      const customs = updatedDocs.find(d => d.name === 'Customs Release')?.status === 'received';
 
       if (newStatus === 'received') {
-        if (doc.name === 'Seaway Bill' && delivery.status < 33) {
+        if (doc.name === 'Seaway Bill' && delivery.status < 25) {
           history.push(delivery.status);
-          newStatusPct = 33;
-        } else if (doc.name === 'Notification of Arrival' && delivery.status < 66) {
+          newStatusPct = 25;
+        } else if (doc.name === 'Notification of Arrival' && delivery.status < 50) {
           history.push(delivery.status);
-          newStatusPct = 66;
-        }
-      } else {
-        // Undo logic for documents
-        if (doc.name === 'Seaway Bill' && !swb && delivery.status === 33) {
-          newStatusPct = 0;
-        } else if (doc.name === 'Notification of Arrival' && !noa && delivery.status === 66) {
-          newStatusPct = 33;
+          newStatusPct = 50;
+        } else if (doc.name === 'Customs Release' && delivery.status < 75) {
+          history.push(delivery.status);
+          newStatusPct = 75;
         }
       }
     } else if (delivery.type === 'exworks') {
-      const pickup = updatedDocs.find(d => d.name === 'Pickup Confirmation')?.status === 'received';
-      if (newStatus === 'received' && doc.name === 'Pickup Confirmation' && delivery.status < 50) {
+      const transportOrder = updatedDocs.find(d => d.name === 'Transport Order')?.status === 'received';
+      if (newStatus === 'received' && doc.name === 'Transport Order' && delivery.status < 50) {
         history.push(delivery.status);
         newStatusPct = 50;
-      } else if (newStatus === 'missing' && doc.name === 'Pickup Confirmation' && delivery.status === 50) {
-        newStatusPct = 25;
       }
     }
 
@@ -162,6 +271,44 @@ const DeliveryManager = () => {
       status: newStatusPct,
       statusHistory: history,
       updatedAt: new Date().toISOString()
+    });
+  };
+
+  const handleSendTransportEmail = (delivery: Delivery) => {
+    const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
+    const transporter = addressBook?.transporters.find(t => t.id === delivery.transporterId);
+    
+    if (!supplier || !transporter) {
+      alert('Leverancier of transporteur niet gevonden.');
+      return;
+    }
+
+    const subject = `Transport Order - Ref: ${delivery.reference}`;
+    const body = `Beste ${transporter.contact || transporter.name},
+
+Hierbij de transportopdracht voor de volgende zending:
+
+Referentie: ${delivery.reference}
+Leverancier: ${supplier.name}
+Afhaaladres: ${supplier.pickupAddress || supplier.address}
+Type lading: ${delivery.cargoType || 'Dry'}
+Aantal pallets: ${delivery.palletCount || '-'}
+ETA Magazijn: ${delivery.etaWarehouse || delivery.eta || '-'}
+
+Graag bevestiging van ontvangst en planning.
+
+Met vriendelijke groet,
+${currentUser.name}
+ILG Foodgroup SCY/YMS`;
+
+    const mailtoUrl = `mailto:${transporter.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+
+    // Log the action
+    dispatch('UPDATE_DELIVERY', {
+      ...delivery,
+      updatedAt: new Date().toISOString(),
+      notes: (delivery.notes ? delivery.notes + '\n' : '') + `[SYSTEM] Transport Order gemaild naar ${transporter.name} op ${new Date().toLocaleString()}`
     });
   };
 
@@ -192,20 +339,32 @@ const DeliveryManager = () => {
 
   return (
     <div className="space-y-8">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Leveringen</h2>
           <p className="text-slate-500 mt-1">Beheer en volg al je container en ex-works zendingen.</p>
         </div>
-        {canEdit && (
+        <div className="flex items-center gap-4">
           <button 
-            onClick={() => handleOpenModal()}
-            className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
+            onClick={() => setShowDelivered(!showDelivered)}
+            className={cn(
+              "flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all border",
+              showDelivered ? "bg-white text-slate-600 border-slate-200" : "bg-slate-800 text-white border-slate-800"
+            )}
           >
-            <Plus size={20} />
-            Nieuwe Levering
+            {showDelivered ? <EyeOff size={18} /> : <Eye size={18} />}
+            <span>{showDelivered ? 'Verberg Geleverd' : 'Toon Geleverd'}</span>
           </button>
-        )}
+          {canEdit && (
+            <button 
+              onClick={() => handleOpenModal()}
+              className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
+            >
+              <Plus size={20} />
+              Nieuwe Levering
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Filters */}
@@ -215,6 +374,8 @@ const DeliveryManager = () => {
           <input 
             type="text" 
             placeholder="Filter op referentie..." 
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
             className="w-full pl-12 pr-4 py-2 bg-slate-50 border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -224,172 +385,208 @@ const DeliveryManager = () => {
         </button>
       </div>
 
-      {/* Deliveries Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {deliveries.map((delivery) => (
-          <motion.div 
-            layout
-            key={delivery.id}
-            className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="p-8 space-y-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "p-4 rounded-2xl",
-                    delivery.type === 'container' ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"
-                  )}>
-                    {delivery.type === 'container' ? <Package size={24} /> : <TruckIcon size={24} />}
-                  </div>
-                  <div>
+      {/* Deliveries List */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-8 py-5 w-10">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.length > 0 && selectedIds.length === deliveries.filter(d => showDelivered || d.status < 100).length}
+                    onChange={toggleSelectAll}
+                    className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                  />
+                </th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                <th 
+                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  onClick={() => handleSort('reference')}
+                >
+                  Referentie
+                </th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Leverancier</th>
+                <th 
+                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  onClick={() => handleSort('status')}
+                >
+                  Status
+                </th>
+                <th 
+                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  onClick={() => handleSort('eta')}
+                >
+                  ETA
+                </th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acties</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {deliveries
+                .filter(d => showDelivered || d.status < 100)
+                .map((delivery) => {
+                  const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
+                  return (
+                <tr 
+                  key={delivery.id} 
+                  className={cn(
+                    "hover:bg-slate-50 transition-colors cursor-pointer group",
+                    selectedIds.includes(delivery.id) ? "bg-indigo-50/50" : ""
+                  )}
+                  onClick={() => handleOpenModal(delivery)}
+                >
+                  <td className="px-8 py-6" onClick={e => e.stopPropagation()}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.includes(delivery.id)}
+                      onChange={() => toggleSelect(delivery.id)}
+                      className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center",
+                      delivery.type === 'container' ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"
+                    )}>
+                      {delivery.type === 'container' ? <Package size={20} /> : <TruckIcon size={20} />}
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-bold text-slate-900">{delivery.reference}</h3>
+                      <span className="text-sm font-bold text-slate-900">{delivery.reference}</span>
                       {delivery.delayRisk === 'high' && (
-                        <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full animate-pulse">
-                          ACTIE NODIG
+                        <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">
+                          ACTIE
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-slate-500 capitalize">{delivery.type} levering • {delivery.containerNumber || delivery.cargoType || 'N/A'}</p>
-                  </div>
-                </div>
-                {canEdit && (
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleOpenModal(delivery)}
-                      className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button 
-                      onClick={() => dispatch('DELETE_DELIVERY', delivery.id)}
-                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Progress */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm font-bold text-slate-600">
-                      <span>Voortgang</span>
-                      <span className="px-2 py-0.5 bg-slate-100 rounded text-xs">{delivery.status}%</span>
-                    </div>
-                    <p className="text-xs text-slate-400 font-medium">
-                      Status: {getStatusLabel(delivery)}
-                    </p>
-                  </div>
-                  {canEdit && (delivery.statusHistory?.length || 0) > 0 && (
-                    <button 
-                      onClick={() => undoStatus(delivery)}
-                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider bg-indigo-50 px-2 py-1 rounded"
-                    >
-                      Stap Ongedaan Maken
-                    </button>
-                  )}
-                </div>
-                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${delivery.status}%` }}
-                    className="bg-indigo-600 h-full rounded-full"
-                  />
-                </div>
-
-                {/* Manual Action Buttons */}
-                {canEdit && (
-                  <div className="flex flex-wrap gap-2">
-                    {delivery.type === 'container' && delivery.status === 66 && (
-                      <button 
-                        onClick={() => setManualStatus(delivery, 80)}
-                        className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all"
-                      >
-                        Naar Magazijn
-                      </button>
-                    )}
-                    {delivery.type === 'container' && delivery.status === 80 && (
-                      <button 
-                        onClick={() => setManualStatus(delivery, 100)}
-                        className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all"
-                      >
-                        Markeer als Afgeleverd
-                      </button>
-                    )}
-                    {delivery.type === 'exworks' && delivery.status === 0 && (
-                      <button 
-                        onClick={() => setManualStatus(delivery, 25)}
-                        className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all"
-                      >
-                        Transport Aanvragen
-                      </button>
-                    )}
-                    {delivery.type === 'exworks' && delivery.status === 50 && (
-                      <button 
-                        onClick={() => setManualStatus(delivery, 100)}
-                        className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all"
-                      >
-                        Markeer als Afgeleverd
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Documents */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Documenten</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {delivery.documents.map((doc) => (
-                    <button
-                      key={doc.id}
-                      onClick={() => toggleDocStatus(delivery, doc.id)}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
-                        doc.status === 'received' 
-                          ? "bg-emerald-50 border-emerald-100 text-emerald-700" 
-                          : "bg-slate-50 border-slate-100 text-slate-600"
+                    <p className="text-xs text-slate-400 mt-0.5">{delivery.containerNumber || delivery.cargoType || '-'}</p>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-slate-900">
+                        {supplier?.name || 'Onbekend'}
+                      </span>
+                      {supplier?.otif && (
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                          OTIF: {supplier.otif}%
+                        </span>
                       )}
-                    >
-                      <div className="flex items-center gap-3">
-                        {doc.status === 'received' ? <Check size={16} /> : <AlertCircle size={16} className={doc.required ? "text-amber-500" : "text-slate-400"} />}
-                        <span className="text-sm font-semibold truncate">{doc.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          {getStatusLabel(delivery)}
+                        </span>
                       </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      <div className="flex gap-1">
+                        {getStatusSteps(delivery.type).map((step, idx) => (
+                          <div 
+                            key={step}
+                            className={cn(
+                              "h-1.5 flex-1 rounded-full",
+                              idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-100"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className="text-sm font-medium text-slate-600">
+                      {delivery.etaWarehouse || delivery.eta || '-'}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6 text-right">
+                    <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                      {delivery.type === 'exworks' && delivery.status === 0 && canEdit && (
+                        <button 
+                          onClick={() => setManualStatus(delivery, 25)}
+                          className="px-3 py-1.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full hover:bg-amber-100 transition-all uppercase tracking-wider"
+                        >
+                          Transport aanvragen
+                        </button>
+                      )}
+                      {delivery.type === 'exworks' && delivery.status === 25 && canEdit && (
+                        <button 
+                          onClick={() => handleSendTransportEmail(delivery)}
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-full hover:bg-indigo-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
+                        >
+                          <FileText size={12} />
+                          Mail Transport Order
+                        </button>
+                      )}
+                      {delivery.notes && (
+                        <div className="relative group/note">
+                          <MessageSquare size={18} className="text-slate-400 hover:text-indigo-600 cursor-help" />
+                          <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-800 text-white text-xs rounded-xl opacity-0 group-hover/note:opacity-100 transition-opacity pointer-events-none z-50">
+                            {delivery.notes}
+                          </div>
+                        </div>
+                      )}
+                      {canEdit && (
+                        <>
+                          <button 
+                            onClick={() => handleOpenModal(delivery)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
+                            onClick={() => dispatch('DELETE_DELIVERY', delivery.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-8 border border-slate-700 backdrop-blur-md"
+          >
+            <div className="flex items-center gap-3 border-r border-slate-700 pr-8">
+              <span className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-bold">
+                {selectedIds.length}
+              </span>
+              <span className="text-sm font-medium text-slate-300">geselecteerd</span>
             </div>
             
-            <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex flex-col gap-4">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
-                <span>ETA: {delivery.etaWarehouse || delivery.eta || 'N/A'}</span>
-                <span>Updated: {new Date(delivery.updatedAt).toLocaleDateString()}</span>
-              </div>
-              
-              {/* Local Log */}
-              <div className="space-y-2">
-                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recente Acties</h5>
-                <div className="space-y-1 max-h-24 overflow-y-auto">
-                  {(state.logs || []).filter(l => l.reference === delivery.reference).slice(0, 3).map(log => (
-                    <div key={log.id} className="flex items-center justify-between text-[10px] text-slate-500 bg-white p-2 rounded-lg border border-slate-100">
-                      <span className="font-semibold">{log.user}</span>
-                      <span className="flex-1 px-2 truncate">{log.action}</span>
-                      <span className="opacity-50">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  ))}
-                  {(state.logs || []).filter(l => l.reference === delivery.reference).length === 0 && (
-                    <p className="text-[10px] text-slate-400 italic">Geen acties gevonden voor deze levering.</p>
-                  )}
-                </div>
-              </div>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => handleBulkStatusUpdate(100)}
+                className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-full text-sm font-bold transition-all"
+              >
+                <Check size={16} />
+                Markeer als Afgeleverd
+              </button>
+              <button 
+                onClick={() => setSelectedIds([])}
+                className="text-sm font-bold text-slate-400 hover:text-white transition-all"
+              >
+                Annuleren
+              </button>
             </div>
           </motion.div>
-        ))}
-      </div>
+        )}
+      </AnimatePresence>
 
       {/* Modal */}
       <AnimatePresence>
@@ -496,8 +693,8 @@ const DeliveryManager = () => {
                         <input type="date" value={formData.etaPort} onChange={e => setFormData({ ...formData, etaPort: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn</label>
-                        <input type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn *</label>
+                        <input required type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Port of Arrival</label>
@@ -526,8 +723,8 @@ const DeliveryManager = () => {
                   ) : (
                     <>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn</label>
-                        <input type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn *</label>
+                        <input required type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Transporteur</label>
@@ -579,6 +776,41 @@ const DeliveryManager = () => {
                       className="w-full px-6 py-4 bg-slate-50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
                     />
                   </div>
+
+                  {editingDelivery && (
+                    <div className="space-y-4 col-span-2 bg-slate-50 p-8 rounded-[2rem]">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-bold text-slate-900">Documenten Beheer</h4>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Klik om status te wijzigen</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {editingDelivery.documents.map(doc => (
+                          <button
+                            key={doc.id}
+                            type="button"
+                            onClick={() => toggleDocStatus(editingDelivery, doc.id)}
+                            className={cn(
+                              "flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
+                              doc.status === 'received' 
+                                ? "bg-emerald-50 border-emerald-100 text-emerald-700" 
+                                : "bg-white border-slate-200 text-slate-600 hover:border-indigo-200"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText size={18} className={doc.status === 'received' ? "text-emerald-500" : "text-slate-400"} />
+                              <div>
+                                <p className="text-sm font-bold">{doc.name}</p>
+                                <p className="text-[10px] uppercase tracking-wider opacity-60">
+                                  {doc.required ? 'Verplicht' : 'Optioneel'}
+                                </p>
+                              </div>
+                            </div>
+                            {doc.status === 'received' ? <Check size={18} /> : <AlertCircle size={18} className="text-amber-500" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-6 flex gap-4">
@@ -608,21 +840,5 @@ const DeliveryManager = () => {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
-
-const getStatusLabel = (delivery: Delivery) => {
-  if (delivery.type === 'container') {
-    if (delivery.status === 0) return 'Besteld';
-    if (delivery.status === 33) return 'Onderweg';
-    if (delivery.status === 66) return 'Douane';
-    if (delivery.status === 80) return 'Onderweg naar Magazijn';
-    if (delivery.status === 100) return 'Afgeleverd';
-  } else {
-    if (delivery.status === 0) return 'Besteld';
-    if (delivery.status === 25) return 'Transport Aangevraagd';
-    if (delivery.status === 50) return 'Onderweg';
-    if (delivery.status === 100) return 'Afgeleverd';
-  }
-  return 'In Behandeling';
-};
 
 export default DeliveryManager;

@@ -27,6 +27,7 @@ const AddressBook = () => {
     contact: '',
     email: '',
     address: '',
+    pickupAddress: '',
   });
 
   const handleOpenModal = (entry?: AddressEntry) => {
@@ -37,6 +38,7 @@ const AddressBook = () => {
         contact: entry.contact,
         email: entry.email,
         address: entry.address,
+        pickupAddress: entry.pickupAddress || '',
       });
     } else {
       setEditingEntry(null);
@@ -45,6 +47,7 @@ const AddressBook = () => {
         contact: '',
         email: '',
         address: '',
+        pickupAddress: '',
       });
     }
     setIsModalOpen(true);
@@ -244,12 +247,25 @@ const AddressBook = () => {
                     <label className="text-sm font-bold text-slate-700 ml-4">Adres</label>
                     <textarea 
                       required
-                      rows={3}
+                      rows={2}
                       value={formData.address}
                       onChange={e => setFormData({ ...formData, address: e.target.value })}
                       className="w-full px-6 py-4 bg-slate-50 border-none rounded-[1.5rem] focus:ring-2 focus:ring-indigo-500 resize-none"
                     />
                   </div>
+
+                  {activeTab === 'suppliers' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 ml-4">Afhaaladres (Pickup Address)</label>
+                      <textarea 
+                        rows={2}
+                        value={formData.pickupAddress}
+                        onChange={e => setFormData({ ...formData, pickupAddress: e.target.value })}
+                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-[1.5rem] focus:ring-2 focus:ring-indigo-500 resize-none"
+                        placeholder="Adres waar de goederen worden afgehaald..."
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-6 flex gap-4">

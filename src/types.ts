@@ -14,6 +14,8 @@ export interface AddressEntry {
   email: string;
   address: string;
   type: 'supplier' | 'transporter';
+  pickupAddress?: string;
+  otif?: number; // On-Time In-Full percentage
 }
 
 export interface Delivery {
@@ -67,6 +69,16 @@ export interface User {
   email: string;
 }
 
+export interface AppSettings {
+  terms: {
+    ordered: string;
+    transportRequested: string;
+    enRouteToWarehouse: string;
+    delivered: string;
+    [key: string]: string;
+  };
+}
+
 export interface AppState {
   deliveries: Delivery[];
   addressBook: {
@@ -75,4 +87,5 @@ export interface AppState {
   };
   logs: LogEntry[];
   users: User[];
+  settings: AppSettings;
 }

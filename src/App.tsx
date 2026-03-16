@@ -47,7 +47,31 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
 
 const AppContent = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const { state, currentUser } = useSocket();
+
+  const handleNavigate = (tab: string, reference?: string, id?: string) => {
+    setActiveTab(tab);
+    if (id) {
+      setSelectedId(id);
+      setSearchFilter('');
+    } else if (reference) {
+      setSearchFilter(reference);
+      setSelectedId(null);
+    } else {
+      setSearchFilter('');
+      setSelectedId(null);
+    }
+  };
+
+  const handleSidebarClick = (tab: string) => {
+    setActiveTab(tab);
+    setSelectedId(null);
+    if (tab === 'deliveries') {
+      setSearchFilter(''); // Reset filter when clicking deliveries tab
+    }
+  };
 
   if (!state) {
     return (
@@ -63,13 +87,13 @@ const AppContent = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <Dashboard />;
-      case 'deliveries': return <DeliveryManager />;
+      case 'dashboard': return <Dashboard onNavigate={handleNavigate} />;
+      case 'deliveries': return <DeliveryManager initialFilter={searchFilter} initialSelectedId={selectedId || undefined} />;
       case 'addressbook': return <AddressBook />;
       case 'statistics': return <Statistics />;
-      case 'logs': return <AuditLog />;
+      case 'logs': return <AuditLog onNavigate={handleNavigate} />;
       case 'users': return <UserManagement />;
-      default: return <Dashboard />;
+      default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
 
@@ -85,10 +109,13 @@ const AppContent = () => {
       {/* Sidebar */}
       <aside className="w-72 bg-white border-r border-slate-200 flex flex-col p-6">
         <div className="flex items-center gap-3 mb-10 px-4">
-          <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <Truck size={24} />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">LogiTrack Pro</h1>
+          <img 
+            src="/logo.jfif" 
+            alt="ILG Logo" 
+            className="h-10 w-auto object-contain"
+            referrerPolicy="no-referrer"
+          />
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS</span></h1>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -96,44 +123,44 @@ const AppContent = () => {
             icon={LayoutDashboard} 
             label="Dashboard" 
             active={activeTab === 'dashboard'} 
-            onClick={() => setActiveTab('dashboard')} 
+            onClick={() => handleSidebarClick('dashboard')} 
           />
           <SidebarItem 
             icon={Truck} 
             label="Leveringen" 
             active={activeTab === 'deliveries'} 
-            onClick={() => setActiveTab('deliveries')} 
+            onClick={() => handleSidebarClick('deliveries')} 
           />
           <SidebarItem 
             icon={BookUser} 
             label="Adressenboek" 
             active={activeTab === 'addressbook'} 
-            onClick={() => setActiveTab('addressbook')} 
+            onClick={() => handleSidebarClick('addressbook')} 
           />
           <SidebarItem 
             icon={BarChart3} 
             label="Statistieken" 
             active={activeTab === 'statistics'} 
-            onClick={() => setActiveTab('statistics')} 
+            onClick={() => handleSidebarClick('statistics')} 
           />
           <SidebarItem 
             icon={History} 
             label="Audit Log" 
             active={activeTab === 'logs'} 
-            onClick={() => setActiveTab('logs')} 
+            onClick={() => handleSidebarClick('logs')} 
           />
           {currentUser.role === 'admin' && (
             <SidebarItem 
               icon={Shield} 
               label="Gebruikers" 
               active={activeTab === 'users'} 
-              onClick={() => setActiveTab('users')} 
+              onClick={() => handleSidebarClick('users')} 
             />
           )}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-slate-100">
-          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-[1.5rem] mb-4">
+          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-[1.5rem] mb-4 mt-4">
             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700">
               <UserIcon size={20} />
             </div>
@@ -160,16 +187,6 @@ const AppContent = () => {
               placeholder="Zoek leveringen, leveranciers..." 
               className="w-full pl-12 pr-4 py-2.5 bg-slate-100 border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
             />
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <button className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            <button className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-              <Settings size={20} />
-            </button>
           </div>
         </header>
 
