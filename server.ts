@@ -23,11 +23,11 @@ async function startServer() {
 
   if (!state) {
     const suppliers = [
-      { id: '1', name: 'Global Tech Solutions', contact: 'John Doe', email: 'john@globaltech.com', address: '123 Tech Lane, Shenzhen, China', type: 'supplier', otif: 94, pickupAddress: 'Warehouse A, Shenzhen Port' },
-      { id: '2', name: 'Euro Logistics', contact: 'Jane Smith', email: 'jane@eurolog.com', address: '456 Port Road, Rotterdam, NL', type: 'supplier', otif: 88, pickupAddress: 'Distribution Center West, Rotterdam' },
-      { id: 's3', name: 'Nordic Manufacturing', contact: 'Sven G.', email: 'sven@nordic.se', address: 'Industrial Way 12, Stockholm', type: 'supplier', otif: 97, pickupAddress: 'Stockholm North Industrial Park' },
-      { id: 's4', name: 'Mediterranean Foods', contact: 'Marco R.', email: 'marco@medfoods.it', address: 'Via Roma 45, Naples', type: 'supplier', otif: 91, pickupAddress: 'Naples Export Hub' },
-      { id: 's5', name: 'Alpine Dairy', contact: 'Heidi M.', email: 'heidi@alpinedairy.ch', address: 'Milk Street 1, Zurich', type: 'supplier', otif: 99, pickupAddress: 'Zurich Cold Storage' }
+      { id: '1', name: 'Unilever Food Solutions', contact: 'Jan de Vries', email: 'jan.devries@unilever.com', address: 'Rotterdam, NL', type: 'supplier', otif: 94, pickupAddress: 'Rotterdam Port' },
+      { id: '2', name: 'Sligro Food Group', contact: 'Karel Visser', email: 'karel@sligro.nl', address: 'Veghel, NL', type: 'supplier', otif: 88, pickupAddress: 'Veghel Distribution Center' },
+      { id: 's3', name: 'Dr. Oetker', contact: 'Hans Müller', email: 'hans.mueller@oetker.de', address: 'Bielefeld, DE', type: 'supplier', otif: 97, pickupAddress: 'Bielefeld Factory' },
+      { id: 's4', name: 'Südzucker AG', contact: 'Klaus Schmidt', email: 'klaus@suedzucker.de', address: 'Mannheim, DE', type: 'supplier', otif: 91, pickupAddress: 'Mannheim Hub' },
+      { id: 's5', name: 'Dodoni S.A.', contact: 'Nikos P.', email: 'nikos@dodoni.gr', address: 'Ioannina, GR', type: 'supplier', otif: 99, pickupAddress: 'Ioannina Cold Storage' }
     ];
     const transporters = [
       { id: '3', name: 'Swift Shipping', contact: 'Mike Ross', email: 'mike@swift.com', address: '789 Ocean Ave, Hamburg', type: 'transporter' },
@@ -61,14 +61,23 @@ async function startServer() {
         transporterId: transporters[i % transporters.length].id,
         status,
         documents: [
-          { id: 'd1', name: 'Factuur', status: Math.random() > 0.3 ? 'received' : 'missing', required: true },
-          { id: 'd2', name: 'Packing List', status: Math.random() > 0.4 ? 'received' : 'missing', required: true },
-          { id: 'd3', name: 'Pickup Confirmation', status: Math.random() > 0.5 ? 'received' : 'missing', required: type === 'exworks' },
-          { id: 'd4', name: 'Transport Order', status: status >= 50 ? 'received' : 'missing', required: type === 'exworks' }
+          ...(type === 'container' ? [
+            { id: 'd1', name: 'Seaway Bill', status: status >= 25 ? 'received' : 'missing', required: true },
+            { id: 'd2', name: 'Notification of Arrival', status: status >= 50 ? 'received' : 'missing', required: true },
+            { id: 'd3', name: 'Factuur', status: Math.random() > 0.5 ? 'received' : 'missing', required: false },
+            { id: 'd4', name: 'Packing List', status: Math.random() > 0.5 ? 'received' : 'missing', required: false },
+            { id: 'd5', name: 'Certificate of Origin', status: Math.random() > 0.5 ? 'received' : 'missing', required: false }
+          ] : [
+            { id: 'd1', name: 'Transport Order', status: status >= 50 ? 'received' : 'missing', required: true },
+            { id: 'd2', name: 'Factuur', status: Math.random() > 0.5 ? 'received' : 'missing', required: false },
+            { id: 'd3', name: 'Packing List', status: Math.random() > 0.5 ? 'received' : 'missing', required: false },
+            { id: 'd4', name: 'Orderbevestiging', status: Math.random() > 0.5 ? 'received' : 'missing', required: false }
+          ])
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         etaWarehouse: eta,
+        originalEtaWarehouse: eta,
         eta: eta,
         notes: `Seed delivery ${i} for demo purposes.`,
         containerNumber: type === 'container' ? `MSKU${Math.floor(1000000 + Math.random() * 9000000)}` : undefined,
@@ -186,9 +195,48 @@ async function startServer() {
           break;
         case "UPDATE_DELIVERY":
           const updatedRisk = calculateRisk(payload);
-          state.deliveries = state.deliveries.map(d => d.id === payload.id ? { ...payload, delayRisk: updatedRisk.risk, predictionReason: updatedRisk.reason } : d);
+          const oldDelivery = state.deliveries.find(d => d.id === payload.id);
+          let newPayload = { ...payload, delayRisk: updatedRisk.risk, predictionReason: updatedRisk.reason };
+          
+          // Keep originalEtaWarehouse if not present in payload
+          if (oldDelivery && oldDelivery.originalEtaWarehouse && !newPayload.originalEtaWarehouse) {
+            newPayload.originalEtaWarehouse = oldDelivery.originalEtaWarehouse;
+          }
+
+          // OTIF calculation logic when changing to Delivered (100)
+          if (oldDelivery && oldDelivery.status < 100 && newPayload.status === 100) {
+            if (newPayload.originalEtaWarehouse) {
+              const originalEta = new Date(newPayload.originalEtaWarehouse);
+              originalEta.setHours(0,0,0,0);
+              const actualDeliveryDate = new Date(); // Delivery is marked today
+              actualDeliveryDate.setHours(0,0,0,0);
+              
+              const isOntime = actualDeliveryDate <= originalEta;
+              const supplierId = newPayload.supplierId;
+              const supplier = state.addressBook.suppliers.find((s: any) => s.id === supplierId);
+              
+              if (supplier) {
+                // Determine new OTIF simple mock based on old value +1 or -1
+                // For a more robust solution we'd track all historical deliveries of the supplier.
+                let newOtif = supplier.otif || 90;
+                if (isOntime) {
+                  newOtif = Math.min(100, newOtif + 1);
+                } else {
+                  newOtif = Math.max(0, newOtif - 2);
+                }
+                
+                state.addressBook.suppliers = state.addressBook.suppliers.map((s: any) => 
+                  s.id === supplierId ? { ...s, otif: Number(newOtif.toFixed(1)) } : s
+                );
+                
+                logEntry.details = `Updated delivery: ${newPayload.reference}. Supplier ${supplier.name} OTIF recalulated to ${newOtif}%.`;
+              }
+            }
+          }
+
+          state.deliveries = state.deliveries.map(d => d.id === newPayload.id ? newPayload : d);
           logEntry.action = "Updated Delivery";
-          logEntry.details = `Updated delivery: ${payload.reference}`;
+          if (!logEntry.details) logEntry.details = `Updated delivery: ${newPayload.reference}`;
           break;
         case "UPDATE_USER":
           state.users = state.users.map(u => u.id === payload.id ? payload : u);

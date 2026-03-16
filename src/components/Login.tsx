@@ -39,9 +39,8 @@ export const Login = () => {
             className="max-w-md w-full mx-auto"
           >
             <div className="flex items-center gap-3 mb-12">
-              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                <Package className="text-white" size={24} />
-              </div>
+              <img src="/logo.jfif" alt="ILG Logo" className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-indigo-200" />
+
               <span className="text-2xl font-black tracking-tight text-slate-900">ILG Foodgroup SCY/YMS</span>
             </div>
 
@@ -123,14 +122,14 @@ export const Login = () => {
               transition={{ delay: 0.2 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-bold mb-8"
             >
-              <Truck size={16} />
-              Yard Management System
+              <Package size={16} />
+              Supply Chain Portal
             </motion.div>
             <h2 className="text-5xl font-black mb-6 leading-tight">
               Grip op je hele <br/>supply chain.
             </h2>
             <p className="text-indigo-100 text-lg max-w-md opacity-90 leading-relaxed">
-              Beheer naadloos container en ex-works leveringen, volg statussen en optimaliseer je warehouse planning in één centraal overzicht.
+              Beheer naadloos container en ex-works leveringen en volg statussen.
             </p>
           </div>
 

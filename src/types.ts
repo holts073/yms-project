@@ -39,6 +39,7 @@ export interface Delivery {
   etd?: string;
   etaPort?: string;
   etaWarehouse?: string;
+  originalEtaWarehouse?: string;
   portOfArrival?: string;
   billOfLading?: string;
   containerNumber?: string;

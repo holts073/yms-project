@@ -24,14 +24,16 @@ import { Delivery, DeliveryType, Document } from '../types';
 const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
   { name: 'Seaway Bill', status: 'missing', required: true },
   { name: 'Notification of Arrival', status: 'missing', required: true },
-  { name: 'Customs Release', status: 'missing', required: true },
+  { name: 'Factuur', status: 'missing', required: false },
   { name: 'Packing List', status: 'missing', required: false },
-  { name: 'Invoice', status: 'missing', required: false }
+  { name: 'Certificate of Origin', status: 'missing', required: false }
 ];
 
 const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Pickup Confirmation', status: 'missing', required: true },
-  { name: 'Transport Order', status: 'missing', required: true }
+  { name: 'Transport Order', status: 'missing', required: true },
+  { name: 'Factuur', status: 'missing', required: false },
+  { name: 'Packing List', status: 'missing', required: false },
+  { name: 'Orderbevestiging', status: 'missing', required: false }
 ];
 
 const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFilter?: string; initialSelectedId?: string }) => {
@@ -43,6 +45,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const [filter, setFilter] = useState(initialFilter);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'eta', direction: 'asc' });
+  const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
 
   // Sync filter with initialFilter if it changes
   useEffect(() => {
@@ -51,13 +54,21 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
 
   // Handle initialSelectedId
   useEffect(() => {
-    if (initialSelectedId && allDeliveries.length > 0) {
+    if (!initialSelectedId) {
+      setLastOpenedId(null);
+    } else if (allDeliveries.length > 0 && lastOpenedId !== initialSelectedId) {
       const delivery = allDeliveries.find(d => d.id === initialSelectedId);
       if (delivery) {
         handleOpenModal(delivery);
+        setLastOpenedId(initialSelectedId);
       }
     }
-  }, [initialSelectedId, allDeliveries]);
+  }, [initialSelectedId, allDeliveries, lastOpenedId]);
+
+  const currentModalDelivery = useMemo(() => {
+    if (!editingDelivery) return null;
+    return allDeliveries.find(d => d.id === editingDelivery.id) || editingDelivery;
+  }, [editingDelivery, allDeliveries]);
 
   const getStatusLabel = (delivery: Delivery) => {
     if (delivery.status === 100) return 'Afgeleverd';
@@ -189,10 +200,17 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingDelivery) {
+    if (currentModalDelivery) {
+      const formUpdates = { ...formData };
+      delete formUpdates.status;
+      delete formUpdates.statusHistory;
+      delete formUpdates.documents;
+      delete formUpdates.delayRisk;
+      delete formUpdates.predictionReason;
+
       dispatch('UPDATE_DELIVERY', {
-        ...editingDelivery,
-        ...formData,
+        ...currentModalDelivery,
+        ...formUpdates,
         updatedAt: new Date().toISOString()
       });
     } else {
@@ -200,6 +218,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       const newDelivery: Delivery = {
         id: Math.random().toString(36).substr(2, 9),
         ...formData,
+        originalEtaWarehouse: formData.etaWarehouse,
         documents: docs.map(d => ({ ...d, id: Math.random().toString(36).substr(2, 9) })),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -243,7 +262,6 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     if (delivery.type === 'container') {
       const swb = updatedDocs.find(d => d.name === 'Seaway Bill')?.status === 'received';
       const noa = updatedDocs.find(d => d.name === 'Notification of Arrival')?.status === 'received';
-      const customs = updatedDocs.find(d => d.name === 'Customs Release')?.status === 'received';
 
       if (newStatus === 'received') {
         if (doc.name === 'Seaway Bill' && delivery.status < 25) {
@@ -252,10 +270,14 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         } else if (doc.name === 'Notification of Arrival' && delivery.status < 50) {
           history.push(delivery.status);
           newStatusPct = 50;
-        } else if (doc.name === 'Customs Release' && delivery.status < 75) {
-          history.push(delivery.status);
-          newStatusPct = 75;
         }
+      } else if (newStatus === 'missing') {
+          // If we are unchecking Notification of Arrival and we were at Douane (50), revert to In Transit (25)
+          // Ensure we don't accidentally downgrade if they manually set to 100
+          if (doc.name === 'Notification of Arrival' && delivery.status === 50) {
+              history.push(delivery.status);
+              newStatusPct = 25;
+          }
       }
     } else if (delivery.type === 'exworks') {
       const transportOrder = updatedDocs.find(d => d.name === 'Transport Order')?.status === 'received';
@@ -519,6 +541,32 @@ ILG Foodgroup SCY/YMS`;
                           Mail Transport Order
                         </button>
                       )}
+                      {delivery.type === 'container' && delivery.status === 50 && canEdit && (
+                        <button 
+                          onClick={() => setManualStatus(delivery, 75)}
+                          className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full hover:bg-blue-100 transition-all uppercase tracking-wider"
+                        >
+                          Onderweg naar Magazijn
+                        </button>
+                      )}
+                      {delivery.type === 'container' && delivery.status === 75 && canEdit && (
+                        <button 
+                          onClick={() => setManualStatus(delivery, 100)}
+                          className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
+                        >
+                          <Check size={12} />
+                          Afgeleverd
+                        </button>
+                      )}
+                      {delivery.type === 'exworks' && delivery.status === 50 && canEdit && (
+                        <button 
+                          onClick={() => setManualStatus(delivery, 100)}
+                          className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
+                        >
+                          <Check size={12} />
+                          Afgeleverd
+                        </button>
+                      )}
                       {delivery.notes && (
                         <div className="relative group/note">
                           <MessageSquare size={18} className="text-slate-400 hover:text-indigo-600 cursor-help" />
@@ -777,18 +825,18 @@ ILG Foodgroup SCY/YMS`;
                     />
                   </div>
 
-                  {editingDelivery && (
+                  {currentModalDelivery && (
                     <div className="space-y-4 col-span-2 bg-slate-50 p-8 rounded-[2rem]">
                       <div className="flex items-center justify-between">
                         <h4 className="text-lg font-bold text-slate-900">Documenten Beheer</h4>
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Klik om status te wijzigen</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {editingDelivery.documents.map(doc => (
+                        {currentModalDelivery.documents.map(doc => (
                           <button
                             key={doc.id}
                             type="button"
-                            onClick={() => toggleDocStatus(editingDelivery, doc.id)}
+                            onClick={() => toggleDocStatus(currentModalDelivery, doc.id)}
                             className={cn(
                               "flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
                               doc.status === 'received' 
