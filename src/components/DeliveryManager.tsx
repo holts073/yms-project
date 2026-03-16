@@ -32,7 +32,7 @@ const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
 ];
 
 const DeliveryManager = () => {
-  const { state, dispatch } = useSocket();
+  const { state, dispatch, currentUser } = useSocket();
   const { deliveries = [], addressBook } = state || {};
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
@@ -106,6 +106,8 @@ const DeliveryManager = () => {
     dispatch('UPDATE_DELIVERY', { ...delivery, documents: updatedDocs });
   };
 
+  const canEdit = currentUser.role !== 'viewer';
+
   return (
     <div className="space-y-8">
       <header className="flex items-center justify-between">
@@ -113,13 +115,15 @@ const DeliveryManager = () => {
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Leveringen</h2>
           <p className="text-slate-500 mt-1">Beheer en volg al je container en ex-works zendingen.</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
-        >
-          <Plus size={20} />
-          Nieuwe Levering
-        </button>
+        {canEdit && (
+          <button 
+            onClick={() => handleOpenModal()}
+            className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
+          >
+            <Plus size={20} />
+            Nieuwe Levering
+          </button>
+        )}
       </header>
 
       {/* Filters */}
@@ -160,20 +164,22 @@ const DeliveryManager = () => {
                     <p className="text-sm text-slate-500 capitalize">{delivery.type} levering</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => handleOpenModal(delivery)}
-                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button 
-                    onClick={() => dispatch('DELETE_DELIVERY', delivery.id)}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                {canEdit && (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => handleOpenModal(delivery)}
+                      className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button 
+                      onClick={() => dispatch('DELETE_DELIVERY', delivery.id)}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Progress */}

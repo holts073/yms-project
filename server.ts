@@ -58,16 +58,46 @@ async function startServer() {
         details: ""
       };
 
+      const calculateRisk = (delivery: any) => {
+        if (delivery.status === 100) return { risk: 'low', reason: 'Voltooid' };
+        
+        const now = new Date();
+        const eta = delivery.eta ? new Date(delivery.eta) : null;
+        const missingRequired = delivery.documents.filter((d: any) => d.required && d.status === 'missing').length;
+        
+        if (missingRequired > 2) return { risk: 'high', reason: 'Meerdere kritieke documenten ontbreken' };
+        
+        if (eta) {
+          const daysToEta = Math.ceil((eta.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysToEta < 3 && delivery.status < 50) return { risk: 'high', reason: 'ETA nabij met lage voortgang' };
+          if (daysToEta < 7 && missingRequired > 0) return { risk: 'medium', reason: 'ETA nadert met ontbrekende documenten' };
+        }
+        
+        return { risk: 'low', reason: 'Op schema' };
+      };
+
       switch (type) {
         case "ADD_DELIVERY":
-          state.deliveries.push(payload);
+          const riskInfo = calculateRisk(payload);
+          state.deliveries.push({ ...payload, delayRisk: riskInfo.risk, predictionReason: riskInfo.reason });
           logEntry.action = "Created Delivery";
           logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
           break;
         case "UPDATE_DELIVERY":
-          state.deliveries = state.deliveries.map(d => d.id === payload.id ? payload : d);
+          const updatedRisk = calculateRisk(payload);
+          state.deliveries = state.deliveries.map(d => d.id === payload.id ? { ...payload, delayRisk: updatedRisk.risk, predictionReason: updatedRisk.reason } : d);
           logEntry.action = "Updated Delivery";
           logEntry.details = `Updated delivery: ${payload.reference}`;
+          break;
+        case "UPDATE_USER":
+          state.users = state.users.map(u => u.id === payload.id ? payload : u);
+          logEntry.action = "Updated User Role";
+          logEntry.details = `Updated role for ${payload.name} to ${payload.role}`;
+          break;
+        case "ADD_USER":
+          state.users.push(payload);
+          logEntry.action = "Added User";
+          logEntry.details = `Added new user: ${payload.name}`;
           break;
         case "DELETE_DELIVERY":
           const del = state.deliveries.find(d => d.id === payload);

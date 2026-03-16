@@ -27,6 +27,8 @@ export interface Delivery {
   createdAt: string;
   updatedAt: string;
   eta?: string;
+  delayRisk?: 'low' | 'medium' | 'high';
+  predictionReason?: string;
 }
 
 export interface LogEntry {
@@ -37,10 +39,12 @@ export interface LogEntry {
   details: string;
 }
 
+export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer';
+
 export interface User {
   id: string;
   name: string;
-  role: 'admin' | 'staff';
+  role: UserRole;
   email: string;
 }
 

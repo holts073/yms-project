@@ -130,8 +130,8 @@ const Statistics = () => {
         </div>
       </div>
 
-      {/* Top Performers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* Top Performers & Risk Analysis */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100 flex items-center gap-6">
           <div className="p-5 bg-white text-emerald-600 rounded-3xl shadow-sm">
             <Award size={32} />
@@ -151,6 +151,17 @@ const Statistics = () => {
             <h4 className="text-amber-900 font-bold text-lg">Aandacht Vereist</h4>
             <p className="text-amber-700 font-medium">{supplierStats[supplierStats.length - 1]?.name || 'N/A'}</p>
             <p className="text-amber-600 text-sm mt-1">{supplierStats[supplierStats.length - 1]?.reliability || 0}% documentatie score</p>
+          </div>
+        </div>
+
+        <div className="bg-red-50 p-8 rounded-[2.5rem] border border-red-100 flex items-center gap-6">
+          <div className="p-5 bg-white text-red-600 rounded-3xl shadow-sm">
+            <TrendingUp size={32} className="rotate-180" />
+          </div>
+          <div>
+            <h4 className="text-red-900 font-bold text-lg">Hoog Risico</h4>
+            <p className="text-red-700 font-medium">{deliveries.filter(d => d.delayRisk === 'high').length} Leveringen</p>
+            <p className="text-red-600 text-sm mt-1">Potentiële vertraging gedetecteerd</p>
           </div>
         </div>
       </div>

@@ -11,7 +11,8 @@ import {
   Search,
   Settings,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -23,6 +24,7 @@ import DeliveryManager from './components/DeliveryManager';
 import AddressBook from './components/AddressBook';
 import Statistics from './components/Statistics';
 import AuditLog from './components/AuditLog';
+import UserManagement from './components/UserManagement';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -66,8 +68,16 @@ const AppContent = () => {
       case 'addressbook': return <AddressBook />;
       case 'statistics': return <Statistics />;
       case 'logs': return <AuditLog />;
+      case 'users': return <UserManagement />;
       default: return <Dashboard />;
     }
+  };
+
+  const canAccess = (tab: string) => {
+    if (currentUser.role === 'admin') return true;
+    if (tab === 'users' || tab === 'logs') return false;
+    if (currentUser.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook')) return true; // View only handled in components
+    return true;
   };
 
   return (
@@ -112,6 +122,14 @@ const AppContent = () => {
             active={activeTab === 'logs'} 
             onClick={() => setActiveTab('logs')} 
           />
+          {currentUser.role === 'admin' && (
+            <SidebarItem 
+              icon={Shield} 
+              label="Gebruikers" 
+              active={activeTab === 'users'} 
+              onClick={() => setActiveTab('users')} 
+            />
+          )}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-slate-100">

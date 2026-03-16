@@ -118,7 +118,7 @@ const Dashboard = () => {
   );
 };
 
-const DashboardItem = ({ delivery }: { delivery: any }) => {
+const DashboardItem = ({ delivery }: { delivery: any, key?: string }) => {
   const missingDocs = delivery.documents.filter((doc: any) => doc.required && doc.status === 'missing').length;
   
   return (
@@ -142,6 +142,15 @@ const DashboardItem = ({ delivery }: { delivery: any }) => {
             <FileText size={14} />
             {missingDocs > 0 ? `${missingDocs} doc(s) ontbreken` : "Documenten compleet"}
           </p>
+          {delivery.delayRisk && delivery.delayRisk !== 'low' && (
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider",
+              delivery.delayRisk === 'high' ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
+            )}>
+              <AlertCircle size={12} />
+              {delivery.delayRisk} Risk: {delivery.predictionReason}
+            </div>
+          )}
           <p className="text-xs text-slate-400 flex items-center gap-1.5">
             <Clock size={14} />
             ETA: {delivery.eta || 'TBD'}
