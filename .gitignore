@@ -1,3 +1,4 @@
+HEAD
 node_modules/
 build/
 dist/
@@ -6,3 +7,5 @@ coverage/
 *.log
 .env*
 !.env.example
+.aider*
+a0663f3 (Eerste setup van yms-project)
