@@ -145,6 +145,60 @@ Please note that your invoice without a signed CMR will not be processed until t
                     className="w-full px-6 py-4 bg-slate-50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 resize-none font-mono text-sm leading-relaxed"
                   />
               </div>
+
+              <div className="col-span-1 md:col-span-2 pt-6 border-t border-slate-100">
+                <h3 className="text-lg font-bold text-slate-900 mb-4">Mailserver (SMTP) Instellingen</h3>
+                <p className="text-sm text-slate-500 mb-6">Instellingen voor het verzenden van automatische mails (bijv. Wachtwoord reset). Laat u deze leeg, dan worden er geen automatische mails verstuurd.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">SMTP Host (b.v. smtp.office365.com)</label>
+                    <input 
+                      type="text" 
+                      value={localSettings.mailServer?.host || ''}
+                      onChange={(e) => setLocalSettings({...localSettings, mailServer: {...(localSettings.mailServer as any), host: e.target.value}})}
+                      className="w-full px-6 py-3 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">SMTP Port (b.v. 587)</label>
+                    <input 
+                      type="number" 
+                      value={localSettings.mailServer?.port || ''}
+                      onChange={(e) => setLocalSettings({...localSettings, mailServer: {...(localSettings.mailServer as any), port: parseInt(e.target.value)}})}
+                      className="w-full px-6 py-3 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">Gebruikersnaam / Emailadres</label>
+                    <input 
+                      type="text" 
+                      value={localSettings.mailServer?.user || ''}
+                      onChange={(e) => setLocalSettings({...localSettings, mailServer: {...(localSettings.mailServer as any), user: e.target.value}})}
+                      className="w-full px-6 py-3 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">Wachtwoord</label>
+                    <input 
+                      type="password" 
+                      value={localSettings.mailServer?.pass || ''}
+                      onChange={(e) => setLocalSettings({...localSettings, mailServer: {...(localSettings.mailServer as any), pass: e.target.value}})}
+                      className="w-full px-6 py-3 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Laat leeg om huidig te behouden"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">Afzender ('From' Adres)</label>
+                    <input 
+                      type="email" 
+                      value={localSettings.mailServer?.from || ''}
+                      onChange={(e) => setLocalSettings({...localSettings, mailServer: {...(localSettings.mailServer as any), from: e.target.value}})}
+                      className="w-full px-6 py-3 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                      placeholder="noreply@ilg-foodgroup.nl"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="pt-6 flex gap-4 border-t border-slate-100">
               <button 

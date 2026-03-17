@@ -9,6 +9,33 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResetting(true);
+    setResetMessage('');
+    try {
+      const res = await fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResetMessage(data.message);
+      } else {
+        setResetMessage(data.error);
+      }
+    } catch (err) {
+      setResetMessage('Er is een fout opgetreden.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +93,7 @@ export const Login = () => {
               <div className="space-y-2 relative">
                 <div className="flex justify-between items-center ml-4 mr-4">
                   <label className="text-sm font-bold text-slate-700">Wachtwoord</label>
+                  <button type="button" onClick={() => setShowResetModal(true)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors">Wachtwoord vergeten?</button>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -143,6 +171,46 @@ export const Login = () => {
         </div>
 
       </div>
+      
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowResetModal(false)} />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full"
+          >
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Wachtwoord Resetten</h3>
+            <p className="text-slate-500 text-sm mb-6">Vul je e-mailadres in om een tijdelijk wachtwoord te ontvangen.</p>
+            
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <input
+                type="email"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="naam@ilgfood.com"
+                className="w-full px-6 py-3 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+              />
+              
+              {resetMessage && (
+                <p className={`text-sm font-bold ${resetMessage.includes('gereset') ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {resetMessage}
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowResetModal(false)} className="flex-1 py-3 hover:bg-slate-50 text-slate-600 font-bold rounded-full text-sm">
+                  Annuleren
+                </button>
+                <button type="submit" disabled={isResetting} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-sm shadow-md disabled:opacity-70">
+                  {isResetting ? 'Verzenden...' : 'Reset'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

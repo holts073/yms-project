@@ -34,42 +34,60 @@ const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
   { name: 'Transport Order', status: 'missing', required: true }
 ];
 
+import { useDeliveries } from '../hooks/useDeliveries';
+
 const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFilter?: string; initialSelectedId?: string }) => {
   const { state, dispatch, currentUser } = useSocket();
-  const { deliveries: allDeliveries = [], addressBook } = state || {};
+  const { addressBook } = state || {};
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
   const [activeModalTab, setActiveModalTab] = useState<'details' | 'history'>('details');
-  const [filter, setFilter] = useState(initialFilter);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'container' | 'exworks'>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'eta', direction: 'asc' });
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+
+  // URL state sync
+  const searchParams = new URLSearchParams(window.location.search);
+  const [filter, setFilter] = useState(searchParams.get('search') || initialFilter);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'container' | 'exworks'>((searchParams.get('type') as any) || 'all');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(
+    searchParams.get('sortKey') ? { key: searchParams.get('sortKey')!, direction: (searchParams.get('sortDir') as any) || 'asc' } : { key: 'eta', direction: 'asc' }
+  );
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
   const ITEMS_PER_PAGE = 15;
 
-  // Sync filter with initialFilter if it changes
   useEffect(() => {
-    setFilter(initialFilter);
-  }, [initialFilter]);
+    const params = new URLSearchParams();
+    if (filter) params.set('search', filter);
+    if (typeFilter !== 'all') params.set('type', typeFilter);
+    if (sortConfig) {
+      params.set('sortKey', sortConfig.key);
+      params.set('sortDir', sortConfig.direction);
+    }
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [filter, typeFilter, sortConfig, currentPage]);
 
   // Handle initialSelectedId
   useEffect(() => {
     if (!initialSelectedId) {
       setLastOpenedId(null);
-    } else if (allDeliveries.length > 0 && lastOpenedId !== initialSelectedId) {
-      const delivery = allDeliveries.find(d => d.id === initialSelectedId);
-      if (delivery) {
-        handleOpenModal(delivery);
-        setLastOpenedId(initialSelectedId);
-      }
+    } else if (lastOpenedId !== initialSelectedId) {
+      // NOTE: With server-side pagination, the specific delivery might not be on page 1.
+      // Ideally we'd fetch it, but for now we rely on user navigation if it's missing.
+      setLastOpenedId(initialSelectedId);
     }
-  }, [initialSelectedId, allDeliveries, lastOpenedId]);
+  }, [initialSelectedId, lastOpenedId]);
+
+  const { deliveries: paginatedDeliveries, totalPages, loading } = useDeliveries(
+    currentPage, ITEMS_PER_PAGE, filter, typeFilter, sortConfig?.key || 'eta', true
+  );
 
   const currentModalDelivery = useMemo(() => {
     if (!editingDelivery) return null;
-    return allDeliveries.find(d => d.id === editingDelivery.id) || editingDelivery;
-  }, [editingDelivery, allDeliveries]);
+    return paginatedDeliveries.find(d => d.id === editingDelivery.id) || editingDelivery;
+  }, [editingDelivery, paginatedDeliveries]);
 
   const getStatusLabel = (delivery: Delivery) => {
     if (delivery.status === 100) return 'Afgeleverd';
@@ -94,43 +112,6 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     setSortConfig({ key, direction });
   };
 
-  const deliveries = useMemo(() => {
-    let list = allDeliveries.filter(d => 
-      d.reference.toLowerCase().includes(filter.toLowerCase())
-    );
-
-    if (typeFilter !== 'all') {
-      list = list.filter(d => d.type === typeFilter);
-    }
-
-    if (sortConfig) {
-      list = [...list].sort((a, b) => {
-        let aValue: any = a[sortConfig.key as keyof typeof a];
-        let bValue: any = b[sortConfig.key as keyof typeof b];
-
-        if (sortConfig.key === 'eta') {
-          aValue = a.etaWarehouse || a.eta || '';
-          bValue = b.etaWarehouse || b.eta || '';
-        }
-
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return list;
-  }, [allDeliveries, filter, sortConfig, typeFilter]);
-
-  const totalPages = Math.ceil(deliveries.filter(d => d.status < 100).length / ITEMS_PER_PAGE);
-
-  // Pagination slicing
-  const paginatedDeliveries = useMemo(() => {
-    const activeDeliveries = deliveries.filter(d => d.status < 100);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return activeDeliveries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [deliveries, currentPage]);
-
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -138,7 +119,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   };
 
   const toggleSelectAll = () => {
-    const visibleIds = deliveries.filter(d => d.status < 100).map(d => d.id);
+    const visibleIds = paginatedDeliveries.map(d => d.id);
     if (selectedIds.length === visibleIds.length) {
       setSelectedIds([]);
     } else {
@@ -408,16 +389,22 @@ Onderwerp: ${subject}
   const canEdit = currentUser.role === 'admin' || currentUser.permissions?.manageDeliveries;
   const canMailTransport = currentUser.role === 'admin' || currentUser.permissions?.sendTransportOrder;
 
-  const handleExportCSV = () => {
-    const headers = ['Referentie', 'Type', 'Status', 'ETA Magazijn', 'Aantal Pallets'].join(',');
-    const rows = deliveries.filter(d => d.status < 100).map(d => [
-      `"${d.reference}"`, `"${d.type}"`, `"${getStatusLabel(d)}"`, `"${d.etaWarehouse}"`, `"${d.palletCount}"`
-    ].join(','));
-    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join('\n');
-    const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = `actieve_leveringen_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+  const handleExportCSV = async () => {
+    try {
+      const res = await fetch('/api/deliveries/all');
+      const allDels = await res.json();
+      const headers = ['Referentie', 'Type', 'Status', 'ETA Magazijn', 'Aantal Pallets'].join(',');
+      const rows = allDels.filter((d: any) => d.status < 100).map((d: any) => [
+        `"${d.reference}"`, `"${d.type}"`, `"${getStatusLabel(d)}"`, `"${d.etaWarehouse}"`, `"${d.palletCount}"`
+      ].join(','));
+      const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join('\n');
+      const link = document.createElement("a");
+      link.href = encodeURI(csvContent);
+      link.download = `actieve_leveringen_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+    } catch (err) {
+      console.error("Export failed", err);
+    }
   };
 
   return (
@@ -484,7 +471,7 @@ Onderwerp: ${subject}
                 <th className="px-8 py-5 w-10">
                   <input 
                     type="checkbox" 
-                    checked={selectedIds.length > 0 && selectedIds.length === deliveries.filter(d => d.status < 100).length}
+                    checked={selectedIds.length > 0 && selectedIds.length === paginatedDeliveries.length}
                     onChange={toggleSelectAll}
                     className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
                   />
@@ -495,6 +482,12 @@ Onderwerp: ${subject}
                   onClick={() => handleSort('reference')}
                 >
                   Referentie
+                </th>
+                <th 
+                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  onClick={() => handleSort('billOfLading')}
+                >
+                  B/L Nummer
                 </th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Leverancier</th>
                 <th 
@@ -574,6 +567,7 @@ Onderwerp: ${subject}
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-slate-900">{delivery.reference}</span>
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">#{delivery.id.substring(0, 6).toUpperCase()}</span>
                       {displayRisk === 'high' && (
                         <div className="relative group/risk">
                           <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full cursor-help">
@@ -591,9 +585,6 @@ Onderwerp: ${subject}
                       {delivery.containerNumber && (
                         <p className="text-[11px] text-slate-500 font-medium">Cont: <span className="text-slate-700">{delivery.containerNumber}</span></p>
                       )}
-                      {delivery.type === 'container' && delivery.billOfLading && (
-                        <p className="text-[11px] text-slate-500 font-medium">B/L: <span className="text-slate-700">{delivery.billOfLading}</span></p>
-                      )}
                       {delivery.type === 'exworks' && delivery.cargoType && (
                         <p className="text-[11px] text-slate-500 font-medium">{delivery.cargoType}</p>
                       )}
@@ -601,6 +592,11 @@ Onderwerp: ${subject}
                         <p className="text-[11px] text-slate-400">-</p>
                       )}
                     </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className="text-sm font-bold text-slate-700">
+                      {delivery.type === 'container' ? (delivery.billOfLading || '-') : '-'}
+                    </span>
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex flex-col">

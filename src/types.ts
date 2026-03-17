@@ -100,8 +100,23 @@ export interface AppSettings {
   };
 }
 
+export interface CompanySettings {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  logoUrl?: string;
+  transportTemplate?: string;
+  mailServer?: {
+    host: string;
+    port: number;
+    user: string;
+    pass: string;
+    from: string;
+  };
+}
+
 export interface AppState {
-  deliveries: Delivery[];
   addressBook: {
     suppliers: AddressEntry[];
     transporters: AddressEntry[];
@@ -109,4 +124,5 @@ export interface AppState {
   logs: LogEntry[];
   users: User[];
   settings: AppSettings;
+  companySettings?: CompanySettings;
 }

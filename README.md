@@ -1,71 +1,67 @@
-# ILG Foodgroup - Supply Chain Portal
+# ILG Foodgroup - Supply Chain / Yard Management System
 
-Welkom bij het ILG Foodgroup Supply Chain Portal (voorheen Yard Management System / YMS). Dit project wordt gebruikt voor het naadloos beheren en volgen van Ex-Works en Container leveringen, met een overzichtelijk dashboard, on-time in-full (OTIF) berekeningen en documentbeheer.
+A robust, full-stack application designed to streamline and manage the entire supply chain workflow, handling container and ex-works deliveries. It provides a real-time dashboard, detailed statistics, automated status tracking, document management, and automated Mail Transport Orders.
 
-## 🛠️ Technologie Stack
-- **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion, Lucide React
-- **Backend**: Node.js, Express, Socket.IO (voor real-time updates)
-- **Database**: SQLite (via `better-sqlite3`)
-- **Build Tool**: Vite
+## Architectural Changes & Overview
 
-## 🚀 Systeemvereisten
-- [Node.js](https://nodejs.org/) (versie 18 of hoger aanbevolen)
-- npm (wordt standaard bij Node.js geïnstalleerd)
+The system has recently been migrated to a more robust, state-of-the-art architecture:
+- **SQLite Database:** The application now utilizes a highly concurrent relational database (`better-sqlite3`), allowing for ACID-compliant transactions, scaling, and the ability to persist millions of rows efficiently.
+- **Server-Side Pagination:** The React frontend now interfaces directly with a REST API (`/api/deliveries`) equipped with efficient pagination and querying.
+- **Persistent Filters & Sortering:** Delivery filtering and sorting parameters are dynamically synced with the browser's URL, enabling users to refresh the page, share links, or navigate History without losing context.
+- **SMTP Password Reset:** The login portal features a newly added automated password-reset flow powered by dynamic `nodemailer` configurations set by the system admin.
+- **Micro-Animations & Modern UI:** A sleek, glass-morphic interface leveraging `motion/react` with customized animations out-of-the-box.
 
-## 📦 Installatie & Setup
+## Readiness for a Yard Management System (YMS)
+Due to the recent transition to an established relational database structure (SQLite), the application is now primed for easy integration of additional operational modules—specifically, a **Yard Management System (YMS)**. 
 
-Volg deze stappen om het project lokaal te installeren en uit te voeren:
+With data normalized into structured `deliveries`, `users`, and `documents` tables, future components can freely query and attach properties such as:
+- Dock assignments
+- Real-time vehicle check-in / check-out timestamps
+- Carrier metrics
+- Gate management logic
 
-1. **Clone de repository**
-   ```bash
-   git clone <jouw-repository-url>
-   cd yms-project
-   ```
+All these capabilities seamlessly append to the existing relational model without bottlenecking the application state.
 
-2. **Installeer de afhankelijkheden**
-   Installeer alle benodigde pakketten voor zowel de frontend als de backend:
+## Installation & Setup
+
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- NPM
+
+### Getting Started
+
+1. **Install Dependencies**
    ```bash
    npm install
    ```
 
-3. **Omgevingsvariabelen (Optioneel)**
-   Het project gebruikt standaard fallbacks voor development, maar voor productie kun je een `.env` bestand aanmaken:
-   ```env
-   JWT_SECRET=jouw_super_geheime_key_hier
-   ```
+2. **Initialize Database**
+   The application intercepts startup and automatically handles the creation of `database.sqlite` based on the defined schema. 
+   *(Note: Any existing data within `database.json` will be gracefully parsed and migrated into SQLite across the `src/db/migrate.ts` script!)*
 
-4. **Start de applicatie (Development Mode)**
-   Start zowel de Vite development server als de Node.js Express/Socket backend tegelijk:
+3. **Development Server**
+   Start both the Vite frontend server and Express/Socket backend simultaneously.
    ```bash
    npm run dev
    ```
-   *De applicatie zal nu lokaal draaien, typisch bereikbaar via `http://localhost:3000` of de poort aangegeven in de terminal.*
 
-   > **Let op:** De eerste keer dat de server start, wordt er automatisch een `yms.db` (SQLite database) aangemaakt en gevuld met demo data (leveranciers, transporteurs en voorbeeldleveringen). Als je met een schone lei wilt beginnen zonder oude conflicterende data, kun je simpelweg het bestand `yms.db` verwijderen en de server herstarten.
+4. **Production Build**
+   To deploy, compile the frontend application:
+   ```bash
+   npm run build
+   ```
+   Then run the server:
+   ```bash
+   npm start
+   ```
 
-## 🏗️ Productie (Build)
+## Features
 
-Om de applicatie te bouwen voor productie:
-```bash
-npm run build
-```
-Start de productie server:
-```bash
-npm start
-```
+- **Dashboard:** At-a-glance oversight over deliveries needing action today, delayed containers, and missing paperwork.
+- **Statistics:** Granular insights over Lead Times, On-Time In-Full (OTIF) execution, Type ratios, and Cost/Volume ratios based on suppliers. 
+- **Delivery Management:** View, sort, export to CSV, edit, and track delivery history in a modal format.
+- **Supplier & Forwarder Contacts:** Built-in address book supporting rich text, OTIF statistics, and conditional remarks.
+- **Automated Communication:** One-click automated E-mail generation (Mail Transport Order) utilizing configurable Mailserver Settings (SMTP) accessible efficiently via the Admin settings panel.
 
-## nl Structuur & Belangrijkste Functies
-
-- `/src/components/Dashboard.tsx`: KPI's, OTIF resultaten, overzichtelijk actiepuntenscherm.
-- `/src/components/DeliveryManager.tsx`: Logica voor Ex-Works (1 document vereist) en Containers (5 documenten). Inclusief status transitions.
-- `/src/components/AddressBook.tsx`: Beheer van leveranciers & expediteurs (automatisch alfabetisch gesorteerd).
-- `/server.ts`: Bevat de Express routes, SQLite initialisatie, JWT authenticatie, configuratie van demo-data en Socket.io state integratie.
-
-## 🔐 Standaard Login (Demo)
-Bij de eerste opstart worden de volgende demo-gebruikers aangemaakt (Wachtwoord voor allen: `welkom123`):
-- `admin@example.com` (Admin User)
-- `staff@example.com` (Warehouse Staff)
-- `ElmerHoltslag@gmail.com` (Admin)
-
----
-*Gemaakt voor ILG Foodgroup Supply Chain Management.*
+## License
+Proprietary software - ILG Foodgroup. All rights reserved.

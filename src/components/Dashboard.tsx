@@ -13,9 +13,11 @@ import {
   Shield
 } from 'lucide-react';
 
+import { useDeliveries } from '../hooks/useDeliveries';
+
 const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: string, id?: string) => void }) => {
   const { state } = useSocket();
-  const { deliveries = [] } = state || {};
+  const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', true);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [filterType, setFilterType] = useState<'action' | 'today'>('action');
 
