@@ -75,12 +75,19 @@ export interface LogEntry {
 
 export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer';
 
+export interface UserPermissions {
+  manageDeliveries?: boolean;
+  manageAddressBook?: boolean;
+  sendTransportOrder?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   role: UserRole;
   email: string;
   passwordHash?: string;
+  permissions?: UserPermissions;
 }
 
 export interface AppSettings {

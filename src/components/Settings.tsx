@@ -14,22 +14,26 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
       phone: '+31 (0)88 000 0000',
       address: 'Voorbeeldstraat 1, 1234 AB, Nederland',
       logoUrl: '/logo.jfif',
-      transportTemplate: `Loading Information:
+      transportTemplate: `==========================================================
+[ LOADING INFORMATION ]        | [ DELIVERY INFORMATION ]
+==========================================================
 Leverancier: {supplierName}
-Adres: {supplierAddress}
-Laadplaats: {loadingCity}, {loadingCountry}
-Opmerkingen leverancier: {supplierRemarks}
+Adres: {supplierAddress}       | Bestemming: {companyName}
+Laadplaats: {loadingCity}      | Adres: {companyAddress}
+Land: {loadingCountry}         | ETA Magazijn: {etaWarehouse}
+                               | 
 
-Delivery Information:
-Bestemming: {companyName}
-Adres: {companyAddress}
-ETA: {etaWarehouse}
+==========================================================
+[ KOSTEN & OPMERKINGEN ]
+==========================================================
 Aantal pallets: {palletCount} ({palletType})
 Gewicht: {weight}
 Type Lading: {cargoType}
-Zending Opmerkingen: {notes}
 
 Agreed Price (All Inclusive, Excl. Diesel): {cost}
+
+Opmerkingen leverancier: {supplierRemarks}
+Zending Opmerkingen: {notes}
 
 Please mention our referencenumber {reference} on your invoice, this is also the loadingreference.
 Without this reference number we cannot match your invoice to our booking and the paymend can be delayed.
@@ -133,9 +137,9 @@ Please note that your invoice without a signed CMR will not be processed until t
               </div>
               <div className="space-y-2 col-span-1 md:col-span-2">
                   <label className="text-sm font-bold text-slate-700 ml-4">Mail Transport Order Template</label>
-                  <p className="text-xs text-slate-500 ml-4 mb-2">Gebruik tags zoals <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{reference}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{supplierName}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{loadingCity}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{palletCount}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{palletType}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{weight}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{cost}`}</code> om in te voegen.</p>
+                  <p className="text-xs text-slate-500 ml-4 mb-2">Gebruik tags zoals <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{reference}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{supplierName}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{loadingCity}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{palletCount}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{palletType}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{weight}`}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{cost}`}</code> om in te voegen. Let op: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">mailto:</code> links ondersteunen geen dikgedrukte tekst of HTML tabellen.</p>
                   <textarea 
-                    rows={12}
+                    rows={20}
                     value={localSettings.transportTemplate}
                     onChange={(e) => setLocalSettings({...localSettings, transportTemplate: e.target.value})}
                     className="w-full px-6 py-4 bg-slate-50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 resize-none font-mono text-sm leading-relaxed"

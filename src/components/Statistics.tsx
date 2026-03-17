@@ -19,6 +19,8 @@ const Statistics = () => {
   const { state } = useSocket();
   const { deliveries = [], addressBook } = state || {};
 
+  const activeSupplierIds = new Set(deliveries.filter(d => d.status < 100).map(d => d.supplierId));
+
   // Reliability per Supplier
   const supplierStats = addressBook?.suppliers.map(supplier => {
     const supplierDeliveries = deliveries.filter(d => d.supplierId === supplier.id);
@@ -101,7 +103,7 @@ const Statistics = () => {
       </header>
 
       {/* Warning Banners */}
-      {supplierStats.some(s => s.reliability < 80) && (
+      {supplierStats.some(s => s.reliability < 80 && activeSupplierIds.has(addressBook?.suppliers.find(sup => sup.name === s.name)?.id || '')) && (
         <div className="bg-orange-50 border border-orange-200 rounded-3xl p-6 flex items-start gap-4">
           <div className="p-3 bg-orange-100 text-orange-600 rounded-xl shrink-0">
             <AlertTriangle size={24} />
@@ -112,7 +114,7 @@ const Statistics = () => {
               Een of meerdere leveranciers presteren momenteel onder de norm van 80% betrouwbaarheid.
             </p>
             <div className="flex flex-wrap gap-2">
-              {supplierStats.filter(s => s.reliability < 80).map(s => (
+              {supplierStats.filter(s => s.reliability < 80 && activeSupplierIds.has(addressBook?.suppliers.find(sup => sup.name === s.name)?.id || '')).map(s => (
                 <span key={s.name} className="px-3 py-1 bg-white/60 text-orange-900 text-sm font-medium rounded-full">
                   {s.name} ({s.reliability}%)
                 </span>

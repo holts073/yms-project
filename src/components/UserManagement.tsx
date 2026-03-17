@@ -21,17 +21,44 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'staff' as UserRole
+    role: 'staff' as UserRole,
+    permissions: {} as any
   });
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
-    dispatch('ADD_USER', {
-      id: Math.random().toString(36).substr(2, 9),
-      ...formData
-    });
+    if (editingUserId) {
+      dispatch('UPDATE_USER', {
+        id: editingUserId,
+        ...formData
+      });
+    } else {
+      dispatch('ADD_USER', {
+        id: Math.random().toString(36).substr(2, 9),
+        ...formData
+      });
+    }
     setIsModalOpen(false);
-    setFormData({ name: '', email: '', role: 'staff' });
+    setEditingUserId(null);
+    setFormData({ name: '', email: '', role: 'staff', permissions: {} });
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUserId(user.id);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      permissions: user.permissions || {}
+    });
+    setIsModalOpen(true);
+  };
+
+  const openNewModal = () => {
+    setEditingUserId(null);
+    setFormData({ name: '', email: '', role: 'staff', permissions: {} });
+    setIsModalOpen(true);
   };
 
   const updateRole = (user: User, newRole: UserRole) => {
@@ -56,7 +83,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
             <p className="text-slate-500 mt-1">Beheer rollen en toegangsrechten voor het team.</p>
           </div>
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={openNewModal}
             className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
           >
             <Plus size={20} />
@@ -107,17 +134,27 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <select 
-                    value={user.role}
-                    onChange={(e) => updateRole(user, e.target.value as UserRole)}
-                    disabled={user.id === currentUser.id}
-                    className="bg-slate-100 border-none rounded-full px-4 py-2 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
-                    <option value="staff">Staff</option>
-                    <option value="viewer">Viewer</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select 
+                      value={user.role}
+                      onChange={(e) => updateRole(user, e.target.value as UserRole)}
+                      disabled={user.id === currentUser.id}
+                      className="bg-slate-100 border-none rounded-full px-4 py-2 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="manager">Manager</option>
+                      <option value="staff">Staff</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                    {user.id !== currentUser.id && (
+                      <button 
+                        onClick={() => openEditModal(user)}
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors text-xs font-bold"
+                      >
+                        Rechten / Edit
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -140,11 +177,11 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-white w-full max-w-md rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-full"
+              className="relative bg-white w-full max-w-lg rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-full"
             >
-              <form onSubmit={handleAddUser} className="p-6 sm:p-10 space-y-6 sm:space-y-8 overflow-y-auto flex-1">
+              <form onSubmit={handleSaveUser} className="p-6 sm:p-10 space-y-6 sm:space-y-8 overflow-y-auto flex-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-slate-900">Nieuwe Gebruiker</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">{editingUserId ? 'Gebruiker Aanpassen' : 'Nieuwe Gebruiker'}</h3>
                   <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">
                     <X size={24} />
                   </button>
@@ -178,16 +215,51 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                       onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
                       className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
                     >
-                      <option value="admin">Admin</option>
+                      <option value="admin">Admin (Alle rechten)</option>
                       <option value="manager">Manager</option>
                       <option value="staff">Staff</option>
-                      <option value="viewer">Viewer</option>
+                      <option value="viewer">Viewer (Alleen lezen)</option>
                     </select>
                   </div>
+
+                  {formData.role !== 'admin' && formData.role !== 'viewer' && (
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                      <h4 className="text-sm font-bold text-slate-900 ml-4">Specifieke Rechten</h4>
+                      <div className="space-y-3 bg-slate-50 p-6 rounded-3xl">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={formData.permissions?.manageDeliveries || false}
+                            onChange={e => setFormData({ ...formData, permissions: { ...formData.permissions, manageDeliveries: e.target.checked } })}
+                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                          />
+                          <span className="text-sm font-bold text-slate-700">Leveringen Beheren (Aanmaken/Bewerken)</span>
+                        </label>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={formData.permissions?.sendTransportOrder || false}
+                            onChange={e => setFormData({ ...formData, permissions: { ...formData.permissions, sendTransportOrder: e.target.checked } })}
+                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                          />
+                          <span className="text-sm font-bold text-slate-700">Mail Transport Order versturen</span>
+                        </label>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={formData.permissions?.manageAddressBook || false}
+                            onChange={e => setFormData({ ...formData, permissions: { ...formData.permissions, manageAddressBook: e.target.checked } })}
+                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                          />
+                          <span className="text-sm font-bold text-slate-700">Adressenboek Beheren</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
-                  Gebruiker Toevoegen
+                  {editingUserId ? 'Opslaan' : 'Gebruiker Toevoegen'}
                 </button>
               </form>
             </motion.div>

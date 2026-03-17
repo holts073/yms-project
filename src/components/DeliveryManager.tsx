@@ -393,9 +393,8 @@ Onderwerp: ${subject}
     });
   };
 
-  const canEdit = currentUser.role !== 'viewer';
-  // Admin or a logistic manager role (assuming 'manager' or a specific custom role name; here we use 'manager' which is already a defined role)
-  const canMailTransport = currentUser.role === 'admin' || currentUser.role === 'manager';
+  const canEdit = currentUser.role === 'admin' || currentUser.permissions?.manageDeliveries;
+  const canMailTransport = currentUser.role === 'admin' || currentUser.permissions?.sendTransportOrder;
 
   const handleExportCSV = () => {
     const headers = ['Referentie', 'Type', 'Status', 'ETA Magazijn', 'Aantal Pallets'].join(',');
@@ -506,6 +505,28 @@ Onderwerp: ${subject}
                 .filter(d => d.status < 100)
                 .map((delivery) => {
                   const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
+                  
+                  // Dynamic Risk Calculation for Ex-Works
+                  let displayRisk = delivery.delayRisk;
+                  let displayReason = delivery.predictionReason;
+                  
+                  if (delivery.type === 'exworks' && delivery.status === 0 && delivery.etaWarehouse) {
+                    const etaDate = new Date(delivery.etaWarehouse);
+                    const today = new Date();
+                    
+                    // Reset time to compare just the dates
+                    etaDate.setHours(0,0,0,0);
+                    today.setHours(0,0,0,0);
+                    
+                    const diffTime = etaDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays <= 7) {
+                      displayRisk = 'high';
+                      displayReason = "Vraag direct transport aan (Minder dan 7 dagen tot ETA).";
+                    }
+                  }
+
                   return (
                 <tr 
                   key={delivery.id} 
@@ -534,10 +555,17 @@ Onderwerp: ${subject}
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-slate-900">{delivery.reference}</span>
-                      {delivery.delayRisk === 'high' && (
-                        <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">
-                          ACTIE
-                        </span>
+                      {displayRisk === 'high' && (
+                        <div className="relative group/risk">
+                          <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full cursor-help">
+                            ACTIE
+                          </span>
+                          {displayReason && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover/risk:opacity-100 transition-opacity pointer-events-none z-50 text-center">
+                              {displayReason}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">{delivery.containerNumber || delivery.cargoType || '-'}</p>

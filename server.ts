@@ -104,22 +104,26 @@ async function startServer() {
         phone: '+31 (0)88 000 0000',
         address: 'Voorbeeldstraat 1, 1234 AB, Nederland',
         logoUrl: '/logo.jfif',
-        transportTemplate: `Loading Information:
+        transportTemplate: `==========================================================
+[ LOADING INFORMATION ]        | [ DELIVERY INFORMATION ]
+==========================================================
 Leverancier: {supplierName}
-Adres: {supplierAddress}
-Laadplaats: {loadingCity}, {loadingCountry}
-Opmerkingen leverancier: {supplierRemarks}
+Adres: {supplierAddress}       | Bestemming: {companyName}
+Laadplaats: {loadingCity}      | Adres: {companyAddress}
+Land: {loadingCountry}         | ETA Magazijn: {etaWarehouse}
+                               | 
 
-Delivery Information:
-Bestemming: {companyName}
-Adres: {companyAddress}
-ETA: {etaWarehouse}
+==========================================================
+[ KOSTEN & OPMERKINGEN ]
+==========================================================
 Aantal pallets: {palletCount} ({palletType})
 Gewicht: {weight}
 Type Lading: {cargoType}
-Zending Opmerkingen: {notes}
 
 Agreed Price (All Inclusive, Excl. Diesel): {cost}
+
+Opmerkingen leverancier: {supplierRemarks}
+Zending Opmerkingen: {notes}
 
 Please mention our referencenumber {reference} on your invoice, this is also the loadingreference.
 Without this reference number we cannot match your invoice to our booking and the paymend can be delayed.
