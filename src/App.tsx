@@ -107,7 +107,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
 
   const canAccess = (tab: string) => {
     if (currentUser?.role === 'admin') return true;
-    if (tab === 'settings') return true; // Settings handles its own admin vs user view
+    if (tab === 'settings') return false; 
     if (currentUser?.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook' || tab === 'archive')) return true; 
     return true;
   };
@@ -157,12 +157,14 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
             active={activeTab === 'statistics'} 
             onClick={() => handleSidebarClick('statistics')} 
           />
-          <SidebarItem 
-            icon={Settings} 
-            label="Instellingen" 
-            active={activeTab === 'settings'} 
-            onClick={() => handleSidebarClick('settings')} 
-          />
+          {currentUser.role === 'admin' && (
+            <SidebarItem 
+              icon={Settings} 
+              label="Instellingen" 
+              active={activeTab === 'settings'} 
+              onClick={() => handleSidebarClick('settings')} 
+            />
+          )}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-slate-100">

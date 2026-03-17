@@ -40,6 +40,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
   const [activeModalTab, setActiveModalTab] = useState<'details' | 'history'>('details');
   const [filter, setFilter] = useState(initialFilter);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'container' | 'exworks'>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'eta', direction: 'asc' });
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
@@ -94,6 +95,10 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     let list = allDeliveries.filter(d => 
       d.reference.toLowerCase().includes(filter.toLowerCase())
     );
+
+    if (typeFilter !== 'all') {
+      list = list.filter(d => d.type === typeFilter);
+    }
 
     if (sortConfig) {
       list = [...list].sort((a, b) => {
@@ -408,6 +413,16 @@ ILG Foodgroup SCY/YMS`;
             className="w-full pl-12 pr-4 py-2 bg-slate-50 border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500"
           />
         </div>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as any)}
+          className="px-6 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-full focus:ring-2 focus:ring-indigo-500 outline-none appearance-none pr-10 relative cursor-pointer"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em` }}
+        >
+          <option value="all">Alle Types</option>
+          <option value="container">Container</option>
+          <option value="exworks">Ex-Works</option>
+        </select>
         <button className="flex items-center gap-2 px-6 py-2 text-slate-600 hover:bg-slate-50 rounded-full border border-slate-200 transition-all">
           <Filter size={18} />
           <span>Filters</span>

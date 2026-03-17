@@ -13,7 +13,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { User, UserRole } from '../types';
 
-const UserManagement = () => {
+const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
   const { state, dispatch, currentUser } = useSocket();
   const { users = [] } = state || {};
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,50 +48,65 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-10">
-      <header className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Gebruikersbeheer</h2>
-          <p className="text-slate-500 mt-1">Beheer rollen en toegangsrechten voor het team.</p>
-        </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
-        >
-          <Plus size={20} />
-          Nieuwe Gebruiker
-        </button>
-      </header>
+    <div className={embedded ? "space-y-6" : "space-y-10"}>
+      {!embedded && (
+        <header className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Gebruikersbeheer</h2>
+            <p className="text-slate-500 mt-1">Beheer rollen en toegangsrechten voor het team.</p>
+          </div>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
+          >
+            <Plus size={20} />
+            Nieuwe Gebruiker
+          </button>
+        </header>
+      )}
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
-        <table className="w-full text-left">
+      {embedded && (
+        <div className="flex justify-end mb-4">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-full font-bold flex items-center gap-3 shadow-md hover:bg-indigo-700 transition-all active:scale-95 text-sm"
+          >
+            <Plus size={16} />
+            Nieuwe Gebruiker
+          </button>
+        </div>
+      )}
+
+      <div className={cn("bg-white rounded-[2.5rem] overflow-hidden", embedded ? "border border-slate-100" : "border border-slate-200 shadow-sm")}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[600px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Gebruiker</th>
-              <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">E-mail</th>
-              <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
-              <th className="px-10 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Acties</th>
+              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Gebruiker</th>
+              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">E-mail</th>
+              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
+              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Acties</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {users.map((user) => (
               <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-10 py-6">
+                <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shrink-0">
                       <UserIcon size={20} />
                     </div>
-                    <span className="font-bold text-slate-900">{user.name}</span>
+                    <span className="font-bold text-slate-900 truncate max-w-[150px]">{user.name}</span>
                   </div>
                 </td>
-                <td className="px-10 py-6 text-slate-500 text-sm font-medium">{user.email}</td>
-                <td className="px-10 py-6">
+                <td className="px-6 py-4 text-slate-500 text-sm font-medium truncate max-w-[200px]">{user.email}</td>
+                <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     {getRoleIcon(user.role)}
                     <span className="text-sm font-bold text-slate-700 capitalize">{user.role}</span>
                   </div>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-6 py-4">
                   <select 
                     value={user.role}
                     onChange={(e) => updateRole(user, e.target.value as UserRole)}
@@ -108,6 +123,7 @@ const UserManagement = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -183,3 +199,7 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(' ');
+}

@@ -9,12 +9,13 @@ const SettingsPage = () => {
   const [activeSegment, setActiveSegment] = useState<'company' | 'users'>('company');
   const isAdmin = currentUser.role === 'admin';
 
-  // Demo company settings state (in a real app this would sync via socket)
   const [companySettings, setCompanySettings] = useState({
     name: 'ILG Foodgroup',
     email: 'info@ilg-foodgroup.nl',
     phone: '+31 (0)88 000 0000',
     address: 'Voorbeeldstraat 1, 1234 AB, Nederland',
+    logoUrl: '/logo.jfif',
+    transportTemplate: 'Beste vervoerder,\n\nHierbij de transport order voor {reference}.\n\nMet vriendelijke groet,\nILG Foodgroup'
   });
 
   const [isEditingCompany, setIsEditingCompany] = useState(false);
@@ -112,6 +113,34 @@ const SettingsPage = () => {
               ) : (
                 <form onSubmit={handleSaveCompany} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 col-span-1 md:col-span-2 flex items-center gap-6">
+                      <div className="w-24 h-24 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
+                        {companySettings.logoUrl ? (
+                          <img src={companySettings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <Building2 className="text-slate-400" size={32} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-sm font-bold text-slate-700 block mb-2">Bedrijfslogo</label>
+                        <input 
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (e) => {
+                                setCompanySettings(prev => ({ ...prev, logoUrl: e.target?.result as string }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-slate-700 ml-4">Bedrijfsnaam</label>
                       <input 
@@ -147,6 +176,16 @@ const SettingsPage = () => {
                         onChange={(e) => setCompanySettings({...companySettings, address: e.target.value})}
                         className="w-full px-6 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 resize-none"
                       />
+                    </div>
+                    <div className="space-y-2 col-span-1 md:col-span-2">
+                       <label className="text-sm font-bold text-slate-700 ml-4">Mail Transport Order Template</label>
+                       <p className="text-xs text-slate-500 ml-4 mb-2">Gebruik <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">{`{reference}`}</code> om de referentie in te voegen.</p>
+                       <textarea 
+                         rows={5}
+                         value={companySettings.transportTemplate}
+                         onChange={(e) => setCompanySettings({...companySettings, transportTemplate: e.target.value})}
+                         className="w-full px-6 py-4 bg-slate-50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 resize-none font-mono text-sm leading-relaxed"
+                       />
                     </div>
                   </div>
                   <div className="pt-6 flex gap-4 border-t border-slate-100">
