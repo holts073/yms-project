@@ -73,7 +73,8 @@ const AddressBook = () => {
     setIsModalOpen(false);
   };
 
-  const entries = addressBook?.[activeTab] || [];
+  const rawEntries = addressBook?.[activeTab] || [];
+  const entries = [...rawEntries].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-8">

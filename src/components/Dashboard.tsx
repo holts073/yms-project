@@ -97,7 +97,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
         />
         <div>
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Welkom bij ILG Foodgroup</h2>
-          <p className="text-slate-500 mt-1">Overzicht van de huidige Supply Chain & Yard status.</p>
+          <p className="text-slate-500 mt-1">Overzicht van de huidige Supply Chain.</p>
         </div>
       </header>
 
@@ -117,7 +117,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Actie vereist</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{actionRequiredDeliveries.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Aandacht vereist</p>
+          <p className="text-slate-500 text-[11px] mt-1">Actie vereist</p>
         </button>
 
         <button 
@@ -134,7 +134,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vandaag</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{expectedTodayDeliveries.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Gepland voor vandaag</p>
+          <p className="text-slate-500 text-[11px] mt-1">Verwacht</p>
         </button>
 
         <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
@@ -145,7 +145,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">In Transit</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{activeDeliveries.filter(d => d.status < 50).length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Onderweg naar haven/hub</p>
+          <p className="text-slate-500 text-[11px] mt-1">In Transit</p>
         </div>
 
         <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
@@ -156,7 +156,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Douane</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{inCustoms.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">In inklaring</p>
+          <p className="text-slate-500 text-[11px] mt-1">Douane</p>
         </div>
 
         <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
@@ -167,7 +167,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Magazijn</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{enRouteToWarehouse.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Laatste fase</p>
+          <p className="text-slate-500 text-[11px] mt-1">Onderweg naar Magazijn</p>
         </div>
       </div>
 

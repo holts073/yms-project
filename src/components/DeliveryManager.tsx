@@ -543,7 +543,7 @@ ILG Foodgroup SCY/YMS`;
                           onClick={() => setManualStatus(delivery, 75)}
                           className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full hover:bg-blue-100 transition-all uppercase tracking-wider"
                         >
-                          Onderweg naar Magazijn
+                          Markeer 'Onderweg naar Magazijn'
                         </button>
                       )}
                       {delivery.type === 'container' && delivery.status === 75 && canEdit && (
@@ -552,7 +552,7 @@ ILG Foodgroup SCY/YMS`;
                           className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
                         >
                           <Check size={12} />
-                          Afgeleverd
+                          Zet op 'Afgeleverd'
                         </button>
                       )}
                       {delivery.type === 'exworks' && delivery.status === 50 && canEdit && (
@@ -561,7 +561,7 @@ ILG Foodgroup SCY/YMS`;
                           className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
                         >
                           <Check size={12} />
-                          Afgeleverd
+                          Zet op 'Afgeleverd'
                         </button>
                       )}
                       {delivery.notes && (
