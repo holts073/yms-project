@@ -76,8 +76,11 @@ async function startServer() {
 
   app.post("/api/login", (req, res) => {
     const { email, password } = req.body;
+    if (!email || typeof email !== "string" || !password) {
+      return res.status(400).json({ error: "Email en wachtwoord verplicht." });
+    }
     const users = getUsers();
-    const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    const user = users.find((u: any) => u.email && u.email.toLowerCase() === email.toLowerCase());
     
     if (!user || (!user.passwordHash && password !== 'welkom123')) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -106,8 +109,11 @@ async function startServer() {
 
   app.post("/api/forgot-password", async (req, res) => {
     const { email } = req.body;
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ error: "Ongeldig e-mailadres." });
+    }
     const users = getUsers();
-    const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    const user = users.find((u: any) => u.email && u.email.toLowerCase() === email.toLowerCase());
     
     if (!user) {
       // Return 200 even if not found to prevent email enumeration, but for MVP returning error is fine
@@ -261,6 +267,7 @@ async function startServer() {
           }
           case "ADD_USER": {
             const { password, ...newUserData } = payload;
+            if (newUserData.email) newUserData.email = newUserData.email.toLowerCase();
             const salt = bcrypt.genSaltSync(10);
             newUserData.passwordHash = bcrypt.hashSync(password || 'welkom123', salt);
             saveUser(newUserData);

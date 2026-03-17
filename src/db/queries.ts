@@ -94,8 +94,10 @@ export function insertDelivery(d: Delivery) {
     // Documents
     db.prepare('DELETE FROM documents WHERE deliveryId = ?').run(d.id);
     const insertDoc = db.prepare('INSERT INTO documents (id, deliveryId, name, status, required) VALUES (?, ?, ?, ?, ?)');
-    for (const doc of d.documents) {
-      insertDoc.run(doc.id, d.id, doc.name, doc.status, doc.required ? 1 : 0);
+    if (d.documents) {
+      for (const doc of d.documents) {
+        insertDoc.run(doc.id, d.id, doc.name, doc.status, doc.required ? 1 : 0);
+      }
     }
 
     // Audit logs

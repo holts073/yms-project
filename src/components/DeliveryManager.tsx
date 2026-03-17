@@ -266,28 +266,28 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
 
       if (newStatus === 'received') {
         if (doc.name === 'Seaway Bill / B/L' && delivery.status < 25) {
-          history.push(delivery.status);
+          if (history.length === 0 || history[history.length - 1] !== delivery.status) history.push(delivery.status);
           newStatusPct = 25;
         } else if (doc.name === 'Notification of Arrival' && delivery.status < 50) {
-          history.push(delivery.status);
+          if (history.length === 0 || history[history.length - 1] !== delivery.status) history.push(delivery.status);
           newStatusPct = 50;
         }
       } else if (newStatus === 'missing') {
           if (doc.name === 'Notification of Arrival' && delivery.status === 50) {
-              history.push(delivery.status);
+              if (history.length === 0 || history[history.length - 1] !== delivery.status) history.push(delivery.status);
               newStatusPct = 25;
           } else if (doc.name === 'Seaway Bill / B/L' && delivery.status === 25) {
-              history.push(delivery.status);
+              if (history.length === 0 || history[history.length - 1] !== delivery.status) history.push(delivery.status);
               newStatusPct = 0;
           }
       }
     } else if (delivery.type === 'exworks') {
       const cmr = updatedDocs.find(d => d.name === 'CMR / Vrachtbrief')?.status === 'received';
       if (newStatus === 'received' && doc.name === 'CMR / Vrachtbrief' && delivery.status < 50) {
-        history.push(delivery.status);
+        if (history.length === 0 || history[history.length - 1] !== delivery.status) history.push(delivery.status);
         newStatusPct = 50;
       } else if (newStatus === 'missing' && doc.name === 'CMR / Vrachtbrief' && delivery.status === 50) {
-        history.push(delivery.status);
+        if (history.length === 0 || history[history.length - 1] !== delivery.status) history.push(delivery.status);
         newStatusPct = 0;
       }
     }
