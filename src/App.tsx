@@ -248,11 +248,6 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0">
-          <div className="flex-1"></div>
-        </header>
-
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto p-10">
           <AnimatePresence mode="wait">
