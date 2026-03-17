@@ -98,6 +98,33 @@ async function startServer() {
         { id: 'user1', name: 'Warehouse Staff', role: 'staff', email: 'staff@example.com', passwordHash: bcrypt.hashSync('welkom123', 10) },
         { id: 'elmer', name: 'Elmer Holtslag', role: 'admin', email: 'ElmerHoltslag@gmail.com', passwordHash: bcrypt.hashSync('welkom123', 10) }
       ],
+      companySettings: {
+        name: 'ILG Foodgroup',
+        email: 'info@ilg-foodgroup.nl',
+        phone: '+31 (0)88 000 0000',
+        address: 'Voorbeeldstraat 1, 1234 AB, Nederland',
+        logoUrl: '/logo.jfif',
+        transportTemplate: `Loading Information:
+Leverancier: {supplierName}
+Adres: {supplierAddress}
+Laadplaats: {loadingCity}, {loadingCountry}
+Opmerkingen leverancier: {supplierRemarks}
+
+Delivery Information:
+Bestemming: {companyName}
+Adres: {companyAddress}
+ETA: {etaWarehouse}
+Aantal pallets: {palletCount} ({palletType})
+Gewicht: {weight}
+Type Lading: {cargoType}
+Zending Opmerkingen: {notes}
+
+Agreed Price (All Inclusive, Excl. Diesel): {cost}
+
+Please mention our referencenumber {reference} on your invoice, this is also the loadingreference.
+Without this reference number we cannot match your invoice to our booking and the paymend can be delayed.
+Please note that your invoice without a signed CMR will not be processed until the CMR is present.`
+      },
       settings: {
         terms: {
           ordered: 'Ordered',

@@ -12,7 +12,8 @@ import {
   Settings,
   LogOut,
   User as UserIcon,
-  Shield
+  Shield,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -47,6 +48,59 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
     <span className="text-sm tracking-wide">{label}</span>
   </button>
 );
+
+const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) => {
+  const [isOpen, setIsOpen] = useState(active);
+  React.useEffect(() => { if (active) setIsOpen(true); }, [active]);
+
+  return (
+    <div className="w-full">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center justify-between gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
+          active 
+            ? "bg-indigo-100 text-indigo-900 font-semibold shadow-sm" 
+            : "text-slate-600 hover:bg-slate-100"
+        )}
+      >
+        <div className="flex items-center gap-4">
+          <Icon size={22} className={active ? "text-indigo-600" : "text-slate-500"} />
+          <span className="text-sm tracking-wide">{label}</span>
+        </div>
+        <ChevronRight size={16} className={cn("transition-transform duration-300", isOpen && "rotate-90")} />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="py-2 px-4 space-y-1 mt-1">
+              {items.map((item: any) => (
+                <button
+                  key={item.id}
+                  onClick={() => onSelect(item.id)}
+                  className={cn(
+                    "flex items-center gap-3 w-full px-6 py-3 rounded-full text-sm transition-all",
+                    item.active 
+                      ? "text-indigo-700 font-bold bg-indigo-50" 
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  <span className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-indigo-600" : "bg-slate-400")} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
   const AppContent = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -100,14 +154,15 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
       case 'addressbook': return <AddressBook />;
       case 'statistics': return <Statistics />;
       case 'logs': return <AuditLog onNavigate={handleNavigate} />;
-      case 'settings': return <SettingsPage />;
+      case 'settings-company': return <SettingsPage currentSegment="company" />;
+      case 'settings-users': return <SettingsPage currentSegment="users" />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
 
   const canAccess = (tab: string) => {
     if (currentUser?.role === 'admin') return true;
-    if (tab === 'settings') return false; 
+    if (tab.startsWith('settings')) return false; 
     if (currentUser?.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook' || tab === 'archive')) return true; 
     return true;
   };
@@ -158,11 +213,15 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
             onClick={() => handleSidebarClick('statistics')} 
           />
           {currentUser.role === 'admin' && (
-            <SidebarItem 
+            <SidebarDropdown 
               icon={Settings} 
               label="Instellingen" 
-              active={activeTab === 'settings'} 
-              onClick={() => handleSidebarClick('settings')} 
+              active={activeTab.startsWith('settings')} 
+              items={[
+                { id: 'settings-company', label: 'Bedrijfsgegevens', active: activeTab === 'settings-company' },
+                { id: 'settings-users', label: 'Gebruikersbeheer', active: activeTab === 'settings-users' }
+              ]}
+              onSelect={handleSidebarClick}
             />
           )}
         </nav>
@@ -191,14 +250,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0">
-          <div className="relative w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Zoek leveringen, leveranciers..." 
-              className="w-full pl-12 pr-4 py-2.5 bg-slate-100 border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
-            />
-          </div>
+          <div className="flex-1"></div>
         </header>
 
         {/* Page Content */}

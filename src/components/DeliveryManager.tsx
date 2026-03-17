@@ -162,7 +162,10 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     palletExchange: false,
     loadingCountry: '',
     loadingCity: '',
-    cargoType: 'Dry'
+    cargoType: 'Dry',
+    transportCost: undefined,
+    weight: undefined,
+    palletType: 'EUR'
   });
 
   const handleOpenModal = (delivery?: Delivery) => {
@@ -193,7 +196,10 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         palletExchange: false,
         loadingCountry: '',
         loadingCity: '',
-        cargoType: 'Dry'
+        cargoType: 'Dry',
+        transportCost: undefined,
+        weight: undefined,
+        palletType: 'EUR'
       });
     }
     setIsModalOpen(true);
@@ -309,22 +315,49 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     }
 
     const subject = `Transport Order - Ref: ${delivery.reference}`;
-    const body = `Beste ${transporter.contact || transporter.name},
+    
+    // Fill the template from settings
+    let emailBody = state?.companySettings?.transportTemplate || 
+      'Beste vervoerder,\n\nHierbij de transport order voor {reference}.\n\nLeverancier: {supplier}\nOpmerkingen: {notes}\nTransportkosten: {cost}\n\nMet vriendelijke groet,\nILG Foodgroup';
+    
+    // Format the cost
+    const costString = delivery.transportCost !== undefined 
+      ? new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(delivery.transportCost)
+      : 'N.v.t.';
 
-Hierbij de transportopdracht voor de volgende zending:
+    emailBody = emailBody
+      .replace(/{reference}/g, delivery.reference)
+      .replace(/{supplierName}/g, supplier.name)
+      .replace(/{supplierAddress}/g, supplier.address || '')
+      .replace(/{loadingCity}/g, delivery.loadingCity || '')
+      .replace(/{loadingCountry}/g, delivery.loadingCountry || '')
+      .replace(/{palletCount}/g, (delivery.palletCount || 0).toString())
+      .replace(/{palletType}/g, delivery.palletType || '-')
+      .replace(/{weight}/g, delivery.weight ? `${delivery.weight} kg` : '-')
+      .replace(/{cargoType}/g, delivery.cargoType || 'Dry')
+      .replace(/{etaWarehouse}/g, delivery.etaWarehouse || '-')
+      .replace(/{companyName}/g, state?.companySettings?.name || 'ILG Foodgroup')
+      .replace(/{companyAddress}/g, state?.companySettings?.address || '')
+      .replace(/{supplierRemarks}/g, supplier.remarks || '-')
+      .replace(/{transporterRemarks}/g, transporter.remarks || '-')
+      .replace(/{notes}/g, delivery.notes || '')
+      .replace(/{cost}/g, costString);
 
-Referentie: ${delivery.reference}
-Leverancier: ${supplier.name}
-Afhaaladres: ${supplier.pickupAddress || supplier.address}
-Type lading: ${delivery.cargoType || 'Dry'}
-Aantal pallets: ${delivery.palletCount || '-'}
-ETA Magazijn: ${delivery.etaWarehouse || delivery.eta || '-'}
+    // Construct the "briefpapier" (letterhead) structure for the email
+    const company = state?.companySettings || { name: 'ILG Foodgroup', address: '', phone: '', email: '' };
+    const letterHead = `${company.name}
+${company.address}
+Tel: ${company.phone} | Email: ${company.email}
+--------------------------------------------------
 
-Graag bevestiging van ontvangst en planning.
+Aan: ${transporter.name}
+${transporter.address || ''}
 
-Met vriendelijke groet,
-${currentUser.name}
-ILG Foodgroup SCY/YMS`;
+Onderwerp: ${subject}
+
+`;
+
+    const body = letterHead + emailBody;
 
     const mailtoUrl = `mailto:${transporter.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailtoUrl;
@@ -837,6 +870,21 @@ ILG Foodgroup SCY/YMS`;
                         <label className="text-sm font-bold text-slate-700 ml-4">Aantal Pallets</label>
                         <input type="number" value={formData.palletCount} onChange={e => setFormData({ ...formData, palletCount: parseInt(e.target.value) })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Type Pallets</label>
+                        <select 
+                          value={formData.palletType || 'EUR'}
+                          onChange={e => setFormData({ ...formData, palletType: e.target.value })}
+                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                        >
+                          <option value="EUR">EUR</option>
+                          <option value="BLOK">BLOK</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Gewicht (kg)</label>
+                        <input type="number" value={formData.weight || ''} onChange={e => setFormData({ ...formData, weight: parseFloat(e.target.value) })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                      </div>
                       <div className="space-y-2 flex items-center gap-4 pt-8">
                         <label className="text-sm font-bold text-slate-700 ml-4">Pallet Ruil</label>
                         <input type="checkbox" checked={formData.palletExchange} onChange={e => setFormData({ ...formData, palletExchange: e.target.checked })} className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500" />
@@ -863,6 +911,19 @@ ILG Foodgroup SCY/YMS`;
                       </div>
                     </>
                   )}
+
+                  <div className="space-y-2 col-span-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">Transportkosten (€)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      step="0.01"
+                      value={formData.transportCost || ''} 
+                      onChange={e => setFormData({ ...formData, transportCost: e.target.value ? parseFloat(e.target.value) : undefined })} 
+                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
+                      placeholder="Bijv. 450.00"
+                    />
+                  </div>
 
                   <div className="space-y-2 col-span-2">
                     <label className="text-sm font-bold text-slate-700 ml-4">Opmerkingen</label>

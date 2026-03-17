@@ -16,6 +16,7 @@ export interface AddressEntry {
   type: 'supplier' | 'transporter';
   pickupAddress?: string;
   otif?: number; // On-Time In-Full percentage
+  remarks?: string;
 }
 
 export interface AuditEntry {
@@ -41,6 +42,9 @@ export interface Delivery {
   statusHistory?: number[];
   notes?: string;
   auditTrail?: AuditEntry[];
+  transportCost?: number;
+  weight?: number;
+  palletType?: 'EUR' | 'BLOK';
   
   // Container specific
   forwarderId?: string;

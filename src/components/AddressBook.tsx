@@ -28,6 +28,7 @@ const AddressBook = () => {
     email: '',
     address: '',
     pickupAddress: '',
+    remarks: ''
   });
 
   const handleOpenModal = (entry?: AddressEntry) => {
@@ -39,6 +40,7 @@ const AddressBook = () => {
         email: entry.email,
         address: entry.address,
         pickupAddress: entry.pickupAddress || '',
+        remarks: entry.remarks || ''
       });
     } else {
       setEditingEntry(null);
@@ -48,6 +50,7 @@ const AddressBook = () => {
         email: '',
         address: '',
         pickupAddress: '',
+        remarks: ''
       });
     }
     setIsModalOpen(true);
@@ -267,6 +270,17 @@ const AddressBook = () => {
                       />
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">Opmerkingen</label>
+                    <textarea 
+                      rows={2}
+                      value={formData.remarks || ''}
+                      onChange={e => setFormData({ ...formData, remarks: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-[1.5rem] focus:ring-2 focus:ring-indigo-500 resize-none"
+                      placeholder="Algemene opmerkingen over deze relatie..."
+                    />
+                  </div>
                 </div>
 
                 <div className="pt-6 flex gap-4">

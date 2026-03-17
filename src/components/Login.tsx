@@ -66,7 +66,6 @@ export const Login = () => {
               <div className="space-y-2 relative">
                 <div className="flex justify-between items-center ml-4 mr-4">
                   <label className="text-sm font-bold text-slate-700">Wachtwoord</label>
-                  <a href="#" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">Wachtwoord vergeten?</a>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -133,14 +132,13 @@ export const Login = () => {
             </p>
           </div>
 
-          {/* Floating UI Elements Demo */}
-          <div className="relative z-10 w-full aspect-video rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 p-6 flex flex-col gap-4 shadow-2xl">
-            <div className="w-full h-8 bg-white/10 rounded-lg animate-pulse" />
-            <div className="w-3/4 h-4 bg-white/5 rounded-full" />
-            <div className="flex gap-4 mt-auto">
-              <div className="flex-1 h-20 bg-emerald-500/20 rounded-xl border border-emerald-500/30 backdrop-blur-md" />
-              <div className="flex-1 h-20 bg-indigo-500/20 rounded-xl border border-indigo-500/30 backdrop-blur-md" />
-            </div>
+          {/* Dashboard Preview Image */}
+          <div className="relative z-10 w-full mt-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 p-2 shadow-2xl overflow-hidden">
+            <img 
+              src="/dashboard-preview.png" 
+              alt="App Dashboard Preview" 
+              className="w-full h-auto rounded-xl object-cover shadow-inner"
+            />
           </div>
         </div>
 
