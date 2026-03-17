@@ -158,6 +158,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
       case 'statistics': return <Statistics />;
       case 'logs': return <AuditLog onNavigate={handleNavigate} />;
       case 'settings-company': return <SettingsPage currentSegment="company" />;
+      case 'settings-documents': return <SettingsPage currentSegment="documents" />;
       case 'settings-users': return <SettingsPage currentSegment="users" />;
       case 'reports': return <Reporting />;
       default: return <Dashboard onNavigate={handleNavigate} />;
@@ -225,6 +226,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
               active={activeTab.startsWith('settings')} 
               items={[
                 { id: 'settings-company', label: 'Bedrijfsgegevens', active: activeTab === 'settings-company' },
+                { id: 'settings-documents', label: 'Documentinstellingen', active: activeTab === 'settings-documents' },
                 { id: 'settings-users', label: 'Gebruikersbeheer', active: activeTab === 'settings-users' }
               ]}
               onSelect={handleSidebarClick}

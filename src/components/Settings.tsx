@@ -3,7 +3,7 @@ import { useSocket } from '../SocketContext';
 import { Settings, Building2, Users, Shield, Edit2, Trash2, Plus, X } from 'lucide-react';
 import UserManagement from './UserManagement';
 
-const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'company' | 'users' }) => {
+const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'company' | 'users' | 'documents' }) => {
   const { state, dispatch, currentUser } = useSocket();
   const isAdmin = currentUser.role === 'admin';
 
@@ -14,42 +14,54 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
       phone: '+31 (0)88 000 0000',
       address: 'Voorbeeldstraat 1, 1234 AB, Nederland',
       logoUrl: '/logo.jfif',
-      transportTemplate: `==========================================================
-[ LOADING INFORMATION ]        | [ DELIVERY INFORMATION ]
-==========================================================
-Leverancier: {supplierName}
-Adres: {supplierAddress}       | Bestemming: {companyName}
-Laadplaats: {loadingCity}      | Adres: {companyAddress}
-Land: {loadingCountry}         | ETA Magazijn: {etaWarehouse}
-                               | 
-
-==========================================================
-[ KOSTEN & OPMERKINGEN ]
-==========================================================
-Aantal pallets: {palletCount} ({palletType})
-Gewicht: {weight}
-Type Lading: {cargoType}
-
-Agreed Price (All Inclusive, Excl. Diesel): {cost}
-
-Opmerkingen leverancier: {supplierRemarks}
-Zending Opmerkingen: {notes}
-
-Please mention our referencenumber {reference} on your invoice, this is also the loadingreference.
-Without this reference number we cannot match your invoice to our booking and the paymend can be delayed.
-Please note that your invoice without a signed CMR will not be processed until the CMR is present.`
+      transportTemplate: `...`
     }
+  );
+
+  const [docSettings, setDocSettings] = useState(
+    state?.settings?.shipment_settings || { container: [], exworks: [] }
   );
 
   React.useEffect(() => {
     if (state?.companySettings) {
       setLocalSettings(state.companySettings);
     }
-  }, [state?.companySettings]);
+    if (state?.settings?.shipment_settings) {
+      setDocSettings(state.settings.shipment_settings);
+    }
+  }, [state?.companySettings, state?.settings?.shipment_settings]);
 
   const handleSaveCompany = (e: React.FormEvent) => {
     e.preventDefault();
     dispatch('UPDATE_COMPANY_SETTINGS', localSettings);
+  };
+
+  const handleSaveDocuments = () => {
+    dispatch('UPDATE_SETTINGS', { ...state?.settings, shipment_settings: docSettings });
+  };
+
+  const addDocument = (type: 'container' | 'exworks') => {
+    const name = window.prompt('Voer de naam van het nieuwe document in:');
+    if (name) {
+      setDocSettings({
+        ...docSettings,
+        [type]: [...docSettings[type], { name, required: false }]
+      });
+    }
+  };
+
+  const removeDocument = (type: 'container' | 'exworks', index: number) => {
+    if (window.confirm('Weet u zeker dat u dit document wilt verwijderen?')) {
+      const newList = [...docSettings[type]];
+      newList.splice(index, 1);
+      setDocSettings({ ...docSettings, [type]: newList });
+    }
+  };
+
+  const toggleRequired = (type: 'container' | 'exworks', index: number) => {
+    const newList = [...docSettings[type]];
+    newList[index] = { ...newList[index], required: !newList[index].required };
+    setDocSettings({ ...docSettings, [type]: newList });
   };
 
   return (
@@ -57,12 +69,14 @@ Please note that your invoice without a signed CMR will not be processed until t
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-            {currentSegment === 'company' ? 'Bedrijfsgegevens' : 'Gebruikersbeheer'}
+            {currentSegment === 'company' ? 'Bedrijfsgegevens' : currentSegment === 'users' ? 'Gebruikersbeheer' : 'Documentinstellingen'}
           </h2>
           <p className="text-slate-500 mt-1">
             {currentSegment === 'company' 
               ? 'Beheer de algemene instellingen van de organisatie.' 
-              : 'Beheer de accounts en rollen van het team.'}
+              : currentSegment === 'users'
+              ? 'Beheer de accounts en rollen van het team.'
+              : 'Beheer de verplichte en optionele documenten per type zending.'}
           </p>
         </div>
       </header>
@@ -217,9 +231,77 @@ Please note that your invoice without a signed CMR will not be processed until t
               <UserManagement embedded={true} />
           </div>
         )}
+
+        {currentSegment === 'documents' && isAdmin && (
+          <div className="space-y-10">
+            {(['container', 'exworks'] as const).map(type => (
+              <div key={type} className="space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h3 className="text-xl font-bold text-slate-900 capitalize">
+                    {type === 'container' ? 'Zeevracht (Container)' : 'Wegtransport (Ex-Works)'}
+                  </h3>
+                  <button 
+                    onClick={() => addDocument(type)}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold hover:bg-indigo-100 transition-colors"
+                  >
+                    <Plus size={14} /> Document Toevoegen
+                  </button>
+                </div>
+                <div className="grid gap-3">
+                  {docSettings[type]?.map((doc: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400">
+                          <Settings size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{doc.name}</p>
+                          <p className="text-xs text-slate-500">{doc.required ? 'Verplicht' : 'Optioneel'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => toggleRequired(type, index)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                            doc.required ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                          )}
+                        >
+                          {doc.required ? 'Maak Optioneel' : 'Maak Verplicht'}
+                        </button>
+                        <button 
+                          onClick={() => removeDocument(type, index)}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!docSettings[type] || docSettings[type].length === 0) && (
+                    <p className="text-center py-6 text-slate-400 text-sm">Geen documenten geconfigureerd.</p>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            <div className="pt-6 border-t border-slate-100">
+              <button 
+                onClick={handleSaveDocuments}
+                className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+              >
+                Documentinstellingen Opslaan
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(' ');
+}
 
 export default SettingsPage;

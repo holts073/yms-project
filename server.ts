@@ -247,19 +247,28 @@ async function startServer() {
             io.emit("DELIVERY_UPDATED");
             break;
 
-          case "UPDATE_USER":
-            saveUser(payload);
+          case "UPDATE_USER": {
+            const { password, ...userData } = payload;
+            if (password) {
+              const salt = bcrypt.genSaltSync(10);
+              userData.passwordHash = bcrypt.hashSync(password, salt);
+            }
+            saveUser(userData);
             logEntry.action = "Updated User Role";
-            logEntry.details = `Updated role for ${payload.name} to ${payload.role}`;
+            logEntry.details = `Updated role for ${userData.name} to ${userData.role}`;
             io.emit("state_update", buildStaticState());
             break;
-
-          case "ADD_USER":
-            saveUser(payload);
+          }
+          case "ADD_USER": {
+            const { password, ...newUserData } = payload;
+            const salt = bcrypt.genSaltSync(10);
+            newUserData.passwordHash = bcrypt.hashSync(password || 'welkom123', salt);
+            saveUser(newUserData);
             logEntry.action = "Added User";
-            logEntry.details = `Added new user: ${payload.name}`;
+            logEntry.details = `Added new user: ${newUserData.name}`;
             io.emit("state_update", buildStaticState());
             break;
+          }
 
           case "UPDATE_ADDRESS":
             saveAddressBookEntry(payload.entry);

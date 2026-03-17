@@ -22,6 +22,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'staff' as UserRole,
     permissions: {} as any
   });
@@ -42,7 +43,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
     }
     setIsModalOpen(false);
     setEditingUserId(null);
-    setFormData({ name: '', email: '', role: 'staff', permissions: {} });
+    setFormData({ name: '', email: '', role: 'staff', password: '', permissions: {} });
   };
 
   const openEditModal = (user: User) => {
@@ -50,6 +51,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
     setFormData({
       name: user.name,
       email: user.email,
+      password: '',
       role: user.role,
       permissions: user.permissions || {}
     });
@@ -58,7 +60,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
 
   const openNewModal = () => {
     setEditingUserId(null);
-    setFormData({ name: '', email: '', role: 'staff', permissions: {} });
+    setFormData({ name: '', email: '', password: '', role: 'staff', permissions: {} });
     setIsModalOpen(true);
   };
 
@@ -220,6 +222,18 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                       type="email" 
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-4">
+                      {editingUserId ? 'Wachtwoord (leeg laten om te behouden)' : 'Wachtwoord'}
+                    </label>
+                    <input 
+                      required={!editingUserId}
+                      type="password" 
+                      value={formData.password}
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
                       className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>

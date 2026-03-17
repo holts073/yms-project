@@ -102,6 +102,26 @@ db.exec(`
   );
 `);
 
+// Initial Seed for shipment_settings
+const existingSettings = db.prepare('SELECT value FROM settings WHERE key = ?').get('shipment_settings');
+if (!existingSettings) {
+  const initialShipmentSettings = {
+    container: [
+      { name: 'Seaway Bill / B/L', required: true },
+      { name: 'Commercial Invoice', required: true },
+      { name: 'Packing List', required: true },
+      { name: 'Notification of Arrival', required: true },
+      { name: 'Certificate of Origin', required: false }
+    ],
+    exworks: [
+      { name: 'CMR / Vrachtbrief', required: true },
+      { name: 'Commercial Invoice', required: true },
+      { name: 'Packing List', required: true }
+    ]
+  };
+  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('shipment_settings', JSON.stringify(initialShipmentSettings));
+}
+
 // Migration for logs table
 try {
   db.prepare("ALTER TABLE logs ADD COLUMN reference TEXT").run();

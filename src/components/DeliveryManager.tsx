@@ -21,25 +21,11 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Delivery, DeliveryType, Document } from '../types';
 import { Combobox } from './ui/Combobox';
-
-const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Seaway Bill / B/L', status: 'missing', required: true },
-  { name: 'Commercial Invoice', status: 'missing', required: true },
-  { name: 'Packing List', status: 'missing', required: true },
-  { name: 'Notification of Arrival', status: 'missing', required: true },
-  { name: 'Certificate of Origin', status: 'missing', required: false }
-];
-
-const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'CMR / Vrachtbrief', status: 'missing', required: true },
-  { name: 'Commercial Invoice', status: 'missing', required: true },
-  { name: 'Packing List', status: 'missing', required: true }
-];
-
 import { useDeliveries } from '../hooks/useDeliveries';
 
 const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFilter?: string; initialSelectedId?: string }) => {
   const { state, dispatch, currentUser } = useSocket();
+  const shipmentSettings = state?.settings?.shipment_settings || { container: [], exworks: [] };
   const { addressBook } = state || {};
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
@@ -229,12 +215,12 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         updatedAt: new Date().toISOString()
       });
     } else {
-      const docs = formData.type === 'container' ? CONTAINER_DOCS : EXWORKS_DOCS;
+      const docs = shipmentSettings[formData.type] || [];
       const newDelivery: Delivery = {
         id: Math.random().toString(36).substr(2, 9),
         ...formData,
         originalEtaWarehouse: formData.etaWarehouse,
-        documents: docs.map(d => ({ ...d, id: Math.random().toString(36).substr(2, 9) })),
+        documents: docs.map((d: any) => ({ ...d, id: Math.random().toString(36).substr(2, 9), status: 'missing' })),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
