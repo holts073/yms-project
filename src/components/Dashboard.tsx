@@ -35,6 +35,27 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
     }
   };
 
+  const getStatusSteps = (type: string) => {
+    if (type === 'container') {
+      return ['Besteld', 'In Transit', 'Douane', 'Onderweg naar Magazijn', 'Afgeleverd'];
+    }
+    return ['Besteld', 'Transport aangevraagd', 'Onderweg naar Magazijn', 'Afgeleverd'];
+  };
+
+  const getStatusIndex = (delivery: any) => {
+    if (delivery.status === 100) return delivery.type === 'container' ? 4 : 3;
+    if (delivery.type === 'container') {
+      if (delivery.status >= 75) return 3;
+      if (delivery.status >= 50) return 2;
+      if (delivery.status >= 25) return 1;
+      return 0;
+    } else {
+      if (delivery.status >= 50) return 2;
+      if (delivery.status >= 25) return 1;
+      return 0;
+    }
+  };
+
   // Calculate stats
   const actionRequiredDeliveries = useMemo(() => deliveries.filter(d => 
     d.status < 100 && (
@@ -109,14 +130,14 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
           onClick={() => setFilterType('action')}
           className={cn(
             "p-6 rounded-[2rem] border transition-all text-left group",
-            filterType === 'action' ? "bg-amber-50 border-amber-200 shadow-md ring-2 ring-amber-500/20" : "bg-white border-slate-200 shadow-sm hover:border-amber-200"
+            filterType === 'action' ? "bg-rose-50 border-rose-200 shadow-md ring-2 ring-rose-500/20" : "bg-white border-slate-200 shadow-sm hover:border-rose-200"
           )}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'action' ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-600 group-hover:bg-amber-100")}>
+            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'action' ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-600 group-hover:bg-rose-100")}>
               <AlertCircle size={20} />
             </div>
-            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Actie vereist</span>
+            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Actie vereist</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{actionRequiredDeliveries.length}</p>
           <p className="text-slate-500 text-[11px] mt-1">Actie vereist</p>
@@ -126,14 +147,14 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
           onClick={() => setFilterType('today')}
           className={cn(
             "p-6 rounded-[2rem] border transition-all text-left group",
-            filterType === 'today' ? "bg-emerald-50 border-emerald-200 shadow-md ring-2 ring-emerald-500/20" : "bg-white border-slate-200 shadow-sm hover:border-emerald-200"
+            filterType === 'today' ? "bg-amber-50 border-amber-200 shadow-md ring-2 ring-amber-500/20" : "bg-white border-slate-200 shadow-sm hover:border-amber-200"
           )}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'today' ? "bg-emerald-600 text-white" : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100")}>
+            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'today' ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-600 group-hover:bg-amber-100")}>
               <Calendar size={20} />
             </div>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vandaag</span>
+            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vandaag</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{expectedTodayDeliveries.length}</p>
           <p className="text-slate-500 text-[11px] mt-1">Verwacht</p>
@@ -163,10 +184,10 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
 
         <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
               <TruckIcon size={20} />
             </div>
-            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Magazijn</span>
+            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Onderweg naar Magazijn</span>
           </div>
           <p className="text-3xl font-bold text-slate-900">{enRouteToWarehouse.length}</p>
           <p className="text-slate-500 text-[11px] mt-1">Onderweg naar Magazijn</p>
@@ -281,10 +302,19 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
                       <td className="px-8 py-6">
                         <div className="flex flex-col gap-1.5 min-w-[120px]">
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            {delivery.status}% • {getStatusLabel(delivery)}
+                            {getStatusLabel(delivery)}
                           </span>
-                          <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                            <div className="bg-indigo-600 h-full" style={{ width: `${delivery.status}%` }} />
+                          <div className="flex gap-1">
+                            {getStatusSteps(delivery.type).map((step, idx) => (
+                              <div 
+                                key={step}
+                                className={cn(
+                                  "h-1.5 flex-1 rounded-full",
+                                  idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-100"
+                                )}
+                                title={step}
+                              />
+                            ))}
                           </div>
                         </div>
                       </td>

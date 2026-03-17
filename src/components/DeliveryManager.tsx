@@ -104,6 +104,13 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     }
   };
 
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -639,7 +646,7 @@ Onderwerp: ${subject}
                   </td>
                   <td className="px-8 py-6">
                     <span className="text-sm font-medium text-slate-600">
-                      {delivery.etaWarehouse || delivery.eta || '-'}
+                      {formatDate(delivery.etaWarehouse || delivery.eta)}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
@@ -688,11 +695,8 @@ Onderwerp: ${subject}
                         </button>
                       )}
                       {delivery.notes && (
-                        <div className="relative group/note">
+                        <div className="relative" title={delivery.notes}>
                           <MessageSquare size={18} className="text-slate-400 hover:text-indigo-600 cursor-help" />
-                          <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-800 text-white text-xs rounded-xl opacity-0 group-hover/note:opacity-100 transition-opacity pointer-events-none z-50">
-                            {delivery.notes}
-                          </div>
                         </div>
                       )}
                       {canEdit && (
@@ -997,18 +1001,20 @@ Onderwerp: ${subject}
                     </>
                   )}
 
-                  <div className="space-y-2 col-span-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">Transportkosten (€)</label>
-                    <input 
-                      type="number" 
-                      min="0"
-                      step="0.01"
-                      value={formData.transportCost || ''} 
-                      onChange={e => setFormData({ ...formData, transportCost: e.target.value ? parseFloat(e.target.value) : undefined })} 
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
-                      placeholder="Bijv. 450.00"
-                    />
-                  </div>
+                  {currentUser?.role !== 'staff' && (
+                    <div className="space-y-2 col-span-2">
+                      <label className="text-sm font-bold text-slate-700 ml-4">Transportkosten (€)</label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        step="0.01"
+                        value={formData.transportCost || ''} 
+                        onChange={e => setFormData({ ...formData, transportCost: e.target.value ? parseFloat(e.target.value) : undefined })} 
+                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
+                        placeholder="Bijv. 450.00"
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-2 col-span-2">
                     <label className="text-sm font-bold text-slate-700 ml-4">Opmerkingen</label>
