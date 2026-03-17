@@ -68,10 +68,13 @@ const Statistics = () => {
   });
   const avgLeadTime = completedDeliveries.length > 0 ? Math.round(totalLeadTimeDays / completedDeliveries.length) : 0;
 
-  // Costs Calculation
   const totalCostContainer = deliveries.filter(d => d.type === 'container').reduce((sum, d) => sum + (d.transportCost || 0), 0);
   const totalCostExWorks = deliveries.filter(d => d.type === 'exworks').reduce((sum, d) => sum + (d.transportCost || 0), 0);
   const totalCost = totalCostContainer + totalCostExWorks;
+
+  // Cost per Pallet Calculation
+  const totalPallets = deliveries.reduce((sum, d) => sum + (d.palletCount || 0), 0);
+  const avgCostPerPallet = totalPallets > 0 ? Math.round(totalCost / totalPallets) : 0;
 
   const costData = [
     { name: 'Container', value: totalCostContainer },
@@ -96,6 +99,28 @@ const Statistics = () => {
         <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Supply Chain Dashboard</h2>
         <p className="text-slate-500 mt-1">Inzicht in prestaties, kosten en doorlooptijden van al je leveringen.</p>
       </header>
+
+      {/* Warning Banners */}
+      {supplierStats.some(s => s.reliability < 80) && (
+        <div className="bg-orange-50 border border-orange-200 rounded-3xl p-6 flex items-start gap-4">
+          <div className="p-3 bg-orange-100 text-orange-600 rounded-xl shrink-0">
+            <AlertTriangle size={24} />
+          </div>
+          <div>
+            <h3 className="text-orange-900 font-bold text-lg mb-1">Aandacht Vereist: Lage OTIF Score</h3>
+            <p className="text-orange-800/80 mb-3">
+              Een of meerdere leveranciers presteren momenteel onder de norm van 80% betrouwbaarheid.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {supplierStats.filter(s => s.reliability < 80).map(s => (
+                <span key={s.name} className="px-3 py-1 bg-white/60 text-orange-900 text-sm font-medium rounded-full">
+                  {s.name} ({s.reliability}%)
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -123,11 +148,11 @@ const Statistics = () => {
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-500 font-bold text-sm uppercase tracking-wider">Totale Transportkosten</h3>
+            <h3 className="text-slate-500 font-bold text-sm uppercase tracking-wider">Gem. Kosten per Pallet</h3>
             <div className="p-2 bg-amber-50 text-amber-600 rounded-xl"><DollarSign size={20} /></div>
           </div>
           <div>
-            <span className="text-3xl font-black text-slate-900">{formatCurrency(totalCost)}</span>
+            <span className="text-4xl font-black text-slate-900">{formatCurrency(avgCostPerPallet)}</span>
           </div>
         </div>
 

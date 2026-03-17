@@ -394,6 +394,8 @@ Onderwerp: ${subject}
   };
 
   const canEdit = currentUser.role !== 'viewer';
+  // Admin or a logistic manager role (assuming 'manager' or a specific custom role name; here we use 'manager' which is already a defined role)
+  const canMailTransport = currentUser.role === 'admin' || currentUser.role === 'manager';
 
   const handleExportCSV = () => {
     const headers = ['Referentie', 'Type', 'Status', 'ETA Magazijn', 'Aantal Pallets'].join(',');
@@ -587,7 +589,7 @@ Onderwerp: ${subject}
                           Transport aanvragen
                         </button>
                       )}
-                      {delivery.type === 'exworks' && delivery.status === 25 && canEdit && (
+                      {delivery.type === 'exworks' && delivery.status === 25 && canEdit && canMailTransport && (
                         <button 
                           onClick={() => handleSendTransportEmail(delivery)}
                           className="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-full hover:bg-indigo-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
