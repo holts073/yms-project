@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { useSocket } from '../SocketContext';
 import { 
-  AlertCircle, 
-  Clock, 
-  CheckCircle2, 
+  AlertCircle,
+  Clock,
+  CheckCircle2,
   ChevronRight,
   Package,
+  Check,
   FileText,
   Truck as TruckIcon,
   ArrowUpDown,
   Shield,
-  Calendar
+  Calendar,
+  Plus,
+  ArrowRight
 } from 'lucide-react';
 
 const formatDate = (dateStr: string) => {
@@ -31,10 +34,70 @@ const formatDate = (dateStr: string) => {
 import { useDeliveries } from '../hooks/useDeliveries';
 
 const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: string, id?: string) => void }) => {
-  const { state } = useSocket();
+  const { state, dispatch, currentUser } = useSocket();
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', true);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [filterType, setFilterType] = useState<'action' | 'today'>('action');
+
+  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
+  const canMailTransport = currentUser?.role === 'admin' || currentUser?.role === 'manager';
+
+  const setManualStatus = (delivery: any, newStatus: number) => {
+    const updatedDelivery = {
+      ...delivery,
+      status: newStatus,
+      statusHistory: [...(delivery.statusHistory || []), delivery.status],
+      updatedAt: new Date().toISOString(),
+      auditTrail: [
+        ...(delivery.auditTrail || []),
+        {
+          timestamp: new Date().toISOString(),
+          user: currentUser?.name || 'Unknown',
+          action: 'Status Update',
+          details: `Status via Dashboard gewijzigd naar ${newStatus}%`
+        }
+      ]
+    };
+    dispatch('UPDATE_DELIVERY', updatedDelivery);
+  };
+
+  const handleSendTransportEmail = (delivery: any) => {
+    const supplier = state?.addressBook?.suppliers.find(s => s.id === delivery.supplierId);
+    const transporter = state?.addressBook?.transporters.find(t => t.id === delivery.transporterId);
+    
+    if (!supplier || !transporter) {
+      alert('Leverancier of transporteur niet gevonden.');
+      return;
+    }
+
+    const subject = `Transport Order - Ref: ${delivery.reference}`;
+    let emailBody = state?.companySettings?.transportTemplate || 
+      'Beste vervoerder,\n\nHierbij de transport order voor {reference}.\n\nLeverancier: {supplier}\nOpmerkingen: {notes}\nTransportkosten: {cost}\n\nMet vriendelijke groet,\nILG Foodgroup';
+    
+    const costString = delivery.transportCost !== undefined 
+      ? new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(delivery.transportCost)
+      : 'N.v.t.';
+
+    emailBody = emailBody
+      .replace(/{reference}/g, delivery.reference)
+      .replace(/{supplierName}/g, supplier.name)
+      .replace(/{supplierAddress}/g, supplier.address || '')
+      .replace(/{loadingCity}/g, delivery.loadingCity || '')
+      .replace(/{loadingCountry}/g, delivery.loadingCountry || '')
+      .replace(/{palletCount}/g, (delivery.palletCount || 0).toString())
+      .replace(/{palletType}/g, delivery.palletType || '-')
+      .replace(/{weight}/g, delivery.weight ? `${delivery.weight} kg` : '-')
+      .replace(/{cargoType}/g, delivery.cargoType || 'Dry')
+      .replace(/{etaWarehouse}/g, delivery.etaWarehouse || '-')
+      .replace(/{companyName}/g, state?.companySettings?.name || 'ILG Foodgroup')
+      .replace(/{companyAddress}/g, state?.companySettings?.address || '')
+      .replace(/{supplierRemarks}/g, supplier.remarks || '-')
+      .replace(/{transporterRemarks}/g, transporter.remarks || '-')
+      .replace(/{notes}/g, delivery.notes || '')
+      .replace(/{cost}/g, costString);
+
+    window.open(`mailto:${transporter.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`);
+  };
 
   const getStatusLabel = (delivery: any) => {
     if (delivery.status === 100) return 'Afgeleverd';
@@ -339,9 +402,45 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
                         </span>
                       </td>
                       <td className="px-8 py-6 text-right">
-                        <button className="text-indigo-600 hover:text-indigo-700 text-sm font-bold flex items-center gap-1 ml-auto">
-                          Bekijken <ChevronRight size={16} />
-                        </button>
+                        <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                          {delivery.type === 'exworks' && delivery.status < 25 && canEdit && (
+                            <button 
+                              onClick={() => setManualStatus(delivery, 25)}
+                              className="px-3 py-1.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full hover:bg-amber-100 transition-all uppercase tracking-wider"
+                            >
+                              Aanvragen
+                            </button>
+                          )}
+                          {delivery.type === 'exworks' && delivery.status >= 25 && delivery.status < 50 && canEdit && canMailTransport && (
+                            <button 
+                              onClick={() => handleSendTransportEmail(delivery)}
+                              className="p-2 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all shadow-sm"
+                              title="Mail Transport Order"
+                            >
+                              <FileText size={16} />
+                            </button>
+                          )}
+                          {delivery.type === 'container' && delivery.status >= 50 && delivery.status < 75 && canEdit && (
+                            <button 
+                              onClick={() => setManualStatus(delivery, 75)}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full hover:bg-blue-100 transition-all uppercase tracking-wider"
+                            >
+                              Onderweg
+                            </button>
+                          )}
+                          {delivery.status >= 50 && delivery.status < 100 && canEdit && (
+                            <button 
+                              onClick={() => setManualStatus(delivery, 100)}
+                              className="p-2 bg-emerald-50 text-emerald-600 rounded-full hover:bg-emerald-100 transition-all shadow-sm"
+                              title="Zet op Afgeleverd"
+                            >
+                              <Check size={16} />
+                            </button>
+                          )}
+                          <button className="text-indigo-600 hover:text-indigo-700 text-sm font-bold flex items-center gap-1 ml-2">
+                            Bekijken <ChevronRight size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     );

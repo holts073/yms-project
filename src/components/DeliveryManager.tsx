@@ -661,7 +661,7 @@ Onderwerp: ${subject}
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
-                      {delivery.type === 'exworks' && delivery.status === 0 && canEdit && (
+                      {delivery.type === 'exworks' && delivery.status < 25 && canEdit && (
                         <button 
                           onClick={() => setManualStatus(delivery, 25)}
                           className="px-3 py-1.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full hover:bg-amber-100 transition-all uppercase tracking-wider"
@@ -669,7 +669,7 @@ Onderwerp: ${subject}
                           Transport aanvragen
                         </button>
                       )}
-                      {delivery.type === 'exworks' && delivery.status === 25 && canEdit && canMailTransport && (
+                      {delivery.type === 'exworks' && delivery.status >= 25 && delivery.status < 50 && canEdit && canMailTransport && (
                         <button 
                           onClick={() => handleSendTransportEmail(delivery)}
                           className="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-full hover:bg-indigo-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
@@ -678,7 +678,7 @@ Onderwerp: ${subject}
                           Mail Transport Order
                         </button>
                       )}
-                      {delivery.type === 'container' && delivery.status === 50 && canEdit && (
+                      {delivery.type === 'container' && delivery.status >= 50 && delivery.status < 75 && canEdit && (
                         <button 
                           onClick={() => setManualStatus(delivery, 75)}
                           className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full hover:bg-blue-100 transition-all uppercase tracking-wider"
@@ -686,7 +686,7 @@ Onderwerp: ${subject}
                           Markeer 'Onderweg naar Magazijn'
                         </button>
                       )}
-                      {delivery.type === 'container' && delivery.status === 75 && canEdit && (
+                      {delivery.type === 'container' && delivery.status >= 75 && delivery.status < 100 && canEdit && (
                         <button 
                           onClick={() => setManualStatus(delivery, 100)}
                           className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
@@ -695,7 +695,7 @@ Onderwerp: ${subject}
                           Zet op 'Afgeleverd'
                         </button>
                       )}
-                      {delivery.type === 'exworks' && delivery.status === 50 && canEdit && (
+                      {delivery.type === 'exworks' && delivery.status >= 50 && delivery.status < 100 && canEdit && (
                         <button 
                           onClick={() => setManualStatus(delivery, 100)}
                           className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
