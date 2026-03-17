@@ -289,13 +289,20 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       }
     }
 
-    dispatch('UPDATE_DELIVERY', { 
+    const updatedDelivery = {
       ...delivery, 
       documents: updatedDocs, 
       status: newStatusPct,
       statusHistory: history,
       updatedAt: new Date().toISOString()
-    });
+    };
+    
+    // Optimistic UI update for the modal
+    if (editingDelivery && editingDelivery.id === delivery.id) {
+       setEditingDelivery(updatedDelivery);
+    }
+
+    dispatch('UPDATE_DELIVERY', updatedDelivery);
   };
 
   const handleSendTransportEmail = (delivery: Delivery) => {

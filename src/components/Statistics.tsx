@@ -13,11 +13,12 @@ import {
   Pie
 } from 'recharts';
 import { TrendingUp, Award, AlertTriangle, Clock, Target, DollarSign, Package } from 'lucide-react';
-import { clsx as cn } from 'clsx';
+import { useDeliveries } from '../hooks/useDeliveries';
 
 const Statistics = () => {
   const { state } = useSocket();
-  const { deliveries = [], addressBook } = state || {};
+  const { addressBook } = state || {};
+  const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', false);
 
   const activeSupplierIds = new Set(deliveries.filter(d => d.status < 100).map(d => d.supplierId));
 
