@@ -235,7 +235,6 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
                           )}>
                             {delivery.type === 'container' ? <Package size={16} /> : <TruckIcon size={16} />}
                           </div>
-                          <div>
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-bold text-slate-900">{delivery.reference}</p>
                               {supplier?.otif && (
@@ -244,9 +243,16 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
                                 </span>
                               )}
                             </div>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-wider">{delivery.type} • {supplier?.name || 'Onbekend'}</p>
+                            <div className="flex flex-col gap-0.5 mt-0.5">
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider">{delivery.type} • {supplier?.name || 'Onbekend'}</p>
+                              {delivery.containerNumber && (
+                                <p className="text-[10px] text-slate-500 font-medium">Cont: <span className="text-slate-700">{delivery.containerNumber}</span></p>
+                              )}
+                              {delivery.type === 'container' && delivery.billOfLading && (
+                                <p className="text-[10px] text-slate-500 font-medium">B/L: <span className="text-slate-700">{delivery.billOfLading}</span></p>
+                              )}
+                            </div>
                           </div>
-                        </div>
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex flex-col gap-1">

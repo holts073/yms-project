@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Delivery, DeliveryType, Document } from '../types';
+import { Combobox } from './ui/Combobox';
 
 const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
   { name: 'Seaway Bill', status: 'missing', required: true },
@@ -44,6 +45,8 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'eta', direction: 'asc' });
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   // Sync filter with initialFilter if it changes
   useEffect(() => {
@@ -117,7 +120,16 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     }
 
     return list;
-  }, [allDeliveries, filter, sortConfig]);
+  }, [allDeliveries, filter, sortConfig, typeFilter]);
+
+  const totalPages = Math.ceil(deliveries.filter(d => d.status < 100).length / ITEMS_PER_PAGE);
+
+  // Pagination slicing
+  const paginatedDeliveries = useMemo(() => {
+    const activeDeliveries = deliveries.filter(d => d.status < 100);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return activeDeliveries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [deliveries, currentPage]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => 
@@ -501,9 +513,7 @@ Onderwerp: ${subject}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {deliveries
-                .filter(d => d.status < 100)
-                .map((delivery) => {
+              {paginatedDeliveries.map((delivery) => {
                   const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
                   
                   // Dynamic Risk Calculation for Ex-Works
@@ -513,17 +523,26 @@ Onderwerp: ${subject}
                   if (delivery.type === 'exworks' && delivery.status === 0 && delivery.etaWarehouse) {
                     const etaDate = new Date(delivery.etaWarehouse);
                     const today = new Date();
-                    
-                    // Reset time to compare just the dates
                     etaDate.setHours(0,0,0,0);
                     today.setHours(0,0,0,0);
-                    
-                    const diffTime = etaDate.getTime() - today.getTime();
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
+                    const diffDays = Math.ceil((etaDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                     if (diffDays <= 7) {
                       displayRisk = 'high';
                       displayReason = "Vraag direct transport aan (Minder dan 7 dagen tot ETA).";
+                    }
+                  } else if (delivery.type === 'container' && delivery.status < 50 && delivery.etaPort) {
+                    // Check if NOA is still missing and ETA Port is soon
+                    const noaMissing = delivery.documents.find(d => d.name === 'Notification of Arrival')?.status === 'missing';
+                    if (noaMissing) {
+                      const etaPortDate = new Date(delivery.etaPort);
+                      const today = new Date();
+                      etaPortDate.setHours(0,0,0,0);
+                      today.setHours(0,0,0,0);
+                      const diffDays = Math.ceil((etaPortDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                      if (diffDays <= 7) {
+                        displayRisk = 'high';
+                        displayReason = "Documentatie (NOA) ontbreekt en schip arriveert binnen 7 dagen.";
+                      }
                     }
                   }
 
@@ -568,7 +587,20 @@ Onderwerp: ${subject}
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{delivery.containerNumber || delivery.cargoType || '-'}</p>
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {delivery.containerNumber && (
+                        <p className="text-[11px] text-slate-500 font-medium">Cont: <span className="text-slate-700">{delivery.containerNumber}</span></p>
+                      )}
+                      {delivery.type === 'container' && delivery.billOfLading && (
+                        <p className="text-[11px] text-slate-500 font-medium">B/L: <span className="text-slate-700">{delivery.billOfLading}</span></p>
+                      )}
+                      {delivery.type === 'exworks' && delivery.cargoType && (
+                        <p className="text-[11px] text-slate-500 font-medium">{delivery.cargoType}</p>
+                      )}
+                      {(!delivery.containerNumber && !delivery.billOfLading && delivery.type === 'container') && (
+                        <p className="text-[11px] text-slate-400">-</p>
+                      )}
+                    </div>
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex flex-col">
@@ -684,6 +716,31 @@ Onderwerp: ${subject}
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="px-8 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-500">
+              Pagina {currentPage} van {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Vorige
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Volgende
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bulk Actions Bar */}
@@ -819,29 +876,24 @@ Onderwerp: ${subject}
 
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-4">Leverancier</label>
-                    <select 
-                      required
+                    <Combobox 
                       value={formData.supplierId}
-                      onChange={e => setFormData({ ...formData, supplierId: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
-                    >
-                      <option value="">Kies leverancier...</option>
-                      {addressBook?.suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, supplierId: val })}
+                      options={(addressBook?.suppliers || []).map(s => ({ value: s.id, label: s.name }))}
+                      placeholder="Kies leverancier..."
+                    />
                   </div>
 
                   {formData.type === 'container' ? (
                     <>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Expediteur</label>
-                        <select 
+                        <Combobox 
                           value={formData.forwarderId}
-                          onChange={e => setFormData({ ...formData, forwarderId: e.target.value })}
-                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
-                        >
-                          <option value="">Kies expediteur...</option>
-                          {addressBook?.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
+                          onChange={(val) => setFormData({ ...formData, forwarderId: val })}
+                          options={(addressBook?.transporters || []).map(t => ({ value: t.id, label: t.name }))}
+                          placeholder="Kies expediteur..."
+                        />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">ETD</label>
