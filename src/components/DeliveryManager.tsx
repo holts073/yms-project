@@ -31,7 +31,9 @@ const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
 ];
 
 const EXWORKS_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Transport Order', status: 'missing', required: true }
+  { name: 'CMR / Vrachtbrief', status: 'missing', required: true },
+  { name: 'Commercial Invoice', status: 'missing', required: true },
+  { name: 'Packing List', status: 'missing', required: true }
 ];
 
 import { useDeliveries } from '../hooks/useDeliveries';
@@ -69,20 +71,24 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     window.history.replaceState({}, '', newUrl);
   }, [filter, typeFilter, sortConfig, currentPage]);
 
+  const { deliveries: paginatedDeliveries, totalPages, loading } = useDeliveries(
+    currentPage, ITEMS_PER_PAGE, filter, typeFilter, sortConfig?.key || 'eta', true
+  );
+
   // Handle initialSelectedId
   useEffect(() => {
     if (!initialSelectedId) {
       setLastOpenedId(null);
     } else if (lastOpenedId !== initialSelectedId) {
-      // NOTE: With server-side pagination, the specific delivery might not be on page 1.
-      // Ideally we'd fetch it, but for now we rely on user navigation if it's missing.
-      setLastOpenedId(initialSelectedId);
+      // Find the delivery in the current list or wait for it to load
+      const found = paginatedDeliveries.find(d => d.id === initialSelectedId);
+      if (found) {
+        setEditingDelivery(found);
+        setIsModalOpen(true);
+        setLastOpenedId(initialSelectedId);
+      }
     }
-  }, [initialSelectedId, lastOpenedId]);
-
-  const { deliveries: paginatedDeliveries, totalPages, loading } = useDeliveries(
-    currentPage, ITEMS_PER_PAGE, filter, typeFilter, sortConfig?.key || 'eta', true
-  );
+  }, [initialSelectedId, lastOpenedId, paginatedDeliveries]);
 
   const currentModalDelivery = useMemo(() => {
     if (!editingDelivery) return null;
@@ -269,7 +275,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     const history = [...(delivery.statusHistory || [])];
 
     if (delivery.type === 'container') {
-      const swb = updatedDocs.find(d => d.name === 'Seaway Bill')?.status === 'received';
+      const swb = updatedDocs.find(d => d.name === 'Seaway Bill / B/L')?.status === 'received';
       const noa = updatedDocs.find(d => d.name === 'Notification of Arrival')?.status === 'received';
 
       if (newStatus === 'received') {
@@ -284,13 +290,19 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
           if (doc.name === 'Notification of Arrival' && delivery.status === 50) {
               history.push(delivery.status);
               newStatusPct = 25;
+          } else if (doc.name === 'Seaway Bill / B/L' && delivery.status === 25) {
+              history.push(delivery.status);
+              newStatusPct = 0;
           }
       }
     } else if (delivery.type === 'exworks') {
-      const transportOrder = updatedDocs.find(d => d.name === 'Transport Order')?.status === 'received';
-      if (newStatus === 'received' && doc.name === 'Transport Order' && delivery.status < 50) {
+      const cmr = updatedDocs.find(d => d.name === 'CMR / Vrachtbrief')?.status === 'received';
+      if (newStatus === 'received' && doc.name === 'CMR / Vrachtbrief' && delivery.status < 50) {
         history.push(delivery.status);
         newStatusPct = 50;
+      } else if (newStatus === 'missing' && doc.name === 'CMR / Vrachtbrief' && delivery.status === 50) {
+        history.push(delivery.status);
+        newStatusPct = 0;
       }
     }
 

@@ -142,11 +142,15 @@ export function saveAddressBookEntry(entry: AddressEntry) {
     .run(entry.id, entry.type, entry.name, entry.contact, entry.email, entry.address, entry.pickupAddress, entry.otif, entry.remarks);
 }
 
+export function deleteAddressEntry(id: string) {
+  db.prepare('DELETE FROM address_book WHERE id = ?').run(id);
+}
+
 export function getLogs() {
   return db.prepare('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 100').all();
 }
 
 export function addLog(log: any) {
-  db.prepare('INSERT INTO logs (id, timestamp, user, action, details) VALUES (?, ?, ?, ?, ?)')
-    .run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details);
+  db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details, log.reference || null);
 }

@@ -11,14 +11,16 @@ import nodemailer from "nodemailer";
 import {
   getDeliveries,
   insertDelivery,
+  getAllDeliveries,
   deleteDelivery,
   getUsers,
   saveUser,
+  deleteUser,
   getAddressBook,
   saveAddressBookEntry,
+  deleteAddressEntry,
   getLogs,
-  addLog,
-  getAllDeliveries
+  addLog
 } from './src/db/queries';
 import { getSetting, saveSetting } from './src/db/sqlite';
 
@@ -91,6 +93,14 @@ async function startServer() {
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
     const { passwordHash, ...safeUser } = user;
+
+    addLog({
+      timestamp: new Date().toISOString(),
+      user: user.name,
+      action: "Login Successful",
+      details: `User logged in from ${req.ip}`
+    });
+
     res.json({ token, user: safeUser });
   });
 
@@ -135,6 +145,13 @@ async function startServer() {
         text: `Beste ${user.name},\n\nUw wachtwoord is gereset. Uw nieuwe tijdelijke wachtwoord is: ${tempPassword}\n\nWe raden u aan dit direct na het inloggen te wijzigen.\n\nMet vriendelijke groet,\nILG Foodgroup YMS`
       });
 
+      addLog({
+        timestamp: new Date().toISOString(),
+        user: "SYSTEM",
+        action: "Password Reset Request",
+        details: `Password reset sent to ${email}`
+      });
+
       res.json({ success: true, message: "Wachtwoord gereset. Controleer uw e-mail." });
     } catch (error) {
       console.error("SMTP Error:", error);
@@ -172,7 +189,8 @@ async function startServer() {
         timestamp,
         user: user.name,
         action: "",
-        details: ""
+        details: "",
+        reference: ""
       };
 
       try {
@@ -194,6 +212,7 @@ async function startServer() {
             insertDelivery(newDelivery);
             logEntry.action = "Created Delivery";
             logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
+            logEntry.reference = payload.reference;
             io.emit("DELIVERY_UPDATED"); // Notify clients to redraw
             break;
           }
@@ -204,6 +223,7 @@ async function startServer() {
             insertDelivery(newPayload);
             logEntry.action = "Updated Delivery";
             logEntry.details = `Updated delivery: ${newPayload.reference}`;
+            logEntry.reference = newPayload.reference;
             io.emit("DELIVERY_UPDATED");
             break;
           }
@@ -259,6 +279,22 @@ async function startServer() {
             saveSetting('settings', payload);
             logEntry.action = "Updated Settings";
             logEntry.details = "Updated terminology settings";
+            io.emit("state_update", buildStaticState());
+            break;
+          
+          case "DELETE_USER":
+            if (user.role === 'admin') {
+              deleteUser(payload);
+              logEntry.action = "Deleted User";
+              logEntry.details = `Deleted user ID: ${payload}`;
+              io.emit("state_update", buildStaticState());
+            }
+            break;
+
+          case "DELETE_ADDRESS":
+            deleteAddressEntry(payload.id);
+            logEntry.action = "Deleted Address Block";
+            logEntry.details = `Deleted ${payload.category} ID: ${payload.id}`;
             io.emit("state_update", buildStaticState());
             break;
         }

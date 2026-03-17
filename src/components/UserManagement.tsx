@@ -8,7 +8,8 @@ import {
   Eye,
   Plus,
   X,
-  Mail
+  Mail,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, UserRole } from '../types';
@@ -63,6 +64,12 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
 
   const updateRole = (user: User, newRole: UserRole) => {
     dispatch('UPDATE_USER', { ...user, role: newRole });
+  };
+
+  const handleDeleteUser = (id: string) => {
+    if (window.confirm('Weet u zeker dat u deze gebruiker wilt verwijderen?')) {
+      dispatch('DELETE_USER', id);
+    }
   };
 
   const getRoleIcon = (role: UserRole) => {
@@ -152,6 +159,14 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                         className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors text-xs font-bold"
                       >
                         Rechten / Edit
+                      </button>
+                    )}
+                    {user.id !== currentUser.id && currentUser.role === 'admin' && (
+                      <button 
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>

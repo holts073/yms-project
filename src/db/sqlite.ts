@@ -82,7 +82,8 @@ db.exec(`
     timestamp TEXT NOT NULL,
     user TEXT NOT NULL,
     action TEXT NOT NULL,
-    details TEXT
+    details TEXT,
+    reference TEXT
   );
 
   CREATE TABLE IF NOT EXISTS audit_logs (
@@ -100,6 +101,14 @@ db.exec(`
     value TEXT NOT NULL -- JSON string
   );
 `);
+
+// Migration for logs table
+try {
+  db.prepare("ALTER TABLE logs ADD COLUMN reference TEXT").run();
+} catch (e) {
+  // Column already exists
+}
+
 
 // Helper for settings
 export function getSetting(key: string, defaultValue: any = null) {

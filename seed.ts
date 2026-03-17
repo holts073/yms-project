@@ -53,14 +53,15 @@ const seedDatabase = async () => {
     etaDate.setDate(today.getDate() + offsetETA);
 
     const docs = isContainer ? [
-      { id: Math.random().toString(36).substr(2, 9), name: 'Seaway Bill / B/L', status: status >= 50 ? 'received' : 'pending', required: true },
+      { id: Math.random().toString(36).substr(2, 9), name: 'Seaway Bill / B/L', status: status >= 25 ? 'received' : 'pending', required: true },
       { id: Math.random().toString(36).substr(2, 9), name: 'Commercial Invoice', status: status >= 25 ? 'received' : 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Packing List', status: 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Notification of Arrival', status: status >= 60 ? 'received' : 'missing', required: true },
+      { id: Math.random().toString(36).substr(2, 9), name: 'Packing List', status: status >= 25 ? 'received' : 'pending', required: true },
+      { id: Math.random().toString(36).substr(2, 9), name: 'Notification of Arrival', status: status >= 50 ? 'received' : 'missing', required: true },
       { id: Math.random().toString(36).substr(2, 9), name: 'Certificate of Origin', status: 'pending', required: false }
     ] : [
-      { id: Math.random().toString(36).substr(2, 9), name: 'CMR', status: status >= 80 ? 'received' : 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Pakbon', status: 'pending', required: true }
+      { id: Math.random().toString(36).substr(2, 9), name: 'CMR / Vrachtbrief', status: status >= 50 ? 'received' : 'pending', required: true },
+      { id: Math.random().toString(36).substr(2, 9), name: 'Commercial Invoice', status: status >= 50 ? 'received' : 'pending', required: true },
+      { id: Math.random().toString(36).substr(2, 9), name: 'Packing List', status: status >= 50 ? 'received' : 'pending', required: true }
     ];
 
     return {
