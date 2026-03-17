@@ -23,10 +23,10 @@ import { Delivery, DeliveryType, Document } from '../types';
 import { Combobox } from './ui/Combobox';
 
 const CONTAINER_DOCS: Omit<Document, 'id'>[] = [
-  { name: 'Seaway Bill', status: 'missing', required: true },
+  { name: 'Seaway Bill / B/L', status: 'missing', required: true },
+  { name: 'Commercial Invoice', status: 'missing', required: true },
+  { name: 'Packing List', status: 'missing', required: true },
   { name: 'Notification of Arrival', status: 'missing', required: true },
-  { name: 'Factuur', status: 'missing', required: false },
-  { name: 'Packing List', status: 'missing', required: false },
   { name: 'Certificate of Origin', status: 'missing', required: false }
 ];
 
@@ -273,7 +273,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       const noa = updatedDocs.find(d => d.name === 'Notification of Arrival')?.status === 'received';
 
       if (newStatus === 'received') {
-        if (doc.name === 'Seaway Bill' && delivery.status < 25) {
+        if (doc.name === 'Seaway Bill / B/L' && delivery.status < 25) {
           history.push(delivery.status);
           newStatusPct = 25;
         } else if (doc.name === 'Notification of Arrival' && delivery.status < 50) {
@@ -281,8 +281,6 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
           newStatusPct = 50;
         }
       } else if (newStatus === 'missing') {
-          // If we are unchecking Notification of Arrival and we were at Douane (50), revert to In Transit (25)
-          // Ensure we don't accidentally downgrade if they manually set to 100
           if (doc.name === 'Notification of Arrival' && delivery.status === 50) {
               history.push(delivery.status);
               newStatusPct = 25;
