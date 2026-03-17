@@ -9,15 +9,23 @@ import {
   Plus,
   X,
   Mail,
-  Trash2
+  Trash2,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, UserRole } from '../types';
+
+// Utility for conditional class names
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(' ');
+}
 
 const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
   const { state, dispatch, currentUser } = useSocket();
   const { users = [] } = state || {};
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -35,15 +43,21 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
         id: editingUserId,
         ...formData
       });
+      setFeedback({ type: 'success', message: 'Gebruiker aangepast' });
     } else {
       dispatch('ADD_USER', {
         id: Math.random().toString(36).substr(2, 9),
         ...formData
       });
+      setFeedback({ type: 'success', message: 'Gebruiker toegevoegd (als e-mail uniek is)' });
     }
-    setIsModalOpen(false);
-    setEditingUserId(null);
-    setFormData({ name: '', email: '', role: 'staff', password: '', permissions: {} });
+    
+    setTimeout(() => {
+      setIsModalOpen(false);
+      setEditingUserId(null);
+      setFormData({ name: '', email: '', role: 'staff', password: '', permissions: {} });
+      setFeedback(null);
+    }, 2000);
   };
 
   const openEditModal = (user: User) => {
@@ -55,12 +69,14 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
       role: user.role,
       permissions: user.permissions || {}
     });
+    setFeedback(null);
     setIsModalOpen(true);
   };
 
   const openNewModal = () => {
     setEditingUserId(null);
     setFormData({ name: '', email: '', password: '', role: 'staff', permissions: {} });
+    setFeedback(null);
     setIsModalOpen(true);
   };
 
@@ -104,7 +120,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
       {embedded && (
         <div className="flex justify-end mb-4">
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={openNewModal}
             className="bg-indigo-600 text-white px-6 py-3 rounded-full font-bold flex items-center gap-3 shadow-md hover:bg-indigo-700 transition-all active:scale-95 text-sm"
           >
             <Plus size={16} />
@@ -116,67 +132,67 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
       <div className={cn("bg-white rounded-[2.5rem] overflow-hidden", embedded ? "border border-slate-100" : "border border-slate-200 shadow-sm")}>
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[600px]">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Gebruiker</th>
-              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">E-mail</th>
-              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
-              <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Acties</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shrink-0">
-                      <UserIcon size={20} />
-                    </div>
-                    <span className="font-bold text-slate-900 truncate max-w-[150px]">{user.name}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-slate-500 text-sm font-medium truncate max-w-[200px]">{user.email}</td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    {getRoleIcon(user.role)}
-                    <span className="text-sm font-bold text-slate-700 capitalize">{user.role}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <select 
-                      value={user.role}
-                      onChange={(e) => updateRole(user, e.target.value as UserRole)}
-                      disabled={user.id === currentUser.id}
-                      className="bg-slate-100 border-none rounded-full px-4 py-2 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                      <option value="staff">Staff</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
-                    {user.id !== currentUser.id && (
-                      <button 
-                        onClick={() => openEditModal(user)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors text-xs font-bold"
-                      >
-                        Rechten / Edit
-                      </button>
-                    )}
-                    {user.id !== currentUser.id && currentUser.role === 'admin' && (
-                      <button 
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </td>
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Gebruiker</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">E-mail</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Acties</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shrink-0">
+                        <UserIcon size={20} />
+                      </div>
+                      <span className="font-bold text-slate-900 truncate max-w-[150px]">{user.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-slate-500 text-sm font-medium truncate max-w-[200px]">{user.email}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {getRoleIcon(user.role)}
+                      <span className="text-sm font-bold text-slate-700 capitalize">{user.role}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <select 
+                        value={user.role}
+                        onChange={(e) => updateRole(user, e.target.value as UserRole)}
+                        disabled={user.id === currentUser?.id}
+                        className="bg-slate-100 border-none rounded-full px-4 py-2 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="manager">Manager</option>
+                        <option value="staff">Staff</option>
+                        <option value="viewer">Viewer</option>
+                      </select>
+                      {user.id !== currentUser?.id && (
+                        <button 
+                          onClick={() => openEditModal(user)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors text-xs font-bold"
+                        >
+                          Rechten / Edit
+                        </button>
+                      )}
+                      {user.id !== currentUser?.id && currentUser?.role === 'admin' && (
+                        <button 
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -187,7 +203,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => !feedback && setIsModalOpen(false)}
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
             <motion.div 
@@ -204,7 +220,20 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                   </button>
                 </div>
 
-                <div className="space-y-6">
+                {feedback ? (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={cn(
+                      "p-8 rounded-3xl flex flex-col items-center justify-center text-center gap-4",
+                      feedback.type === 'success' ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"
+                    )}
+                  >
+                    {feedback.type === 'success' ? <CheckCircle2 size={48} className="text-emerald-500" /> : <AlertCircle size={48} className="text-red-500" />}
+                    <p className="font-bold text-lg">{feedback.message}</p>
+                  </motion.div>
+                ) : (
+                  <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-4">Naam</label>
                     <input 
@@ -285,11 +314,14 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                       </div>
                     </div>
                   )}
-                </div>
+                  </div>
+                )}
 
-                <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
-                  {editingUserId ? 'Opslaan' : 'Gebruiker Toevoegen'}
-                </button>
+                <div className="pt-4">
+                  <button disabled={!!feedback} type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all disabled:opacity-50">
+                    {editingUserId ? 'Opslaan' : 'Gebruiker Toevoegen'}
+                  </button>
+                </div>
               </form>
             </motion.div>
           </div>
@@ -300,7 +332,3 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
 };
 
 export default UserManagement;
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
-}

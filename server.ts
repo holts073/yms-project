@@ -296,6 +296,16 @@ async function startServer() {
           case "ADD_USER": {
             const { password, ...newUserData } = payload;
             if (newUserData.email) newUserData.email = newUserData.email.toLowerCase();
+            
+            // Check for existing user with same email
+            const existingUsers = getUsers();
+            if (existingUsers.find(u => u.email === newUserData.email)) {
+              console.error(`[ADD_USER] FAILED: Email ${newUserData.email} already exists.`);
+              logEntry.action = "User Addition Failed";
+              logEntry.details = `Failed to add user ${newUserData.name} - Duplicate email: ${newUserData.email}`;
+              break; 
+            }
+
             const salt = bcrypt.genSaltSync(10);
             newUserData.passwordHash = bcrypt.hashSync(password || 'welkom123', salt);
             saveUser(newUserData);
@@ -349,8 +359,13 @@ async function startServer() {
           io.emit("state_update", buildStaticState());
         }
 
-      } catch (err) {
-        console.error("Action Error:", err);
+      } catch (err: any) {
+        console.error("Action Error Details:", {
+          type,
+          user: user?.name,
+          error: err?.message || err,
+          stack: err?.stack
+        });
       }
     });
   });
