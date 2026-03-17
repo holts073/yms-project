@@ -62,6 +62,7 @@ export interface Delivery {
   loadingCountry?: string;
   loadingCity?: string;
   cargoType?: 'Dry' | 'Cool' | 'Frozen';
+  loadingTime?: string;
 }
 
 export interface LogEntry {

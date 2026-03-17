@@ -157,7 +157,8 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     cargoType: 'Dry',
     transportCost: undefined,
     weight: undefined,
-    palletType: 'EUR'
+    palletType: 'EUR',
+    loadingTime: ''
   });
 
   const handleOpenModal = (delivery?: Delivery) => {
@@ -191,7 +192,8 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         cargoType: 'Dry',
         transportCost: undefined,
         weight: undefined,
-        palletType: 'EUR'
+        palletType: 'EUR',
+        loadingTime: ''
       });
     }
     setIsModalOpen(true);
@@ -319,50 +321,52 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
 
     const subject = `Transport Order - Ref: ${delivery.reference}`;
     
-    // Fill the template from settings
-    let emailBody = state?.companySettings?.transportTemplate || 
-      'Beste vervoerder,\n\nHierbij de transport order voor {reference}.\n\nLeverancier: {supplier}\nOpmerkingen: {notes}\nTransportkosten: {cost}\n\nMet vriendelijke groet,\nILG Foodgroup';
-    
     // Format the cost
     const costString = delivery.transportCost !== undefined 
       ? new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(delivery.transportCost)
       : 'N.v.t.';
 
-    emailBody = emailBody
-      .replace(/{reference}/g, delivery.reference)
-      .replace(/{supplierName}/g, supplier.name)
-      .replace(/{supplierAddress}/g, supplier.address || '')
-      .replace(/{loadingCity}/g, delivery.loadingCity || '')
-      .replace(/{loadingCountry}/g, delivery.loadingCountry || '')
-      .replace(/{palletCount}/g, (delivery.palletCount || 0).toString())
-      .replace(/{palletType}/g, delivery.palletType || '-')
-      .replace(/{weight}/g, delivery.weight ? `${delivery.weight} kg` : '-')
-      .replace(/{cargoType}/g, delivery.cargoType || 'Dry')
-      .replace(/{etaWarehouse}/g, delivery.etaWarehouse || '-')
-      .replace(/{companyName}/g, state?.companySettings?.name || 'ILG Foodgroup')
-      .replace(/{companyAddress}/g, state?.companySettings?.address || '')
-      .replace(/{supplierRemarks}/g, supplier.remarks || '-')
-      .replace(/{transporterRemarks}/g, transporter.remarks || '-')
-      .replace(/{notes}/g, delivery.notes || '')
-      .replace(/{cost}/g, costString);
-
-    // Construct the "briefpapier" (letterhead) structure for the email
+    // Construct the beautiful 3-section email template
     const company = state?.companySettings || { name: 'ILG Foodgroup', address: '', phone: '', email: '' };
-    const letterHead = `${company.name}
+    
+    const emailBody = `
+Beste ${transporter.name},
+
+Hierbij bevestigen wij de volgende transportopdracht:
+
+--------------------------------------------------------------------------------
+| [LOADING INFORMATION]                     | [DELIVERY INFORMATION]           |
+--------------------------------------------------------------------------------
+| Supplier: ${supplier.name.padEnd(31)} | Destination: ${company.name.padEnd(19)} |
+| Address: ${(supplier.address || '-').padEnd(32)} | Address: ${(company.address || '-').padEnd(23)} |
+| City: ${(delivery.loadingCity || '-').padEnd(35)} | ETA: ${(delivery.etaWarehouse || '-').padEnd(27)} |
+| Country: ${(delivery.loadingCountry || '-').padEnd(32)} | Contact: ${(company.phone || '-').padEnd(25)} |
+| Loading Time: ${(delivery.loadingTime || '-').padEnd(27)} |                                   |
+--------------------------------------------------------------------------------
+
+[CARGO DETAILS]
+--------------------------------------------------------------------------------
+Reference: ${delivery.reference}
+Pallets: ${delivery.palletCount || 0} (${delivery.palletType || 'EUR'})
+Weight: ${delivery.weight ? delivery.weight + ' kg' : '-'}
+Cargo Type: ${delivery.cargoType || 'Dry'}
+--------------------------------------------------------------------------------
+
+[NOTES & COSTS]
+--------------------------------------------------------------------------------
+Transport Cost: ${costString}
+Notes: ${delivery.notes || '-'}
+Supplier Remarks: ${supplier.remarks || '-'}
+--------------------------------------------------------------------------------
+
+Met vriendelijke groet,
+
+${company.name}
 ${company.address}
 Tel: ${company.phone} | Email: ${company.email}
---------------------------------------------------
+    `.trim();
 
-Aan: ${transporter.name}
-${transporter.address || ''}
-
-Onderwerp: ${subject}
-
-`;
-
-    const body = letterHead + emailBody;
-
-    const mailtoUrl = `mailto:${transporter.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoUrl = `mailto:${transporter.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
     window.location.href = mailtoUrl;
 
     // Log the action
@@ -993,6 +997,16 @@ Onderwerp: ${subject}
                           <option value="Cool">Koel</option>
                           <option value="Frozen">Vries</option>
                         </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-4">Laadtijd</label>
+                        <input 
+                          type="text" 
+                          value={formData.loadingTime || ''} 
+                          onChange={e => setFormData({ ...formData, loadingTime: e.target.value })} 
+                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
+                          placeholder="Bijv. 09:00 - 17:00"
+                        />
                       </div>
                     </>
                   )}

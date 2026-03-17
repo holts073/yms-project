@@ -82,13 +82,13 @@ export function insertDelivery(d: Delivery) {
         id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt,
         transportCost, weight, palletType, palletCount, cargoType, loadingCountry, loadingCity, palletExchange,
         etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
-        delayRisk, predictionReason, notes, statusHistory
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        delayRisk, predictionReason, notes, statusHistory, loadingTime
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       d.id, d.type, d.reference, d.supplierId, d.transporterId, d.forwarderId, d.status, d.eta, d.createdAt, d.updatedAt,
       d.transportCost, d.weight, d.palletType, d.palletCount, d.cargoType, d.loadingCountry, d.loadingCity, d.palletExchange ? 1 : 0,
       d.etd, d.etaPort, d.etaWarehouse, d.originalEtaWarehouse, d.portOfArrival, d.billOfLading, d.containerNumber,
-      d.delayRisk, d.predictionReason, d.notes, d.statusHistory ? JSON.stringify(d.statusHistory) : null
+      d.delayRisk, d.predictionReason, d.notes, d.statusHistory ? JSON.stringify(d.statusHistory) : null, d.loadingTime
     );
 
     // Documents

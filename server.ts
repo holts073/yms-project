@@ -223,12 +223,35 @@ async function startServer() {
             break;
           }
           case "UPDATE_DELIVERY": {
+            const allDels = getAllDeliveries();
+            const existing = allDels.find(d => d.id === payload.id);
             const updatedRisk = calculateRisk(payload);
             let newPayload = { ...payload, delayRisk: updatedRisk.risk, predictionReason: updatedRisk.reason };
             
+            if (existing && existing.status !== newPayload.status) {
+              const getStatusLabel = (p: any) => {
+                if (p.status === 100) return 'Afgeleverd';
+                if (p.type === 'container') {
+                  if (p.status >= 75) return 'Onderweg naar Magazijn';
+                  if (p.status >= 50) return 'Douane';
+                  if (p.status >= 25) return 'In Transit';
+                  return 'Besteld';
+                } else {
+                  if (p.status >= 50) return 'Onderweg naar Magazijn';
+                  if (p.status >= 25) return 'Transport aangevraagd';
+                  return 'Besteld';
+                }
+              };
+              const oldLabel = getStatusLabel(existing);
+              const newLabel = getStatusLabel(newPayload);
+              logEntry.details = `Status gewijzigd van "${oldLabel}" naar "${newLabel}" voor ${newPayload.reference}`;
+              logEntry.action = "Status Update";
+            } else {
+              logEntry.action = "Updated Delivery";
+              logEntry.details = `Details bijgewerkt voor: ${newPayload.reference}`;
+            }
+
             insertDelivery(newPayload);
-            logEntry.action = "Updated Delivery";
-            logEntry.details = `Updated delivery: ${newPayload.reference}`;
             logEntry.reference = newPayload.reference;
             io.emit("DELIVERY_UPDATED");
             break;

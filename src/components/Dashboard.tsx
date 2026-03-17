@@ -13,7 +13,8 @@ import {
   Shield,
   Calendar,
   Plus,
-  ArrowRight
+  ArrowRight,
+  MessageSquare
 } from 'lucide-react';
 
 const formatDate = (dateStr: string) => {
@@ -71,30 +72,51 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
     }
 
     const subject = `Transport Order - Ref: ${delivery.reference}`;
-    let emailBody = state?.companySettings?.transportTemplate || 
-      'Beste vervoerder,\n\nHierbij de transport order voor {reference}.\n\nLeverancier: {supplier}\nOpmerkingen: {notes}\nTransportkosten: {cost}\n\nMet vriendelijke groet,\nILG Foodgroup';
     
+    // Format the cost
     const costString = delivery.transportCost !== undefined 
       ? new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(delivery.transportCost)
       : 'N.v.t.';
 
-    emailBody = emailBody
-      .replace(/{reference}/g, delivery.reference)
-      .replace(/{supplierName}/g, supplier.name)
-      .replace(/{supplierAddress}/g, supplier.address || '')
-      .replace(/{loadingCity}/g, delivery.loadingCity || '')
-      .replace(/{loadingCountry}/g, delivery.loadingCountry || '')
-      .replace(/{palletCount}/g, (delivery.palletCount || 0).toString())
-      .replace(/{palletType}/g, delivery.palletType || '-')
-      .replace(/{weight}/g, delivery.weight ? `${delivery.weight} kg` : '-')
-      .replace(/{cargoType}/g, delivery.cargoType || 'Dry')
-      .replace(/{etaWarehouse}/g, delivery.etaWarehouse || '-')
-      .replace(/{companyName}/g, state?.companySettings?.name || 'ILG Foodgroup')
-      .replace(/{companyAddress}/g, state?.companySettings?.address || '')
-      .replace(/{supplierRemarks}/g, supplier.remarks || '-')
-      .replace(/{transporterRemarks}/g, transporter.remarks || '-')
-      .replace(/{notes}/g, delivery.notes || '')
-      .replace(/{cost}/g, costString);
+    // Construct the beautiful 3-section email template
+    const company = state?.companySettings || { name: 'ILG Foodgroup', address: '', phone: '', email: '' };
+    
+    const emailBody = `
+Beste ${transporter.name},
+
+Hierbij bevestigen wij de volgende transportopdracht:
+
+--------------------------------------------------------------------------------
+| [LOADING INFORMATION]                     | [DELIVERY INFORMATION]           |
+--------------------------------------------------------------------------------
+| Supplier: ${supplier.name.padEnd(31)} | Destination: ${company.name.padEnd(19)} |
+| Address: ${(supplier.address || '-').padEnd(32)} | Address: ${(company.address || '-').padEnd(23)} |
+| City: ${(delivery.loadingCity || '-').padEnd(35)} | ETA: ${(delivery.etaWarehouse || '-').padEnd(27)} |
+| Country: ${(delivery.loadingCountry || '-').padEnd(32)} | Contact: ${(company.phone || '-').padEnd(25)} |
+| Loading Time: ${(delivery.loadingTime || '-').padEnd(27)} |                                   |
+--------------------------------------------------------------------------------
+
+[CARGO DETAILS]
+--------------------------------------------------------------------------------
+Reference: ${delivery.reference}
+Pallets: ${delivery.palletCount || 0} (${delivery.palletType || 'EUR'})
+Weight: ${delivery.weight ? delivery.weight + ' kg' : '-'}
+Cargo Type: ${delivery.cargoType || 'Dry'}
+--------------------------------------------------------------------------------
+
+[NOTES & COSTS]
+--------------------------------------------------------------------------------
+Transport Cost: ${costString}
+Notes: ${delivery.notes || '-'}
+Supplier Remarks: ${supplier.remarks || '-'}
+--------------------------------------------------------------------------------
+
+Met vriendelijke groet,
+
+${company.name}
+${company.address}
+Tel: ${company.phone} | Email: ${company.email}
+    `.trim();
 
     window.open(`mailto:${transporter.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`);
   };
@@ -299,6 +321,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
                         Referentie <ArrowUpDown size={12} />
                       </div>
                     </th>
+                    <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Opmerking</th>
                     <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Reden</th>
                     <th 
                       className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
@@ -354,6 +377,16 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
                               )}
                             </div>
                           </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        {delivery.notes ? (
+                          <div className="relative group/notes text-slate-400 hover:text-indigo-600 transition-colors cursor-help">
+                            <MessageSquare size={18} />
+                            <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-slate-800 text-white text-[10px] rounded-xl opacity-0 group-hover/notes:opacity-100 transition-opacity pointer-events-none z-[60] shadow-xl">
+                              {delivery.notes}
+                            </div>
+                          </div>
+                        ) : '-'}
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex flex-col gap-1">

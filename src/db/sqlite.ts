@@ -65,7 +65,8 @@ db.exec(`
     delayRisk TEXT,
     predictionReason TEXT,
     notes TEXT,
-    statusHistory TEXT -- JSON string [0, 25, 50]
+    statusHistory TEXT, -- JSON string [0, 25, 50]
+    loadingTime TEXT
   );
 
   CREATE TABLE IF NOT EXISTS documents (
@@ -125,6 +126,12 @@ if (!existingSettings) {
 // Migration for logs table
 try {
   db.prepare("ALTER TABLE logs ADD COLUMN reference TEXT").run();
+} catch (e) {
+  // Column already exists
+}
+
+try {
+  db.prepare("ALTER TABLE deliveries ADD COLUMN loadingTime TEXT").run();
 } catch (e) {
   // Column already exists
 }
