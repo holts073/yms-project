@@ -179,18 +179,26 @@ async function startServer() {
       };
 
       switch (type) {
-        case "ADD_DELIVERY":
+        case "ADD_DELIVERY": {
           const riskInfo = calculateRisk(payload);
-          state.deliveries.push({ 
+          const newDelivery = { 
             ...payload, 
             delayRisk: riskInfo.risk, 
             predictionReason: riskInfo.reason,
-            statusHistory: payload.statusHistory || []
-          });
+            statusHistory: payload.statusHistory || [],
+            auditTrail: [{
+              timestamp,
+              user: user.name,
+              action: "Aangemaakt",
+              details: `Levering ${payload.reference} aangemaakt`
+            }]
+          };
+          state.deliveries.push(newDelivery);
           logEntry.action = "Created Delivery";
           logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
           break;
-        case "UPDATE_DELIVERY":
+        }
+        case "UPDATE_DELIVERY": {
           const updatedRisk = calculateRisk(payload);
           const oldDelivery = state.deliveries.find(d => d.id === payload.id);
           let newPayload = { ...payload, delayRisk: updatedRisk.risk, predictionReason: updatedRisk.reason };
@@ -231,10 +239,37 @@ async function startServer() {
             }
           }
 
+          if (oldDelivery && oldDelivery.status !== newPayload.status) {
+             const auditEntry = {
+                timestamp,
+                user: user.name,
+                action: "Status Gewijzigd",
+                details: `Status veranderd van ${oldDelivery.status}% naar ${newPayload.status}%`
+             };
+             newPayload.auditTrail = [...(newPayload.auditTrail || []), auditEntry];
+          } else if (oldDelivery && JSON.stringify(oldDelivery.documents) !== JSON.stringify(newPayload.documents)) {
+             const auditEntry = {
+                timestamp,
+                user: user.name,
+                action: "Documenten Gewijzigd",
+                details: `Documenten voor levering ${newPayload.reference} gewijzigd via overzicht.`
+             };
+             newPayload.auditTrail = [...(newPayload.auditTrail || []), auditEntry];
+          } else if (oldDelivery) {
+             const auditEntry = {
+                timestamp,
+                user: user.name,
+                action: "Aangepast",
+                details: `Levering specificaties van ${newPayload.reference} aangepast.`
+             };
+             newPayload.auditTrail = [...(newPayload.auditTrail || []), auditEntry];
+          }
+
           state.deliveries = state.deliveries.map(d => d.id === newPayload.id ? newPayload : d);
           logEntry.action = "Updated Delivery";
           if (!logEntry.details) logEntry.details = `Updated delivery: ${newPayload.reference}`;
           break;
+        }
         case "UPDATE_USER":
           state.users = state.users.map(u => u.id === payload.id ? payload : u);
           logEntry.action = "Updated User Role";

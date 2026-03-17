@@ -18,6 +18,13 @@ export interface AddressEntry {
   otif?: number; // On-Time In-Full percentage
 }
 
+export interface AuditEntry {
+  timestamp: string;
+  user: string;
+  action: string;
+  details: string;
+}
+
 export interface Delivery {
   id: string;
   type: DeliveryType;
@@ -33,6 +40,7 @@ export interface Delivery {
   predictionReason?: string;
   statusHistory?: number[];
   notes?: string;
+  auditTrail?: AuditEntry[];
   
   // Container specific
   forwarderId?: string;

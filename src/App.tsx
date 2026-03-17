@@ -26,6 +26,8 @@ import Statistics from './components/Statistics';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
 import { Login } from './components/Login';
+import Archive from './components/Archive';
+import SettingsPage from './components/Settings';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -94,18 +96,19 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
     switch (activeTab) {
       case 'dashboard': return <Dashboard onNavigate={handleNavigate} />;
       case 'deliveries': return <DeliveryManager initialFilter={searchFilter} initialSelectedId={selectedId || undefined} />;
+      case 'archive': return <Archive />;
       case 'addressbook': return <AddressBook />;
       case 'statistics': return <Statistics />;
       case 'logs': return <AuditLog onNavigate={handleNavigate} />;
-      case 'users': return <UserManagement />;
+      case 'settings': return <SettingsPage />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
 
   const canAccess = (tab: string) => {
     if (currentUser?.role === 'admin') return true;
-    if (tab === 'users') return false;
-    if (currentUser?.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook')) return true; // View only handled in components
+    if (tab === 'settings') return true; // Settings handles its own admin vs user view
+    if (currentUser?.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook' || tab === 'archive')) return true; 
     return true;
   };
 
@@ -143,25 +146,23 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
             onClick={() => handleSidebarClick('addressbook')} 
           />
           <SidebarItem 
+            icon={History} 
+            label="Archief" 
+            active={activeTab === 'archive'} 
+            onClick={() => handleSidebarClick('archive')} 
+          />
+          <SidebarItem 
             icon={BarChart3} 
             label="Statistieken" 
             active={activeTab === 'statistics'} 
             onClick={() => handleSidebarClick('statistics')} 
           />
           <SidebarItem 
-            icon={History} 
-            label="Audit Log" 
-            active={activeTab === 'logs'} 
-            onClick={() => handleSidebarClick('logs')} 
+            icon={Settings} 
+            label="Instellingen" 
+            active={activeTab === 'settings'} 
+            onClick={() => handleSidebarClick('settings')} 
           />
-          {currentUser.role === 'admin' && (
-            <SidebarItem 
-              icon={Shield} 
-              label="Gebruikers" 
-              active={activeTab === 'users'} 
-              onClick={() => handleSidebarClick('users')} 
-            />
-          )}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-slate-100">

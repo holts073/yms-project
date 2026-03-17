@@ -15,8 +15,8 @@ import {
   Truck as TruckIcon,
   ChevronRight,
   MessageSquare,
-  Eye,
-  EyeOff
+  History,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Delivery, DeliveryType, Document } from '../types';
@@ -38,7 +38,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const { deliveries: allDeliveries = [], addressBook } = state || {};
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<Delivery | null>(null);
-  const [showDelivered, setShowDelivered] = useState(false);
+  const [activeModalTab, setActiveModalTab] = useState<'details' | 'history'>('details');
   const [filter, setFilter] = useState(initialFilter);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'eta', direction: 'asc' });
@@ -121,7 +121,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   };
 
   const toggleSelectAll = () => {
-    const visibleIds = deliveries.filter(d => showDelivered || d.status < 100).map(d => d.id);
+    const visibleIds = deliveries.filter(d => d.status < 100).map(d => d.id);
     if (selectedIds.length === visibleIds.length) {
       setSelectedIds([]);
     } else {
@@ -192,6 +192,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       });
     }
     setIsModalOpen(true);
+    setActiveModalTab('details');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -356,23 +357,32 @@ ILG Foodgroup SCY/YMS`;
 
   const canEdit = currentUser.role !== 'viewer';
 
+  const handleExportCSV = () => {
+    const headers = ['Referentie', 'Type', 'Status', 'ETA Magazijn', 'Aantal Pallets'].join(',');
+    const rows = deliveries.filter(d => d.status < 100).map(d => [
+      `"${d.reference}"`, `"${d.type}"`, `"${getStatusLabel(d)}"`, `"${d.etaWarehouse}"`, `"${d.palletCount}"`
+    ].join(','));
+    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join('\n');
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `actieve_leveringen_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Leveringen</h2>
-          <p className="text-slate-500 mt-1">Beheer en volg al je container en ex-works zendingen.</p>
+          <p className="text-slate-500 mt-1">Beheer en volg al je actieve container en ex-works zendingen.</p>
         </div>
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => setShowDelivered(!showDelivered)}
-            className={cn(
-              "flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all border",
-              showDelivered ? "bg-white text-slate-600 border-slate-200" : "bg-slate-800 text-white border-slate-800"
-            )}
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-full hover:bg-slate-50 transition-colors shadow-sm"
           >
-            {showDelivered ? <EyeOff size={18} /> : <Eye size={18} />}
-            <span>{showDelivered ? 'Verberg Geleverd' : 'Toon Geleverd'}</span>
+            <Download size={18} />
+            CSV Export
           </button>
           {canEdit && (
             <button 
@@ -413,7 +423,7 @@ ILG Foodgroup SCY/YMS`;
                 <th className="px-8 py-5 w-10">
                   <input 
                     type="checkbox" 
-                    checked={selectedIds.length > 0 && selectedIds.length === deliveries.filter(d => showDelivered || d.status < 100).length}
+                    checked={selectedIds.length > 0 && selectedIds.length === deliveries.filter(d => d.status < 100).length}
                     onChange={toggleSelectAll}
                     className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
                   />
@@ -443,7 +453,7 @@ ILG Foodgroup SCY/YMS`;
             </thead>
             <tbody className="divide-y divide-slate-100">
               {deliveries
-                .filter(d => showDelivered || d.status < 100)
+                .filter(d => d.status < 100)
                 .map((delivery) => {
                   const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
                   return (
@@ -664,6 +674,32 @@ ILG Foodgroup SCY/YMS`;
                   </button>
                 </div>
 
+                {editingDelivery && (
+                  <div className="flex gap-4 p-1.5 bg-slate-100 rounded-full w-fit mb-6 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModalTab('details')}
+                      className={cn(
+                        "px-6 py-2 rounded-full font-bold text-sm transition-all",
+                        activeModalTab === 'details' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      Gegevens
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModalTab('history')}
+                      className={cn(
+                        "px-6 py-2 rounded-full font-bold text-sm transition-all",
+                        activeModalTab === 'history' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      Historie
+                    </button>
+                  </div>
+                )}
+
+                {activeModalTab === 'details' || !editingDelivery ? (
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2 col-span-2">
                     <label className="text-sm font-bold text-slate-700 ml-4">Type Levering</label>
@@ -857,6 +893,33 @@ ILG Foodgroup SCY/YMS`;
                     </div>
                   )}
                 </div>
+                ) : (
+                  <div className="space-y-3">
+                    {currentModalDelivery?.auditTrail?.length ? (
+                      currentModalDelivery.auditTrail.map((entry, idx) => (
+                        <div key={idx} className="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 border border-slate-200">
+                            <History size={16} className="text-slate-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-slate-900">{entry.action}</span>
+                              <span className="text-xs text-slate-400">•</span>
+                              <span className="text-xs text-slate-500">{new Date(entry.timestamp).toLocaleString('nl-NL')}</span>
+                            </div>
+                            <p className="text-sm text-slate-600 font-medium">{entry.details}</p>
+                            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Door: {entry.user}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10 opacity-50">
+                        <History size={32} className="mx-auto mb-3" />
+                        <p className="text-sm italic text-slate-500">Geen historie beschikbaar.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="pt-6 flex gap-4">
                   <button 
