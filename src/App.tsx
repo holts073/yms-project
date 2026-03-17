@@ -13,7 +13,8 @@ import {
   LogOut,
   User as UserIcon,
   Shield,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -29,6 +30,7 @@ import UserManagement from './components/UserManagement';
 import { Login } from './components/Login';
 import Archive from './components/Archive';
 import SettingsPage from './components/Settings';
+import Reporting from './components/Reporting';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -156,6 +158,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
       case 'logs': return <AuditLog onNavigate={handleNavigate} />;
       case 'settings-company': return <SettingsPage currentSegment="company" />;
       case 'settings-users': return <SettingsPage currentSegment="users" />;
+      case 'reports': return <Reporting />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
@@ -178,7 +181,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.0.1</span></h1>
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.1.1</span></h1>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -212,6 +215,14 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
             active={activeTab === 'statistics'} 
             onClick={() => handleSidebarClick('statistics')} 
           />
+          {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
+            <SidebarItem 
+              icon={FileText} 
+              label="Rapportages" 
+              active={activeTab === 'reports'} 
+              onClick={() => handleSidebarClick('reports')} 
+            />
+          )}
           {currentUser.role === 'admin' && (
             <SidebarDropdown 
               icon={Settings} 

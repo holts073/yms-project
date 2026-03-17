@@ -16,7 +16,7 @@ import { TrendingUp, Award, AlertTriangle, Clock, Target, DollarSign, Package } 
 import { useDeliveries } from '../hooks/useDeliveries';
 
 const Statistics = () => {
-  const { state } = useSocket();
+  const { state, currentUser } = useSocket();
   const { addressBook } = state || {};
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', false);
 
@@ -149,15 +149,17 @@ const Statistics = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-500 font-bold text-sm uppercase tracking-wider">Gem. Kosten per Pallet</h3>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl"><DollarSign size={20} /></div>
+        {currentUser?.role !== 'staff' && (
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-slate-500 font-bold text-sm uppercase tracking-wider">Gem. Kosten per Pallet</h3>
+              <div className="p-2 bg-amber-50 text-amber-600 rounded-xl"><DollarSign size={20} /></div>
+            </div>
+            <div>
+              <span className="text-4xl font-black text-slate-900">{formatCurrency(avgCostPerPallet)}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-4xl font-black text-slate-900">{formatCurrency(avgCostPerPallet)}</span>
-          </div>
-        </div>
+        )}
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
@@ -204,38 +206,40 @@ const Statistics = () => {
         </div>
 
         {/* Cost Distribution Chart */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center space-y-6">
-          <h3 className="text-xl font-bold text-slate-900 w-full text-left">Kosten Verdeling</h3>
-          {totalCost > 0 ? (
-            <>
-              <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={costData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value">
-                      {costData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip 
-                      formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex gap-8">
-                {costData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                    <span className="text-sm font-bold text-slate-600">{entry.name}: {formatCurrency(entry.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-             <div className="h-[250px] flex items-center justify-center text-slate-400 font-medium">Nog onvoldoende data beschikbaar.</div>
-          )}
-        </div>
+        {currentUser?.role !== 'staff' && (
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center space-y-6">
+            <h3 className="text-xl font-bold text-slate-900 w-full text-left">Kosten Verdeling</h3>
+            {totalCost > 0 ? (
+              <>
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={costData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value">
+                        {costData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip 
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex gap-8">
+                  {costData.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
+                      <span className="text-sm font-bold text-slate-600">{entry.name}: {formatCurrency(entry.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-slate-400 font-medium">Nog onvoldoende data beschikbaar.</div>
+            )}
+          </div>
+        )}
       </div>
 
        {/* Reliability Chart */}
@@ -279,41 +283,43 @@ const Statistics = () => {
         </div>
 
         {/* Supplier Cost Chart */}
-        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">Transportkosten per Leverancier</h3>
-              <p className="text-slate-500 text-sm mt-1">Top 5 leveranciers met de hoogste transportkosten (gebaseerd op goedgekeurde leveringen).</p>
+        {currentUser?.role !== 'staff' && (
+          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Transportkosten per Leverancier</h3>
+                <p className="text-slate-500 text-sm mt-1">Top 5 leveranciers met de hoogste transportkosten (gebaseerd op goedgekeurde leveringen).</p>
+              </div>
+            </div>
+            
+            <div className="h-[300px] w-full">
+              {supplierCostStats.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={supplierCostStats} layout="vertical" margin={{ left: 40, right: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                    <XAxis type="number" hide />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                      width={150}
+                    />
+                    <RechartsTooltip 
+                      cursor={{ fill: '#f8fafc' }}
+                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                    <Bar dataKey="cost" radius={[0, 20, 20, 0]} barSize={24} fill="#8b5cf6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium">Geen transportkosten geregistreerd.</div>
+              )}
             </div>
           </div>
-          
-          <div className="h-[300px] w-full">
-            {supplierCostStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={supplierCostStats} layout="vertical" margin={{ left: 40, right: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                  <XAxis type="number" hide />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
-                    width={150}
-                  />
-                  <RechartsTooltip 
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <Bar dataKey="cost" radius={[0, 20, 20, 0]} barSize={24} fill="#8b5cf6" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium">Geen transportkosten geregistreerd.</div>
-            )}
-          </div>
-        </div>
+        )}
 
     </div>
   );

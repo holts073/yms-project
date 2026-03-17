@@ -9,9 +9,24 @@ import {
   FileText,
   Truck as TruckIcon,
   ArrowUpDown,
-  Calendar,
-  Shield
+  Shield,
+  Calendar
 } from 'lucide-react';
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('nl-NL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (e) {
+    return dateStr;
+  }
+};
 
 import { useDeliveries } from '../hooks/useDeliveries';
 
@@ -319,7 +334,9 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-sm font-medium text-slate-600">{delivery.etaWarehouse || delivery.eta || '-'}</span>
+                        <span className="text-sm font-medium text-slate-600">
+                          {delivery.etaWarehouse ? formatDate(delivery.etaWarehouse) : (delivery.eta ? formatDate(delivery.eta) : '-')}
+                        </span>
                       </td>
                       <td className="px-8 py-6 text-right">
                         <button className="text-indigo-600 hover:text-indigo-700 text-sm font-bold flex items-center gap-1 ml-auto">
