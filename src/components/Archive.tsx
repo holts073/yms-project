@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useDeliveries } from '../hooks/useDeliveries';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,7 +19,8 @@ function cn(...inputs: ClassValue[]) {
 
 const Archive = () => {
   const { state } = useSocket();
-  const { deliveries = [], addressBook } = state || {};
+  const { addressBook } = state || {};
+  const { deliveries = [] } = useDeliveries(1, 1000, '', 'all', 'updatedAt', false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter for ONLY delivered items

@@ -14,7 +14,8 @@ import {
   User as UserIcon,
   Shield,
   ChevronRight,
-  FileText
+  FileText,
+  ClipboardList
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -181,7 +182,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.1.1</span></h1>
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.2.0</span></h1>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -203,26 +204,20 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
             active={activeTab === 'addressbook'} 
             onClick={() => handleSidebarClick('addressbook')} 
           />
-          <SidebarItem 
-            icon={History} 
-            label="Archief" 
-            active={activeTab === 'archive'} 
-            onClick={() => handleSidebarClick('archive')} 
-          />
-          <SidebarItem 
+          <SidebarDropdown 
             icon={BarChart3} 
-            label="Statistieken" 
-            active={activeTab === 'statistics'} 
-            onClick={() => handleSidebarClick('statistics')} 
+            label="Analyse & Archief" 
+            active={['archive', 'statistics', 'reports', 'logs'].includes(activeTab)} 
+            items={[
+              { id: 'archive', label: 'Archief', active: activeTab === 'archive' },
+              { id: 'statistics', label: 'Statistieken', active: activeTab === 'statistics' },
+              ...(currentUser.role === 'admin' || currentUser.role === 'manager' ? [
+                { id: 'reports', label: 'Rapportages', active: activeTab === 'reports' },
+                { id: 'logs', label: 'Logboek', active: activeTab === 'logs' }
+              ] : [])
+            ]}
+            onSelect={handleSidebarClick}
           />
-          {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
-            <SidebarItem 
-              icon={FileText} 
-              label="Rapportages" 
-              active={activeTab === 'reports'} 
-              onClick={() => handleSidebarClick('reports')} 
-            />
-          )}
           {currentUser.role === 'admin' && (
             <SidebarDropdown 
               icon={Settings} 
