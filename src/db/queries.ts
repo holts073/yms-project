@@ -125,8 +125,11 @@ export function getUsers(): User[] {
 }
 
 export function saveUser(u: User) {
+  const existing = db.prepare('SELECT passwordHash FROM users WHERE id = ?').get(u.id) as { passwordHash: string } | undefined;
+  const passwordHash = u.passwordHash || existing?.passwordHash || null;
+  
   db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(u.id, u.name, u.email, u.passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null);
+    .run(u.id, u.name, u.email, passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null);
 }
 
 export function deleteUser(id: string) {

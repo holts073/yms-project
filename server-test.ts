@@ -31,7 +31,7 @@ async function startServer() {
     cors: { origin: "*" },
   });
 
-  const PORT = 3000;
+  const PORT = 3001;
   const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
 
   app.use(express.json());
@@ -255,18 +255,13 @@ async function startServer() {
 
           case "UPDATE_USER": {
             const { password, ...userData } = payload;
-            const existingUser = getUsers().find(u => u.id === userData.id);
-            
             if (password) {
               const salt = bcrypt.genSaltSync(10);
               userData.passwordHash = bcrypt.hashSync(password, salt);
-            } else if (existingUser) {
-              userData.passwordHash = existingUser.passwordHash;
             }
-
             saveUser(userData);
-            logEntry.action = "Updated User";
-            logEntry.details = `Updated profile/role for ${userData.name}`;
+            logEntry.action = "Updated User Role";
+            logEntry.details = `Updated role for ${userData.name} to ${userData.role}`;
             io.emit("state_update", buildStaticState());
             break;
           }

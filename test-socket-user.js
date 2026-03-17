@@ -1,4 +1,4 @@
-const { io } = require("socket.io-client");
+import { io } from "socket.io-client";
 const socket = io("http://localhost:3000");
 
 socket.on("connect", () => {
@@ -32,13 +32,3 @@ socket.on("state_update", (state) => {
   }
   process.exit(0);
 });
-
-socket.on("connect_error", (err) => {
-  console.error("Connect error:", err);
-  process.exit(1);
-});
-
-setTimeout(() => {
-  console.log("Timeout");
-  process.exit(1);
-}, 5000);
