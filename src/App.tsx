@@ -32,6 +32,9 @@ import { Login } from './components/Login';
 import Archive from './components/Archive';
 import SettingsPage from './components/Settings';
 import Reporting from './components/Reporting';
+import YmsDashboard from './components/YmsDashboard';
+import YmsSettings from './components/YmsSettings';
+import YmsPublic from './components/YmsPublic';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -160,7 +163,10 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
       case 'settings-company': return <SettingsPage currentSegment="company" />;
       case 'settings-documents': return <SettingsPage currentSegment="documents" />;
       case 'settings-users': return <SettingsPage currentSegment="users" />;
+      case 'settings-yms': return <YmsSettings />;
       case 'reports': return <Reporting />;
+      case 'yms-dashboard': return <YmsDashboard />;
+      case 'yms-public': return <YmsPublic />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
@@ -171,6 +177,10 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
     if (currentUser?.role === 'viewer' && (tab === 'deliveries' || tab === 'addressbook' || tab === 'archive')) return true; 
     return true;
   };
+
+  if (activeTab === 'yms-public') {
+    return <YmsPublic />;
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
@@ -205,6 +215,12 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
             active={activeTab === 'addressbook'} 
             onClick={() => handleSidebarClick('addressbook')} 
           />
+          <SidebarItem 
+            icon={ClipboardList} 
+            label="YMS Dashboard" 
+            active={activeTab === 'yms-dashboard'} 
+            onClick={() => handleSidebarClick('yms-dashboard')} 
+          />
           <SidebarDropdown 
             icon={BarChart3} 
             label="Analyse & Archief" 
@@ -227,6 +243,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
               items={[
                 { id: 'settings-company', label: 'Bedrijfsgegevens', active: activeTab === 'settings-company' },
                 { id: 'settings-documents', label: 'Documentinstellingen', active: activeTab === 'settings-documents' },
+                { id: 'settings-yms', label: 'YMS Instellingen', active: activeTab === 'settings-yms' },
                 { id: 'settings-users', label: 'Gebruikersbeheer', active: activeTab === 'settings-users' }
               ]}
               onSelect={handleSidebarClick}

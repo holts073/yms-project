@@ -126,4 +126,40 @@ export interface AppState {
   users: User[];
   settings: AppSettings;
   companySettings?: CompanySettings;
+  yms: {
+    docks: YmsDock[];
+    waitingAreas: YmsWaitingArea[];
+    deliveries: YmsDelivery[];
+  };
+}
+
+export type YmsTemperature = 'Droog' | 'Vries' | 'Koel';
+export type YmsDeliveryStatus = 'Scheduled' | 'Arrived' | 'At Dock' | 'Completed';
+
+export interface YmsDock {
+  id: number;
+  name: string;
+  allowedTemperatures: YmsTemperature[];
+  status: 'Available' | 'Occupied' | 'Blocked';
+  currentDeliveryId?: string;
+}
+
+export interface YmsWaitingArea {
+  id: number;
+  name: string;
+  status: 'Available' | 'Occupied';
+  currentDeliveryId?: string;
+}
+
+export interface YmsDelivery {
+  id: string;
+  reference: string;
+  licensePlate: string;
+  supplier: string;
+  temperature: YmsTemperature;
+  scheduledTime: string;
+  arrivalTime?: string;
+  dockId?: number;
+  waitingAreaId?: number;
+  status: YmsDeliveryStatus;
 }

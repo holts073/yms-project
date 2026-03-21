@@ -101,7 +101,55 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL -- JSON string
   );
+
+  CREATE TABLE IF NOT EXISTS yms_docks (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    allowedTemperatures TEXT NOT NULL, -- JSON array
+    status TEXT NOT NULL DEFAULT 'Available',
+    currentDeliveryId TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS yms_waiting_areas (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Available',
+    currentDeliveryId TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS yms_deliveries (
+    id TEXT PRIMARY KEY,
+    reference TEXT NOT NULL,
+    licensePlate TEXT NOT NULL,
+    supplier TEXT NOT NULL,
+    temperature TEXT NOT NULL,
+    scheduledTime TEXT NOT NULL,
+    arrivalTime TEXT,
+    dockId INTEGER,
+    waitingAreaId INTEGER,
+    status TEXT NOT NULL DEFAULT 'Scheduled',
+    FOREIGN KEY(dockId) REFERENCES yms_docks(id),
+    FOREIGN KEY(waitingAreaId) REFERENCES yms_waiting_areas(id)
+  );
 `);
+
+// Initial Seed for docks
+const dockCount = db.prepare('SELECT COUNT(*) as count FROM yms_docks').get() as { count: number };
+if (dockCount.count === 0) {
+  const insertDock = db.prepare('INSERT INTO yms_docks (id, name, allowedTemperatures) VALUES (?, ?, ?)');
+  for (let i = 1; i <= 20; i++) {
+    insertDock.run(i, `Dock ${i}`, JSON.stringify(['Droog', 'Vries', 'Koel']));
+  }
+}
+
+// Initial Seed for waiting areas
+const waitingAreaCount = db.prepare('SELECT COUNT(*) as count FROM yms_waiting_areas').get() as { count: number };
+if (waitingAreaCount.count === 0) {
+  const insertWaitingArea = db.prepare('INSERT INTO yms_waiting_areas (id, name) VALUES (?, ?)');
+  for (let i = 1; i <= 10; i++) {
+    insertWaitingArea.run(i, `Wachtplaats ${i}`);
+  }
+}
 
 // Initial Seed for shipment_settings
 const existingSettings = db.prepare('SELECT value FROM settings WHERE key = ?').get('shipment_settings');

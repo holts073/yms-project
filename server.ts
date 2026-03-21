@@ -20,7 +20,14 @@ import {
   saveAddressBookEntry,
   deleteAddressEntry,
   getLogs,
-  addLog
+  addLog,
+  getYmsDocks,
+  saveYmsDock,
+  getYmsWaitingAreas,
+  saveYmsWaitingArea,
+  getYmsDeliveries,
+  saveYmsDelivery,
+  deleteYmsDelivery
 } from './src/db/queries';
 import { getSetting, saveSetting } from './src/db/sqlite';
 
@@ -46,7 +53,12 @@ async function startServer() {
         return safeUser;
       }),
       companySettings: getSetting('companySettings', {}),
-      settings: getSetting('settings', {})
+      settings: getSetting('settings', {}),
+      yms: {
+        docks: getYmsDocks(),
+        waitingAreas: getYmsWaitingAreas(),
+        deliveries: getYmsDeliveries()
+      }
     };
   };
 
@@ -349,6 +361,34 @@ async function startServer() {
             deleteAddressEntry(payload.id);
             logEntry.action = "Deleted Address Block";
             logEntry.details = `Deleted ${payload.category} ID: ${payload.id}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_UPDATE_DOCK":
+            saveYmsDock(payload);
+            logEntry.action = "YMS Dock Updated";
+            logEntry.details = `Updated YMS Dock: ${payload.name}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_UPDATE_WAITING_AREA":
+            saveYmsWaitingArea(payload);
+            logEntry.action = "YMS Waiting Area Updated";
+            logEntry.details = `Updated YMS Waiting Area: ${payload.name}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_SAVE_DELIVERY":
+            saveYmsDelivery(payload);
+            logEntry.action = "YMS Delivery Saved";
+            logEntry.details = `Saved YMS Delivery: ${payload.reference}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_DELETE_DELIVERY":
+            deleteYmsDelivery(payload);
+            logEntry.action = "YMS Delivery Deleted";
+            logEntry.details = `Deleted YMS Delivery ID: ${payload}`;
             io.emit("state_update", buildStaticState());
             break;
         }

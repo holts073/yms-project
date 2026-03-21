@@ -155,7 +155,49 @@ export function getLogs() {
   return db.prepare('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 100').all();
 }
 
+
 export function addLog(log: any) {
   db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)')
     .run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details, log.reference || null);
+}
+
+// YMS Queries
+export function getYmsDocks(): any[] {
+  const rows = db.prepare('SELECT * FROM yms_docks').all() as any[];
+  return rows.map(r => ({
+    ...r,
+    allowedTemperatures: JSON.parse(r.allowedTemperatures)
+  }));
+}
+
+export function saveYmsDock(dock: any) {
+  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, currentDeliveryId = ? WHERE id = ?')
+    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.currentDeliveryId || null, dock.id);
+}
+
+export function getYmsWaitingAreas(): any[] {
+  return db.prepare('SELECT * FROM yms_waiting_areas').all();
+}
+
+export function saveYmsWaitingArea(wa: any) {
+  db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, currentDeliveryId = ? WHERE id = ?')
+    .run(wa.name, wa.status, wa.currentDeliveryId || null, wa.id);
+}
+
+export function getYmsDeliveries(): any[] {
+  return db.prepare('SELECT * FROM yms_deliveries').all();
+}
+
+export function saveYmsDelivery(d: any) {
+  db.prepare(`
+    INSERT OR REPLACE INTO yms_deliveries (
+      id, reference, licensePlate, supplier, temperature, scheduledTime, arrivalTime, dockId, waitingAreaId, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    d.id, d.reference, d.licensePlate, d.supplier, d.temperature, d.scheduledTime, d.arrivalTime || null, d.dockId || null, d.waitingAreaId || null, d.status
+  );
+}
+
+export function deleteYmsDelivery(id: string) {
+  db.prepare('DELETE FROM yms_deliveries WHERE id = ?').run(id);
 }
