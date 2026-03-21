@@ -17,7 +17,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { YmsDock, YmsWaitingArea, YmsTemperature, YmsWarehouse, YmsDockOverride } from '../types';
+import { YmsDock, YmsWaitingArea, YmsTemperature, YmsWarehouse, YmsDockOverride, YmsWaitingAreaStatus } from '../types';
 
 export default function YmsSettings() {
   const { state, dispatch } = useSocket();
@@ -216,7 +216,7 @@ export default function YmsSettings() {
                 <div className="space-y-4">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Temperaturen</p>
                   <div className="flex flex-wrap gap-2">
-                    {(['Droog', 'Koel', 'Vries'] as YmsTemperature[]).map((temp) => (
+                    {(['Droog', 'Koel', 'Vries', 'Fast Lane'] as YmsTemperature[]).map((temp) => (
                       <button
                         key={temp}
                         onClick={() => toggleTemperature(dock, temp)}
@@ -228,6 +228,16 @@ export default function YmsSettings() {
                       </button>
                     ))}
                   </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <button
+                    onClick={() => handleUpdateDock({ ...dock, isFastLane: !dock.isFastLane })}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all ${
+                      dock.isFastLane ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {dock.isFastLane ? 'FAST LANE ACTIEF' : 'GEEN FAST LANE'}
+                  </button>
                 </div>
                 <div className="mt-6 pt-6 border-t border-slate-100">
                   <button
@@ -260,7 +270,23 @@ export default function YmsSettings() {
                   onChange={(e) => handleUpdateWaitingArea({ ...wa, name: e.target.value })}
                   className="w-full text-lg font-bold text-slate-900 bg-transparent border-none p-0 focus:ring-0 mb-4"
                 />
-                <p className="text-xs text-slate-400 font-medium">{wa.currentDeliveryId ? 'Voertuig aanwezig' : 'Leeg'}</p>
+                <p className="text-xs text-slate-400 font-medium mb-4">{wa.currentDeliveryId ? 'Voertuig aanwezig' : 'Leeg'}</p>
+                <div className="flex gap-1">
+                  {(['Active', 'Deactivated', 'Blocked'] as YmsWaitingAreaStatus[]).map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => handleUpdateWaitingArea({ ...wa, adminStatus: status })}
+                      className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                        (wa.adminStatus || 'Active') === status 
+                          ? status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 
+                            status === 'Deactivated' ? 'bg-slate-200 text-slate-600' : 'bg-rose-100 text-rose-700'
+                          : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                      }`}
+                    >
+                      {status === 'Active' ? 'Actief' : status === 'Deactivated' ? 'Uit' : 'Blok'}
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </motion.div>

@@ -422,11 +422,35 @@ async function startServer() {
             io.emit("state_update", buildStaticState());
             break;
 
+          case "GET_COMPLIANCE_STATS": {
+            const allDels = getYmsDeliveries();
+            const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            
+            const stats = allDels.filter(d => 
+              d.arrivalTime && d.arrivalTime > last24h && 
+              d.isLate && 
+              d.palletCount > 10 // FAST_LANE_THRESHOLD Hardcoded for now, or use getSetting
+            ).map(d => ({
+              date: new Date(d.arrivalTime!).toLocaleDateString('nl-NL'),
+              supplier: d.supplier,
+              reference: d.reference,
+              id: d.id
+            }));
+            
+            socket.emit("YMS_COMPLIANCE_STATS_RESULT", stats);
+            break;
+          }
+
           case "YMS_SAVE_DELIVERY": {
             const current = payload as any;
             const ymsDeliveries = getYmsDeliveries();
             const existing = ymsDeliveries.find(d => d.id === current.id);
             
+            // Fast-Lane bypass for isLate
+            if (current.palletCount && current.palletCount <= 10) {
+              current.isLate = false;
+            }
+
             if (existing && current.status && existing.status !== current.status) {
               if (!isValidTransition(existing.status, current.status)) {
                 console.error(`Invalid transition from ${existing.status} to ${current.status}`);

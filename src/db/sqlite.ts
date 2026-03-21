@@ -115,7 +115,9 @@ db.exec(`
     name TEXT NOT NULL,
     allowedTemperatures TEXT NOT NULL, -- JSON array
     status TEXT NOT NULL DEFAULT 'Available',
+    adminStatus TEXT NOT NULL DEFAULT 'Active',
     currentDeliveryId TEXT,
+    isFastLane INTEGER DEFAULT 0,
     PRIMARY KEY(id, warehouseId),
     FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id) ON DELETE CASCADE
   );
@@ -125,6 +127,7 @@ db.exec(`
     warehouseId TEXT NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'Available',
+    adminStatus TEXT NOT NULL DEFAULT 'Active',
     currentDeliveryId TEXT,
     PRIMARY KEY(id, warehouseId),
     FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id) ON DELETE CASCADE
@@ -154,6 +157,8 @@ db.exec(`
     isReefer INTEGER DEFAULT 0,
     tempAlertThreshold INTEGER DEFAULT 30,
     lastEtaUpdate TEXT,
+    direction TEXT DEFAULT 'INBOUND',
+    palletCount INTEGER DEFAULT 0,
     FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id),
     FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId),
     FOREIGN KEY(waitingAreaId, warehouseId) REFERENCES yms_waiting_areas(id, warehouseId)
@@ -280,4 +285,22 @@ export function saveSetting(key: string, value: any) {
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, JSON.stringify(value));
 }
 
-// Database Seeder / Migrator will be written in server.ts
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN direction TEXT DEFAULT 'INBOUND'").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN palletCount INTEGER DEFAULT 0").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_docks ADD COLUMN isFastLane INTEGER DEFAULT 0").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_docks ADD COLUMN adminStatus TEXT DEFAULT 'Active'").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_waiting_areas ADD COLUMN adminStatus TEXT DEFAULT 'Active'").run();
+} catch (e) {}

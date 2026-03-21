@@ -177,8 +177,8 @@ export function getYmsDocks(warehouseId?: string): any[] {
 }
 
 export function saveYmsDock(dock: any) {
-  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?')
-    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.currentDeliveryId || null, dock.id, dock.warehouseId);
+  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, adminStatus = ?, currentDeliveryId = ?, isFastLane = ? WHERE id = ? AND warehouseId = ?')
+    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.id, dock.warehouseId);
 }
 
 export function getYmsWaitingAreas(warehouseId?: string): any[] {
@@ -192,8 +192,8 @@ export function getYmsWaitingAreas(warehouseId?: string): any[] {
 }
 
 export function saveYmsWaitingArea(wa: any) {
-  db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?')
-    .run(wa.name, wa.status, wa.currentDeliveryId || null, wa.id, wa.warehouseId);
+  db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, adminStatus = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?')
+    .run(wa.name, wa.status, wa.adminStatus || 'Active', wa.currentDeliveryId || null, wa.id, wa.warehouseId);
 }
 
 export function getYmsDeliveries(warehouseId?: string): any[] {
@@ -208,7 +208,9 @@ export function getYmsDeliveries(warehouseId?: string): any[] {
     ...r,
     isReefer: r.isReefer === 1,
     isLate: r.isLate === 1,
-    statusTimestamps: r.statusTimestamps ? JSON.parse(r.statusTimestamps) : {}
+    statusTimestamps: r.statusTimestamps ? JSON.parse(r.statusTimestamps) : {},
+    direction: r.direction || 'INBOUND',
+    palletCount: r.palletCount || 0
   }));
 }
 
@@ -217,13 +219,15 @@ export function saveYmsDelivery(d: any) {
     INSERT OR REPLACE INTO yms_deliveries (
       id, warehouseId, reference, licensePlate, supplier, supplierId, mainDeliveryId, temperature, 
       scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
-      predictedEta, priorityScore, estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      predictedEta, priorityScore, estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate,
+      direction, palletCount
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     d.id, d.warehouseId || 'W01', d.reference, d.licensePlate, d.supplier, d.supplierId || null, d.mainDeliveryId || null, d.temperature,
     d.scheduledTime, d.arrivalTime || null, d.registrationTime || null, d.isLate ? 1 : 0, 
     d.dockId || null, d.waitingAreaId || null, d.transporterId || null, d.status, d.statusTimestamps ? JSON.stringify(d.statusTimestamps) : null,
-    d.predictedEta || null, d.priorityScore || 0, d.estimatedDuration || 60, d.isReefer ? 1 : 0, d.tempAlertThreshold || 30, d.lastEtaUpdate || null
+    d.predictedEta || null, d.priorityScore || 0, d.estimatedDuration || 60, d.isReefer ? 1 : 0, d.tempAlertThreshold || 30, d.lastEtaUpdate || null,
+    d.direction || 'INBOUND', d.palletCount || 0
   );
 }
 

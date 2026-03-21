@@ -1,4 +1,6 @@
-import { YmsDeliveryStatus } from '../types';
+import { YmsDeliveryStatus, YmsDelivery } from '../types';
+
+export const FAST_LANE_THRESHOLD = 10; // Default threshold
 
 export const YMS_STATUS_FLOW: YmsDeliveryStatus[] = [
   'PLANNED',
@@ -27,18 +29,23 @@ export function isValidTransition(current: YmsDeliveryStatus, next: YmsDeliveryS
   return ALLOWED_TRANSITIONS[current]?.includes(next) || false;
 }
 
-export function getStatusLabel(status: YmsDeliveryStatus): string {
+export function getStatusLabel(status: YmsDeliveryStatus, direction?: 'INBOUND' | 'OUTBOUND'): string {
   const labels: Record<YmsDeliveryStatus, string> = {
     'PLANNED': 'Gepland',
     'GATE_IN': 'Aangekomen (Gate In)',
     'IN_YARD': 'In Yard (Wachtend)',
     'DOCKED': 'Aangedockt',
-    'UNLOADING': 'Uitladen',
+    'UNLOADING': direction === 'OUTBOUND' ? 'Laden (Outbound)' : 'Uitladen',
     'LOADING': 'Laden',
     'COMPLETED': 'Gereed (Afgeleverd)',
     'GATE_OUT': 'Vertrokken (Gate Out)'
   };
   return labels[status] || status;
+}
+
+export function isFastLaneEligible(delivery: Partial<YmsDelivery>): boolean {
+  if (!delivery.palletCount) return false;
+  return delivery.palletCount <= FAST_LANE_THRESHOLD;
 }
 
 export function calculateKPIs(statusTimestamps: Record<string, string>) {

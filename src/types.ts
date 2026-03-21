@@ -137,7 +137,8 @@ export interface AppState {
   };
 }
 
-export type YmsTemperature = 'Droog' | 'Vries' | 'Koel';
+export type YmsTemperature = 'Droog' | 'Vries' | 'Koel' | 'Fast Lane';
+export type YmsDirection = 'INBOUND' | 'OUTBOUND';
 export type YmsDeliveryStatus = 'PLANNED' | 'GATE_IN' | 'IN_YARD' | 'DOCKED' | 'UNLOADING' | 'LOADING' | 'COMPLETED' | 'GATE_OUT';
 
 export interface YmsWarehouse {
@@ -153,13 +154,16 @@ export interface YmsDock {
   allowedTemperatures: YmsTemperature[];
   status: 'Available' | 'Occupied' | 'Blocked';
   currentDeliveryId?: string;
+  isFastLane?: boolean;
 }
+
+export type YmsWaitingAreaStatus = 'Active' | 'Deactivated' | 'Blocked';
 
 export interface YmsWaitingArea {
   id: number;
   warehouseId: string;
   name: string;
-  status: 'Available' | 'Occupied';
+  status: 'Available' | 'Occupied' | YmsWaitingAreaStatus;
   currentDeliveryId?: string;
 }
 
@@ -181,6 +185,8 @@ export interface YmsDelivery {
   transporterId?: string;
   status: YmsDeliveryStatus;
   statusTimestamps?: Record<string, string>; // Maps status to ISO timestamp
+  direction?: YmsDirection;
+  palletCount?: number;
   
   // AI & Reefer Features
   predictedEta?: string;
