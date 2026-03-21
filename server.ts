@@ -266,6 +266,33 @@ async function startServer() {
             insertDelivery(newPayload);
             logEntry.reference = newPayload.reference;
             io.emit("DELIVERY_UPDATED");
+
+            // Auto-YMS Creation Logic
+            const isAtLastStep = (newPayload.type === 'container' && newPayload.status >= 75 && newPayload.status < 100) ||
+                                 (newPayload.type === 'exworks' && newPayload.status >= 50 && newPayload.status < 100);
+
+            if (isAtLastStep) {
+              const ymsDeliveries = getYmsDeliveries();
+              const existingYms = ymsDeliveries.find(yd => yd.reference === newPayload.reference);
+              
+              if (!existingYms) {
+                const suppliers = getAddressBook().suppliers;
+                const supplier = suppliers.find(s => s.id === newPayload.supplierId);
+                
+                const newYmsDelivery = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  reference: newPayload.reference,
+                  licensePlate: '', // Can be updated later
+                  supplier: supplier?.name || 'Onbekend',
+                  temperature: newPayload.cargoType || 'Droog',
+                  scheduledTime: newPayload.etaWarehouse || newPayload.eta || new Date().toISOString(),
+                  status: 'Scheduled',
+                  transporterId: newPayload.transporterId
+                };
+                saveYmsDelivery(newYmsDelivery);
+                io.emit("state_update", buildStaticState());
+              }
+            }
             break;
           }
           case "DELETE_DELIVERY":

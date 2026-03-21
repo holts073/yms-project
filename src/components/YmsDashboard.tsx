@@ -196,6 +196,11 @@ export default function YmsDashboard() {
                       <div className="flex items-center gap-4 mt-1 text-slate-500 text-sm">
                         <span className="flex items-center gap-1"><User size={14}/> {delivery.supplier}</span>
                         <span className="flex items-center gap-1 font-mono bg-slate-100 px-2 rounded-md font-bold">{delivery.licensePlate}</span>
+                        {delivery.transporterId && (
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                             ({state.addressBook.transporters.find(t => t.id === delivery.transporterId)?.name})
+                           </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -346,14 +351,29 @@ export default function YmsDashboard() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Leverancier</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
-                  value={editingDelivery?.supplier || ''}
-                  onChange={(e) => setEditingDelivery({...editingDelivery, supplier: e.target.value})}
-                />
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Leverancier</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
+                    value={editingDelivery?.supplier || ''}
+                    onChange={(e) => setEditingDelivery({...editingDelivery, supplier: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Transporteur</label>
+                  <select
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold appearance-none"
+                    value={editingDelivery?.transporterId || ''}
+                    onChange={(e) => setEditingDelivery({...editingDelivery, transporterId: e.target.value})}
+                  >
+                    <option value="">Selecteer Transporteur</option>
+                    {state.addressBook.transporters.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">

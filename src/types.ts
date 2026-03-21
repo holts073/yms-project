@@ -63,6 +63,7 @@ export interface Delivery {
   loadingCity?: string;
   cargoType?: 'Dry' | 'Cool' | 'Frozen';
   loadingTime?: string;
+  dockId?: number;
 }
 
 export interface LogEntry {
@@ -161,5 +162,6 @@ export interface YmsDelivery {
   arrivalTime?: string;
   dockId?: number;
   waitingAreaId?: number;
+  transporterId?: string;
   status: YmsDeliveryStatus;
 }

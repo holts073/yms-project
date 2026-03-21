@@ -60,6 +60,7 @@ db.exec(`
     portOfArrival TEXT,
     billOfLading TEXT,
     containerNumber TEXT,
+    dockId INTEGER,
     
     -- Calculated/Metadata
     delayRisk TEXT,
@@ -127,6 +128,7 @@ db.exec(`
     arrivalTime TEXT,
     dockId INTEGER,
     waitingAreaId INTEGER,
+    transporterId TEXT,
     status TEXT NOT NULL DEFAULT 'Scheduled',
     FOREIGN KEY(dockId) REFERENCES yms_docks(id),
     FOREIGN KEY(waitingAreaId) REFERENCES yms_waiting_areas(id)
@@ -180,9 +182,15 @@ try {
 
 try {
   db.prepare("ALTER TABLE deliveries ADD COLUMN loadingTime TEXT").run();
-} catch (e) {
-  // Column already exists
-}
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE deliveries ADD COLUMN dockId INTEGER").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN transporterId TEXT").run();
+} catch (e) {}
 
 
 // Helper for settings
