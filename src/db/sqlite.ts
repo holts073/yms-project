@@ -146,6 +146,12 @@ db.exec(`
     registrationTime TEXT,
     isLate BOOLEAN,
     status TEXT NOT NULL DEFAULT 'Scheduled',
+    predictedEta TEXT,
+    priorityScore INTEGER DEFAULT 0,
+    estimatedDuration INTEGER DEFAULT 60,
+    isReefer INTEGER DEFAULT 0,
+    tempAlertThreshold INTEGER DEFAULT 30,
+    lastEtaUpdate TEXT,
     FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id),
     FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId),
     FOREIGN KEY(waitingAreaId, warehouseId) REFERENCES yms_waiting_areas(id, warehouseId)
@@ -159,6 +165,17 @@ db.exec(`
     status TEXT NOT NULL,
     allowedTemperatures TEXT NOT NULL, -- JSON array
     FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS yms_alerts (
+    id TEXT PRIMARY KEY,
+    deliveryId TEXT,
+    warehouseId TEXT,
+    type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    message TEXT NOT NULL,
+    resolved INTEGER DEFAULT 0
   );
 `);
 
@@ -225,6 +242,22 @@ try {
 try {
   db.prepare("ALTER TABLE yms_deliveries ADD COLUMN isLate BOOLEAN").run();
 } catch (e) {}
+
+// AI & Reefer Migrations
+const reeferColumns = [
+    { name: 'predictedEta', type: 'TEXT' },
+    { name: 'priorityScore', type: 'INTEGER DEFAULT 0' },
+    { name: 'estimatedDuration', type: 'INTEGER DEFAULT 60' },
+    { name: 'isReefer', type: 'INTEGER DEFAULT 0' },
+    { name: 'tempAlertThreshold', type: 'INTEGER DEFAULT 30' },
+    { name: 'lastEtaUpdate', type: 'TEXT' }
+];
+
+reeferColumns.forEach(col => {
+    try {
+        db.prepare(`ALTER TABLE yms_deliveries ADD COLUMN ${col.name} ${col.type}`).run();
+    } catch (e) {}
+});
 
 
 // Helper for settings

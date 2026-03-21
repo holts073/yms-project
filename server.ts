@@ -33,7 +33,11 @@ import {
   deleteYmsWarehouse,
   getYmsDockOverrides,
   saveYmsDockOverride,
-  deleteYmsDockOverride
+  deleteYmsDockOverride,
+  getYmsAlerts,
+  saveYmsAlert,
+  deleteYmsAlert,
+  resolveYmsAlert
 } from './src/db/queries';
 import { getSetting, saveSetting } from './src/db/sqlite';
 
@@ -65,7 +69,8 @@ async function startServer() {
         docks: getYmsDocks(),
         waitingAreas: getYmsWaitingAreas(),
         deliveries: getYmsDeliveries(),
-        dockOverrides: getYmsDockOverrides()
+        dockOverrides: getYmsDockOverrides(),
+        alerts: getYmsAlerts()
       }
     };
   };
@@ -465,6 +470,78 @@ async function startServer() {
             logEntry.details = `Deleted Override ID: ${payload}`;
             io.emit("state_update", buildStaticState());
             break;
+
+          case "YMS_SAVE_ALERT":
+            saveYmsAlert(payload);
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_DELETE_ALERT":
+            deleteYmsAlert(payload);
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_RESOLVE_ALERT":
+            resolveYmsAlert(payload);
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_AUTO_SCHEDULE": {
+            const { warehouseId } = payload;
+            const dels = getYmsDeliveries(warehouseId).filter(d => d.status === 'Arrived' || d.status === 'Scheduled');
+            const availableDocks = getYmsDocks(warehouseId).filter(d => d.status === 'Available');
+
+            if (availableDocks.length === 0 || dels.length === 0) break;
+
+            // Calculate Priority Scores
+            const scoredDels = dels.map(d => {
+                let score = 0;
+                // Temperature Bonus
+                if (d.temperature === 'Vries') score += 50;
+                else if (d.temperature === 'Koel') score += 30;
+                
+                // Reefer Bonus
+                if (d.isReefer) score += 20;
+
+                // Urgency (earlier is more urgent)
+                const schedTime = new Date(d.scheduledTime).getTime();
+                const now = new Date().getTime();
+                const diffMins = (schedTime - now) / 60000;
+                
+                if (diffMins < 0) score += 40; // Overdue
+                else if (diffMins < 60) score += 20; // Within hour
+
+                // Wait Time Penalty (for arrived trucks)
+                if (d.status === 'Arrived' && d.arrivalTime) {
+                    const waitedMins = (now - new Date(d.arrivalTime).getTime()) / 60000;
+                    score += waitedMins * 0.5; // +0.5 pts per minute waiting
+                }
+
+                return { ...d, priorityScore: Math.round(score) };
+            }).sort((a, b) => b.priorityScore - a.priorityScore);
+
+            // Assign to docks
+            scoredDels.forEach((d, idx) => {
+                if (idx < availableDocks.length && d.status === 'Arrived') {
+                    const dock = availableDocks[idx];
+                    // Check compatibility
+                    const allowed = JSON.parse(dock.allowedTemperatures || '[]');
+                    if (allowed.includes(d.temperature)) {
+                        d.dockId = dock.id;
+                        d.status = 'At Dock';
+                        dock.status = 'Occupied';
+                        dock.currentDeliveryId = d.id;
+                        saveYmsDelivery(d);
+                        saveYmsDock(dock);
+                    }
+                }
+            });
+
+            logEntry.action = "AI Auto-Scheduling";
+            logEntry.details = `Performed auto-assignment for Warehouse ${warehouseId}`;
+            io.emit("state_update", buildStaticState());
+            break;
+          }
         }
 
         addLog(logEntry);
@@ -498,6 +575,39 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Background Worker for Reefer Alerts
+  setInterval(() => {
+    const deliveries = getYmsDeliveries().filter(d => d.status === 'Arrived' && d.isReefer);
+    const now = new Date();
+    
+    deliveries.forEach(d => {
+        if (!d.arrivalTime) return;
+        const waitedMins = (now.getTime() - new Date(d.arrivalTime).getTime()) / 60000;
+        const threshold = d.tempAlertThreshold || 30;
+        
+        if (waitedMins > threshold) {
+            const existingAlerts = getYmsAlerts(d.warehouseId);
+            const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'WAIT_TIME' && !a.resolved);
+            
+            if (!alreadyAlerted) {
+                const alert = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    deliveryId: d.id,
+                    warehouseId: d.warehouseId,
+                    type: 'WAIT_TIME',
+                    severity: waitedMins > threshold * 2 ? 'high' : 'medium',
+                    timestamp: now.toISOString(),
+                    message: `REEFER ALERT: ${d.licensePlate} (${d.reference}) wacht al ${Math.round(waitedMins)} minuten!`,
+                    resolved: false
+                };
+                saveYmsAlert(alert);
+                // We emit after the loop or inside? Inside is fine for immediate notification
+                io.emit("state_update", buildStaticState());
+            }
+        }
+    });
+  }, 60000); // Check every minute
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT} with SQLite`);

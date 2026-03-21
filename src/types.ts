@@ -133,6 +133,7 @@ export interface AppState {
     waitingAreas: YmsWaitingArea[];
     deliveries: YmsDelivery[];
     dockOverrides: YmsDockOverride[];
+    alerts: YmsAlert[];
   };
 }
 
@@ -178,6 +179,25 @@ export interface YmsDelivery {
   waitingAreaId?: number;
   transporterId?: string;
   status: YmsDeliveryStatus;
+  
+  // AI & Reefer Features
+  predictedEta?: string;
+  priorityScore?: number;
+  estimatedDuration?: number;
+  isReefer?: boolean;
+  tempAlertThreshold?: number;
+  lastEtaUpdate?: string;
+}
+
+export interface YmsAlert {
+  id: string;
+  deliveryId?: string;
+  warehouseId: string;
+  type: 'WAIT_TIME' | 'TEMP_RISK' | 'DELAY';
+  severity: 'low' | 'medium' | 'high';
+  timestamp: string;
+  message: string;
+  resolved: boolean;
 }
 
 export interface YmsDockOverride {

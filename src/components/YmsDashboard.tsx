@@ -14,7 +14,10 @@ import {
   Warehouse,
   Calendar as CalendarIcon,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  ShieldAlert,
+  Bot
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { YmsDelivery, YmsTemperature, YmsDeliveryStatus, YmsDock, YmsWaitingArea } from '../types';
@@ -27,10 +30,11 @@ export default function YmsDashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('W01');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [showAlerts, setShowAlerts] = useState(false);
 
   if (!state?.yms) return null;
 
-  const { deliveries = [], docks = [], waitingAreas = [], warehouses = [], dockOverrides = [] } = state.yms;
+  const { deliveries = [], docks = [], waitingAreas = [], warehouses = [], dockOverrides = [], alerts = [] } = state.yms;
 
   // Filter Data based on selection
   const currentWarehouses = warehouses.filter(w => w.id === selectedWarehouseId);
@@ -138,6 +142,13 @@ export default function YmsDashboard() {
       setSelectedDate(d.toISOString().split('T')[0]);
   };
 
+  const activeAlerts = alerts.filter(a => !a.resolved);
+  const reeferAlertCount = activeAlerts.length;
+
+  const handleAutoSchedule = () => {
+    dispatch('YMS_AUTO_SCHEDULE', { warehouseId: selectedWarehouseId });
+  };
+
   return (
     <div className="space-y-8 h-full flex flex-col">
       <div className="flex items-center justify-between">
@@ -163,7 +174,7 @@ export default function YmsDashboard() {
             </div>
           </div>
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
@@ -174,6 +185,27 @@ export default function YmsDashboard() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
+          {reeferAlertCount > 0 && (
+            <button 
+              onClick={() => setShowAlerts(!showAlerts)}
+              className="relative p-2 bg-rose-50 text-rose-600 rounded-xl border border-rose-200 hover:bg-rose-100 transition-all shadow-sm"
+            >
+              <ShieldAlert size={20} className="animate-pulse" />
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white">
+                {reeferAlertCount}
+              </span>
+            </button>
+          )}
+
+          <button
+            onClick={handleAutoSchedule}
+            className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all transform hover:scale-105 active:scale-95 group text-sm"
+          >
+            <Bot size={18} className="group-hover:rotate-12 transition-transform" />
+            AI Optimize
+          </button>
+
           <button
             onClick={() => window.location.href = `#/yms-public?warehouseId=${selectedWarehouseId}`} 
             className="flex items-center gap-2 px-6 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all border border-slate-200"
@@ -187,13 +219,44 @@ export default function YmsDashboard() {
             {viewMode === 'list' ? 'Timeline' : 'Lijst'}
           </button>
           <button
-            onClick={() => { setEditingDelivery({ status: 'Scheduled', temperature: 'Droog' }); setIsModalOpen(true); }}
-            className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+            onClick={() => { setEditingDelivery({ status: 'Scheduled', temperature: 'Droog', isReefer: false, tempAlertThreshold: 30 }); setIsModalOpen(true); }}
+            className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all shadow-md active:scale-95"
           >
             <Plus size={20} /> Nieuw
           </button>
         </div>
       </div>
+
+      {/* Alerts Overlay */}
+      {showAlerts && activeAlerts.length > 0 && (
+        <div className="absolute top-24 right-8 w-96 bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 z-50 max-h-[70vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
+                    <ShieldAlert size={18} className="text-rose-500" />
+                    Actieve Waarschuwingen
+                </h3>
+                <button onClick={() => setShowAlerts(false)} className="text-slate-400 hover:text-slate-600 transition-colors"><Plus size={18} className="rotate-45" /></button>
+            </div>
+            <div className="space-y-3">
+                {activeAlerts.map(alert => (
+                    <div key={alert.id} className={`p-4 rounded-2xl border ${alert.severity === 'high' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'}`}>
+                        <div className="flex justify-between items-start gap-2">
+                            <p className={`text-xs font-bold ${alert.severity === 'high' ? 'text-rose-700' : 'text-amber-700'}`}>{alert.message}</p>
+                            <button 
+                                onClick={() => dispatch('YMS_RESOLVE_ALERT', alert.id)}
+                                className="text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <CheckCircle2 size={16} />
+                            </button>
+                        </div>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400 mt-2">
+                            {new Date(alert.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                        </p>
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-hidden flex flex-col">
         {viewMode === 'list' ? (
@@ -231,6 +294,16 @@ export default function YmsDashboard() {
                           }`}>
                             {delivery.temperature}
                           </span>
+                          {delivery.priorityScore && delivery.priorityScore > 0 && (
+                             <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-indigo-100">
+                               <TrendingUp size={10} /> {delivery.priorityScore} pts
+                             </span>
+                          )}
+                          {delivery.isReefer && (
+                             <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-rose-100">
+                               Reefer
+                             </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 mt-1 text-slate-500 text-sm">
                           <span className="flex items-center gap-1"><User size={14}/> {delivery.supplier}</span>
@@ -254,7 +327,15 @@ export default function YmsDashboard() {
                     <div className="flex items-center gap-8">
                       <div className="text-right">
                         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Tijdschema</p>
-                        <p className="font-bold text-slate-900">{new Date(delivery.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        <div className="flex flex-col items-end">
+                          <p className={`font-bold ${delivery.predictedEta ? 'text-slate-400 line-through text-xs' : 'text-slate-900'}`}>{new Date(delivery.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                          {delivery.predictedEta && (
+                            <p className="font-black text-indigo-600 flex items-center gap-1">
+                               <Bot size={12} />
+                               {new Date(delivery.predictedEta).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <div className="h-10 w-px bg-slate-100" />
                       <div className="flex gap-2">
