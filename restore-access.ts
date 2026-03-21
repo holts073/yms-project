@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { saveUser, getUsers } from './src/db/queries';
 import bcrypt from 'bcryptjs';
 
@@ -5,9 +6,9 @@ async function restore() {
   console.log("Starting account restoration...");
   
   const accounts = [
-    { email: 'admin@ilgfood.com', name: 'Admin', role: 'admin', password: 'admin123' },
-    { email: 'manager@ilgfood.com', name: 'Logistics Manager', role: 'manager', password: 'manager123' },
-    { email: 'staff@ilgfood.com', name: 'Staff User', role: 'staff', password: 'welkom123' }
+    { email: 'admin@ilgfood.com', name: 'Admin', role: 'admin', password: process.env.INITIAL_ADMIN_PASSWORD || 'admin123' },
+    { email: 'manager@ilgfood.com', name: 'Logistics Manager', role: 'manager', password: process.env.INITIAL_MANAGER_PASSWORD || 'manager123' },
+    { email: 'staff@ilgfood.com', name: 'Staff User', role: 'staff', password: process.env.INITIAL_STAFF_PASSWORD || 'welkom123' }
   ];
 
   for (const acc of accounts) {

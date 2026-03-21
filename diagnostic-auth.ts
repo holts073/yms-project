@@ -1,11 +1,12 @@
+import 'dotenv/config';
 import { getUsers } from './src/db/queries';
 import bcrypt from 'bcryptjs';
 
-const testPasswords: Record<string, string> = {
-  'admin@ilgfood.com': 'admin123',
-  'manager@ilgfood.com': 'manager123',
-  'staff@ilgfood.com': 'welkom123',
-  'test99@test.com': 'pwd'
+const testPasswords: Record<string, string | undefined> = {
+  'admin@ilgfood.com': process.env.INITIAL_ADMIN_PASSWORD,
+  'manager@ilgfood.com': process.env.INITIAL_MANAGER_PASSWORD,
+  'staff@ilgfood.com': process.env.INITIAL_STAFF_PASSWORD,
+  'test99@test.com': 'pwd' // This is just a test case, maybe also move to ENV if needed
 };
 
 async function run() {

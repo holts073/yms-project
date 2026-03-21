@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { insertDelivery, saveAddressBookEntry, saveUser } from './src/db/queries';
 import { Delivery, AddressEntry, User } from './src/types';
 import bcrypt from 'bcryptjs';
@@ -14,9 +15,17 @@ const seedDatabase = async () => {
   console.log("Seeding base testing data (Users & Address Book)...");
 
   // 1. Users
-  const staffHash = await bcrypt.hash('welkom123', 10);
-  const managerHash = await bcrypt.hash('manager123', 10);
-  const adminHash = await bcrypt.hash('admin123', 10);
+  const staffPwd = process.env.INITIAL_STAFF_PASSWORD || 'welkom123';
+  const managerPwd = process.env.INITIAL_MANAGER_PASSWORD || 'manager123';
+  const adminPwd = process.env.INITIAL_ADMIN_PASSWORD || 'admin123';
+
+  if (!process.env.INITIAL_ADMIN_PASSWORD) {
+    console.warn("WARNING: INITIAL_ADMIN_PASSWORD not set in .env. Using default.");
+  }
+
+  const staffHash = await bcrypt.hash(staffPwd, 10);
+  const managerHash = await bcrypt.hash(managerPwd, 10);
+  const adminHash = await bcrypt.hash(adminPwd, 10);
 
   const users: User[] = [
     { id: 'u1', name: 'Admin', email: 'admin@ilgfood.com', role: 'admin', passwordHash: adminHash },
