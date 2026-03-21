@@ -191,10 +191,13 @@ export function getYmsDeliveries(): any[] {
 export function saveYmsDelivery(d: any) {
   db.prepare(`
     INSERT OR REPLACE INTO yms_deliveries (
-      id, reference, licensePlate, supplier, temperature, scheduledTime, arrivalTime, dockId, waitingAreaId, transporterId, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      id, reference, licensePlate, supplier, supplierId, temperature, 
+      scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    d.id, d.reference, d.licensePlate, d.supplier, d.temperature, d.scheduledTime, d.arrivalTime || null, d.dockId || null, d.waitingAreaId || null, d.transporterId || null, d.status
+    d.id, d.reference, d.licensePlate, d.supplier, d.supplierId || null, d.temperature,
+    d.scheduledTime, d.arrivalTime || null, d.registrationTime || null, d.isLate ? 1 : 0, 
+    d.dockId || null, d.waitingAreaId || null, d.transporterId || null, d.status
   );
 }
 

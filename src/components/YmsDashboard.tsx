@@ -24,15 +24,18 @@ export default function YmsDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<Partial<YmsDelivery> | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
 
   if (!state?.yms) return null;
 
   const { deliveries, docks, waitingAreas } = state.yms;
 
   const handleSaveDelivery = (d: Partial<YmsDelivery>) => {
+    const supplier = state.addressBook.suppliers.find(s => s.id === d.supplierId);
     const delivery = {
       ...d,
       id: d.id || Math.random().toString(36).substr(2, 9),
+      supplier: supplier?.name || d.supplier || 'Onbekend',
       status: d.status || 'Scheduled',
       scheduledTime: d.scheduledTime || new Date().toISOString()
     };
@@ -139,6 +142,12 @@ export default function YmsDashboard() {
             Publieke Monitor
           </button>
           <button
+            onClick={() => setViewMode(viewMode === 'list' ? 'timeline' : 'list')}
+            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all border border-slate-200"
+          >
+            {viewMode === 'list' ? 'Timeline Weergave' : 'Lijst Weergave'}
+          </button>
+          <button
             onClick={() => { setEditingDelivery({ status: 'Scheduled', temperature: 'Droog' }); setIsModalOpen(true); }}
             className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-md active:scale-95"
           >
@@ -148,7 +157,10 @@ export default function YmsDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden flex flex-col">
+          {viewMode === 'list' ? (
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 flex-1 overflow-hidden">
+                {/* Previous List View Content... */}
         {/* Left Column: List of Deliveries */}
         <div className="xl:col-span-3 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
           <div className="flex gap-4 mb-2">
@@ -200,6 +212,13 @@ export default function YmsDashboard() {
                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
                              ({state.addressBook.transporters.find(t => t.id === delivery.transporterId)?.name})
                            </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        {delivery.isLate && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md text-[10px] font-bold uppercase tracking-wider border border-rose-100 animate-pulse">
+                            <AlertCircle size={10} /> Te laat aangemeld (&gt;24u)
+                          </span>
                         )}
                       </div>
                     </div>
@@ -280,43 +299,116 @@ export default function YmsDashboard() {
           </div>
         </div>
 
-        {/* Right Column: Dock Overview */}
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <MapPin size={20} className="text-indigo-600" />
-              Dock Live View
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {docks.map(dock => (
-                <div 
-                  key={dock.id}
-                  className={`p-4 rounded-3xl border-2 transition-all cursor-pointer ${
-                    dock.status === 'Occupied' 
-                      ? 'bg-indigo-50 border-indigo-200 shadow-inner' 
-                      : dock.status === 'Blocked' 
-                        ? 'bg-rose-50 border-rose-100 opacity-50' 
-                        : 'bg-slate-50 border-transparent hover:border-slate-200'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-black text-slate-400">{dock.id}</span>
-                    <div className={`w-2 h-2 rounded-full ${
-                      dock.status === 'Occupied' ? 'bg-indigo-600 animate-pulse' :
-                      dock.status === 'Blocked' ? 'bg-rose-600' : 'bg-emerald-500'
-                    }`} />
-                  </div>
-                  <p className="text-sm font-bold truncate">{dock.name}</p>
-                  {dock.currentDeliveryId && (
-                    <p className="text-[10px] font-bold text-indigo-600 mt-1 truncate">
-                      {deliveries.find(d => d.id === dock.currentDeliveryId)?.reference}
-                    </p>
-                  )}
-                </div>
-              ))}
+              </div>
             </div>
-          </div>
-        </div>
+          ) : (
+            <div className="flex-1 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden flex flex-col shadow-sm">
+              <div className="flex-1 overflow-auto custom-scrollbar relative">
+                {/* Timeline Header (Hours) */}
+                <div className="flex sticky top-0 z-20 bg-slate-50 border-b border-slate-200">
+                  <div className="w-40 flex-shrink-0 border-r border-slate-200 p-4 font-bold text-xs text-slate-400 uppercase tracking-widest bg-slate-50">Docks</div>
+                  {Array.from({ length: 16 }).map((_, i) => (
+                    <div key={i} className="w-[200px] flex-shrink-0 p-4 border-r border-slate-100 text-sm font-bold text-slate-600 text-center">
+                      {i + 7}:00
+                    </div>
+                  ))}
+                </div>
+
+                {/* Timeline Rows (Docks) */}
+                <div className="relative">
+                  {docks.map(dock => (
+                    <div key={dock.id} className="flex border-b border-slate-100 group">
+                      <div className="w-40 flex-shrink-0 border-r border-slate-200 p-4 bg-slate-50/50 group-hover:bg-slate-100 transition-colors">
+                        <div className="font-bold text-slate-900">{dock.name}</div>
+                        <div className="flex gap-1 mt-1">
+                          {dock.allowedTemperatures.map(temp => (
+                            <div key={temp} className={`w-2 h-2 rounded-full ${
+                              temp === 'Vries' ? 'bg-blue-400' : temp === 'Koel' ? 'bg-indigo-400' : 'bg-amber-400'
+                            }`} title={temp} />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 flex relative h-24 min-w-[3200px]">
+                        {/* Grid Lines */}
+                        {Array.from({ length: 16 }).map((_, i) => (
+                          <div key={i} className="w-[200px] border-r border-slate-50 flex-shrink-0" />
+                        ))}
+                        
+                        {/* Deliveries for this Dock */}
+                        {deliveries.filter(d => d.dockId === dock.id && d.status !== 'Completed').map(delivery => {
+                          const date = new Date(delivery.scheduledTime);
+                          const startHour = 7;
+                          const hour = date.getHours();
+                          const min = date.getMinutes();
+                          const offsetPercent = ((hour - startHour) * 60 + min) / (16 * 60) * 100;
+                          const leftPos = (hour - startHour) * 200 + (min / 60) * 200;
+                          
+                          return (
+                            <motion.div
+                              layoutId={delivery.id}
+                              key={delivery.id}
+                              drag
+                              dragMomentum={false}
+                              onDragEnd={(_, info) => {
+                                // Vertical drag for dock change
+                                const rowHeight = 96; // h-24
+                                const dockDelta = Math.round(info.offset.y / rowHeight);
+                                if (dockDelta !== 0) {
+                                  const dockIndex = docks.findIndex(dk => dk.id === dock.id);
+                                  const newDock = docks[dockIndex + dockDelta];
+                                  if (newDock) handleAssignToDock(delivery, newDock.id);
+                                }
+                                
+                                // Horizontal drag for time change
+                                const hourWidth = 200;
+                                const timeDeltaMinutes = (info.offset.x / hourWidth) * 60;
+                                if (Math.abs(timeDeltaMinutes) > 5) {
+                                  const newDate = new Date(delivery.scheduledTime);
+                                  newDate.setMinutes(newDate.getMinutes() + timeDeltaMinutes);
+                                  handleSaveDelivery({ ...delivery, scheduledTime: newDate.toISOString() });
+                                }
+                              }}
+                              className="absolute top-2 h-20 w-48 bg-white border border-slate-200 rounded-2xl shadow-lg p-3 cursor-grab active:cursor-grabbing z-10 hover:border-indigo-500 transition-colors group/card"
+                              style={{ left: leftPos }}
+                            >
+                              <div className="flex justify-between items-start">
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase ${
+                                  delivery.status === 'At Dock' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {delivery.status}
+                                </span>
+                                <MoreVertical size={12} className="text-slate-300 group-hover/card:text-slate-500" />
+                              </div>
+                              <p className="font-bold text-xs mt-1 truncate">{delivery.reference}</p>
+                              <p className="text-[10px] text-slate-400 font-mono font-bold mt-0.5">{delivery.licensePlate || 'GEEN NR'}</p>
+                              <div className="mt-2 flex items-center justify-between">
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                                  <Clock size={10} />
+                                  {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                {delivery.isLate && <AlertCircle size={10} className="text-rose-500 animate-pulse" />}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Current Time Indicator */}
+                  <div 
+                    className="absolute top-0 bottom-0 w-0.5 bg-rose-500 z-30 pointer-events-none shadow-[0_0_10px_rgba(244,63,94,0.5)]"
+                    style={{ 
+                      left: 160 + (Math.max(0, Math.min(16 * 60, (new Date().getHours() - 7) * 60 + new Date().getMinutes())) / (16 * 60)) * 3200
+                    }}
+                  >
+                    <div className="bg-rose-500 text-white text-[8px] font-black px-1 rounded-sm absolute -top-4 -left-3">NU</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
 
       {/* Modal for Add/Edit */}
@@ -354,12 +446,16 @@ export default function YmsDashboard() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Leverancier</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
-                    value={editingDelivery?.supplier || ''}
-                    onChange={(e) => setEditingDelivery({...editingDelivery, supplier: e.target.value})}
-                  />
+                  <select
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold appearance-none"
+                    value={editingDelivery?.supplierId || ''}
+                    onChange={(e) => setEditingDelivery({...editingDelivery, supplierId: e.target.value})}
+                  >
+                    <option value="">Selecteer Leverancier</option>
+                    {state.addressBook.suppliers.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Transporteur</label>

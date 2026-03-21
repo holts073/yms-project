@@ -129,6 +129,9 @@ db.exec(`
     dockId INTEGER,
     waitingAreaId INTEGER,
     transporterId TEXT,
+    supplierId TEXT,
+    registrationTime TEXT,
+    isLate BOOLEAN,
     status TEXT NOT NULL DEFAULT 'Scheduled',
     FOREIGN KEY(dockId) REFERENCES yms_docks(id),
     FOREIGN KEY(waitingAreaId) REFERENCES yms_waiting_areas(id)
@@ -190,6 +193,18 @@ try {
 
 try {
   db.prepare("ALTER TABLE yms_deliveries ADD COLUMN transporterId TEXT").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN supplierId TEXT").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN registrationTime TEXT").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN isLate BOOLEAN").run();
 } catch (e) {}
 
 

@@ -405,12 +405,23 @@ async function startServer() {
             io.emit("state_update", buildStaticState());
             break;
 
-          case "YMS_SAVE_DELIVERY":
-            saveYmsDelivery(payload);
+          case "YMS_SAVE_DELIVERY": {
+            const current = payload as any;
+            if (!current.registrationTime) {
+                current.registrationTime = new Date().toISOString();
+            }
+            // 24h Registration Rule
+            const regDate = new Date(current.registrationTime).getTime();
+            const schedDate = new Date(current.scheduledTime).getTime();
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+            current.isLate = (regDate + twentyFourHours) > schedDate;
+
+            saveYmsDelivery(current);
             logEntry.action = "YMS Delivery Saved";
-            logEntry.details = `Saved YMS Delivery: ${payload.reference}`;
+            logEntry.details = `Saved YMS Delivery: ${current.reference} (Late: ${current.isLate})`;
             io.emit("state_update", buildStaticState());
             break;
+          }
 
           case "YMS_DELETE_DELIVERY":
             deleteYmsDelivery(payload);

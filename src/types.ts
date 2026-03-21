@@ -157,9 +157,12 @@ export interface YmsDelivery {
   reference: string;
   licensePlate: string;
   supplier: string;
+  supplierId?: string;
   temperature: YmsTemperature;
   scheduledTime: string;
   arrivalTime?: string;
+  registrationTime?: string;
+  isLate?: boolean;
   dockId?: number;
   waitingAreaId?: number;
   transporterId?: string;

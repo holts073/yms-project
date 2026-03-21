@@ -18,8 +18,10 @@ export default function YmsPublic() {
   const activeDeliveries = deliveries
     .filter(d => d.status === 'Arrived' || d.status === 'At Dock')
     .sort((a, b) => {
+      // Prioritize "At Dock"
       if (a.status === 'At Dock' && b.status !== 'At Dock') return -1;
       if (a.status !== 'At Dock' && b.status === 'At Dock') return 1;
+      // Then by scheduled time
       return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
     });
 
