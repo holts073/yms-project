@@ -1,31 +1,38 @@
-# ILG Foodgroup - Supply Chain / Yard Management System
+# ILG Foodgroup - Supply Chain & Yard Management System (YMS)
 
-A robust, full-stack application designed to streamline and manage the entire supply chain workflow, handling container and ex-works deliveries. It provides a real-time dashboard, detailed statistics, automated status tracking, document management, and automated Mail Transport Orders.
+A comprehensive, full-stack logistics platform designed to manage the entire supply chain workflow—from inbound container and ex-works deliveries to real-time yard operations and dock scheduling.
 
-## Architectural Changes & Overview
+## 🚀 Recent Expansion: Yard Management System (YMS)
+The system now includes a state-of-the-art **YMS Module**, enabling warehouse managers to orchestrate yard traffic with precision:
 
-The system has recently been migrated to a more robust, state-of-the-art architecture:
-- **SQLite Database:** The application now utilizes a highly concurrent relational database (`better-sqlite3`), allowing for ACID-compliant transactions, scaling, and the ability to persist millions of rows efficiently.
-- **Server-Side Pagination:** The React frontend now interfaces directly with a REST API (`/api/deliveries`) equipped with efficient pagination and querying.
-- **Persistent Filters & Sortering:** Delivery filtering and sorting parameters are dynamically synced with the browser's URL, enabling users to refresh the page, share links, or navigate History without losing context.
-- **SMTP Password Reset:** The login portal features a newly added automated password-reset flow powered by dynamic `nodemailer` configurations set by the system admin.
-- **Micro-Animations & Modern UI:** A sleek, glass-morphic interface leveraging `motion/react` with customized animations out-of-the-box.
+- **Real-time Dock Scheduling:** Interactive Timeline and List views for managing dock occupancy across multiple warehouses.
+- **Inbound & Outbound Support:** Seamlessly switch between **INBOUND** (unloading) and **OUTBOUND** (loading) flows with dynamic UI status updates.
+- **Fast-Lane Logic:** Efficiently handle small shipments (≤ 10 pallets) with specialized **Fast-Lane Docks** (⚡) and automated late-registration exemptions.
+- **Waiting Area Management:** Full CRUD control over yard parking spots, including status toggles for **Active**, **Deactivated**, and **Blocked** (Maintenance) states.
+- **AI-Driven Optimization:** Built-in AI logic for predictive scheduling, ETA adjustments, and priority-based dock assignment.
+- **Reefer & Temperature Workflow:** Dedicated monitoring for temperature-controlled trailers with specialized priority rules and long-wait alerts.
+- **Compliance Reporting:** Automated tracking of non-compliant arrivals (late or unannounced) to identify and address supplier/carrier performance issues.
 
-## Readiness for a Yard Management System (YMS)
-Due to the recent transition to an established relational database structure (SQLite), the application is now primed for easy integration of additional operational modules—specifically, a **Yard Management System (YMS)**. 
+## 📦 Core Logistics Features
 
-With data normalized into structured `deliveries`, `users`, and `documents` tables, future components can freely query and attach properties such as:
-- Dock assignments
-- Real-time vehicle check-in / check-out timestamps
-- Carrier metrics
-- Gate management logic
+- **Delivery Dashboard:** At-a-glance oversight of daily actions, delayed containers, and pending documentation.
+- **Advanced Statistics:** Granular insights into Lead Times, On-Time In-Full (OTIF) execution, cost/volume ratios, and supplier performance.
+- **Address Book:** Integrated contact management for Suppliers and Transporters, featuring OTIF tracking and rich-text remarks.
+- **Automated Communication:** One-click generation of Mail Transport Orders (MTO) via a configurable SMTP engine.
+- **Document Management:** Centralized repository for delivery-related paperwork with automated status tracking.
 
-All these capabilities seamlessly append to the existing relational model without bottlenecking the application state.
+## 🛠️ Technical Stack
 
-## Installation & Setup
+- **Frontend:** React 19, Vite, Tailwind CSS (Vanilla CSS focus), Lucide Icons, Framer Motion (for high-end micro-animations).
+- **Backend:** Node.js, Express, Socket.io (for real-time dashboard syncing).
+- **Database:** SQLite (`better-sqlite3`) for robust, ACID-compliant relational data management.
+- **Mailing:** Nodemailer with dynamic admin-defined SMTP configurations.
+- **Language:** TypeScript for end-to-end type safety.
+
+## ⚙️ Installation & Setup
 
 ### Prerequisites
-- Node.js (v18 or higher recommended)
+- Node.js (v18+)
 - NPM
 
 ### Getting Started
@@ -35,33 +42,28 @@ All these capabilities seamlessly append to the existing relational model withou
    npm install
    ```
 
-2. **Initialize Database**
-   The application intercepts startup and automatically handles the creation of `database.sqlite` based on the defined schema. 
-   *(Note: Any existing data within `database.json` will be gracefully parsed and migrated into SQLite across the `src/db/migrate.ts` script!)*
+2. **Database Initialization**
+   The application automatically handles the creation of `database.sqlite` and applies necessary migrations on startup based on the `src/db/sqlite.ts` schema.
 
-3. **Development Server**
-   Start both the Vite frontend server and Express/Socket backend simultaneously.
+3. **Development Mode**
+   Starts the combined Express/Socket.io backend and the Vite frontend:
    ```bash
    npm run dev
    ```
 
 4. **Production Build**
-   To deploy, compile the frontend application:
+   Build the frontend:
    ```bash
    npm run build
    ```
-   Then run the server:
+   Start the server in production:
    ```bash
    npm start
    ```
 
-## Features
+## 🔐 Security & Access
+- **Authentication:** Robust login system with password hashing (`bcryptjs`).
+- **Access Recovery:** Managed via the `restore-access.ts` utility and automated password-reset flows.
 
-- **Dashboard:** At-a-glance oversight over deliveries needing action today, delayed containers, and missing paperwork.
-- **Statistics:** Granular insights over Lead Times, On-Time In-Full (OTIF) execution, Type ratios, and Cost/Volume ratios based on suppliers. 
-- **Delivery Management:** View, sort, export to CSV, edit, and track delivery history in a modal format.
-- **Supplier & Forwarder Contacts:** Built-in address book supporting rich text, OTIF statistics, and conditional remarks.
-- **Automated Communication:** One-click automated E-mail generation (Mail Transport Order) utilizing configurable Mailserver Settings (SMTP) accessible efficiently via the Admin settings panel.
-
-## License
+## 📄 License
 Proprietary software - ILG Foodgroup. All rights reserved.
