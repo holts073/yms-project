@@ -138,7 +138,7 @@ export interface AppState {
 }
 
 export type YmsTemperature = 'Droog' | 'Vries' | 'Koel';
-export type YmsDeliveryStatus = 'Scheduled' | 'Arrived' | 'At Dock' | 'Completed';
+export type YmsDeliveryStatus = 'PLANNED' | 'GATE_IN' | 'IN_YARD' | 'DOCKED' | 'UNLOADING' | 'LOADING' | 'COMPLETED' | 'GATE_OUT';
 
 export interface YmsWarehouse {
   id: string;
@@ -170,6 +170,7 @@ export interface YmsDelivery {
   licensePlate: string;
   supplier: string;
   supplierId?: string;
+  mainDeliveryId?: string;
   temperature: YmsTemperature;
   scheduledTime: string;
   arrivalTime?: string;
@@ -179,6 +180,7 @@ export interface YmsDelivery {
   waitingAreaId?: number;
   transporterId?: string;
   status: YmsDeliveryStatus;
+  statusTimestamps?: Record<string, string>; // Maps status to ISO timestamp
   
   // AI & Reefer Features
   predictedEta?: string;

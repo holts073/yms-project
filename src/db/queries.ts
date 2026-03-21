@@ -207,21 +207,22 @@ export function getYmsDeliveries(warehouseId?: string): any[] {
   return rows.map(r => ({
     ...r,
     isReefer: r.isReefer === 1,
-    isLate: r.isLate === 1
+    isLate: r.isLate === 1,
+    statusTimestamps: r.statusTimestamps ? JSON.parse(r.statusTimestamps) : {}
   }));
 }
 
 export function saveYmsDelivery(d: any) {
   db.prepare(`
     INSERT OR REPLACE INTO yms_deliveries (
-      id, warehouseId, reference, licensePlate, supplier, supplierId, temperature, 
-      scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status,
+      id, warehouseId, reference, licensePlate, supplier, supplierId, mainDeliveryId, temperature, 
+      scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
       predictedEta, priorityScore, estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    d.id, d.warehouseId || 'W01', d.reference, d.licensePlate, d.supplier, d.supplierId || null, d.temperature,
+    d.id, d.warehouseId || 'W01', d.reference, d.licensePlate, d.supplier, d.supplierId || null, d.mainDeliveryId || null, d.temperature,
     d.scheduledTime, d.arrivalTime || null, d.registrationTime || null, d.isLate ? 1 : 0, 
-    d.dockId || null, d.waitingAreaId || null, d.transporterId || null, d.status,
+    d.dockId || null, d.waitingAreaId || null, d.transporterId || null, d.status, d.statusTimestamps ? JSON.stringify(d.statusTimestamps) : null,
     d.predictedEta || null, d.priorityScore || 0, d.estimatedDuration || 60, d.isReefer ? 1 : 0, d.tempAlertThreshold || 30, d.lastEtaUpdate || null
   );
 }

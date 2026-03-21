@@ -40,6 +40,7 @@ import {
   resolveYmsAlert
 } from './src/db/queries';
 import { getSetting, saveSetting } from './src/db/sqlite';
+import { isValidTransition, calculateKPIs } from './src/lib/ymsRules';
 
 async function startServer() {
   const app = express();
@@ -294,13 +295,16 @@ async function startServer() {
                 
                 const newYmsDelivery = {
                   id: Math.random().toString(36).substr(2, 9),
+                  mainDeliveryId: newPayload.id,
                   reference: newPayload.reference,
-                  licensePlate: '', // Can be updated later
+                  licensePlate: newPayload.containerNumber || 'NR ONBEKEND', // Can be updated later
                   supplier: supplier?.name || 'Onbekend',
                   temperature: newPayload.cargoType || 'Droog',
+                  isReefer: newPayload.type === 'container' ? 1 : 0,
                   scheduledTime: newPayload.etaWarehouse || newPayload.eta || new Date().toISOString(),
-                  status: 'Scheduled',
-                  transporterId: newPayload.transporterId
+                  status: 'PLANNED',
+                  transporterId: newPayload.transporterId,
+                  statusTimestamps: { 'PLANNED': timestamp }
                 };
                 saveYmsDelivery(newYmsDelivery);
                 io.emit("state_update", buildStaticState());
@@ -420,18 +424,44 @@ async function startServer() {
 
           case "YMS_SAVE_DELIVERY": {
             const current = payload as any;
-            if (!current.registrationTime) {
-                current.registrationTime = new Date().toISOString();
+            const ymsDeliveries = getYmsDeliveries();
+            const existing = ymsDeliveries.find(d => d.id === current.id);
+            
+            if (existing && current.status && existing.status !== current.status) {
+              if (!isValidTransition(existing.status, current.status)) {
+                console.error(`Invalid transition from ${existing.status} to ${current.status}`);
+                // Don't break completely, but log error. In a strict system we'd return 400.
+              }
+
+              // Update Timestamps
+              current.statusTimestamps = {
+                ...(existing.statusTimestamps || {}),
+                [current.status]: timestamp
+              };
+
+              // Special logic for GATE_IN
+              if (current.status === 'GATE_IN') {
+                current.registrationTime = timestamp;
+                current.arrivalTime = timestamp;
+              }
+
+              // Sync back to main delivery on COMPLETED
+              if (current.status === 'COMPLETED' && current.mainDeliveryId) {
+                const allDels = getAllDeliveries();
+                const mainDel = allDels.find(d => d.id === current.mainDeliveryId);
+                if (mainDel) {
+                  insertDelivery({ ...mainDel, status: 100, updatedAt: timestamp });
+                  io.emit("DELIVERY_UPDATED");
+                }
+              }
+            } else if (!existing) {
+                // Initialize timestamps for new delivery
+                current.statusTimestamps = { [current.status || 'PLANNED']: timestamp };
             }
-            // 24h Registration Rule
-            const regDate = new Date(current.registrationTime).getTime();
-            const schedDate = new Date(current.scheduledTime).getTime();
-            const twentyFourHours = 24 * 60 * 60 * 1000;
-            current.isLate = (regDate + twentyFourHours) > schedDate;
 
             saveYmsDelivery(current);
             logEntry.action = "YMS Delivery Saved";
-            logEntry.details = `Saved YMS Delivery: ${current.reference} (Late: ${current.isLate})`;
+            logEntry.details = `Saved YMS Delivery: ${current.reference} (Status: ${current.status})`;
             io.emit("state_update", buildStaticState());
             break;
           }
@@ -576,34 +606,61 @@ async function startServer() {
     });
   }
 
-  // Background Worker for Reefer Alerts
+  // Background Worker for Reefer & Detention Alerts
   setInterval(() => {
-    const deliveries = getYmsDeliveries().filter(d => d.status === 'Arrived' && d.isReefer);
+    const allDeliveries = getYmsDeliveries();
     const now = new Date();
     
-    deliveries.forEach(d => {
-        if (!d.arrivalTime) return;
-        const waitedMins = (now.getTime() - new Date(d.arrivalTime).getTime()) / 60000;
-        const threshold = d.tempAlertThreshold || 30;
-        
-        if (waitedMins > threshold) {
-            const existingAlerts = getYmsAlerts(d.warehouseId);
-            const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'WAIT_TIME' && !a.resolved);
+    allDeliveries.forEach(d => {
+        if (!d.isReefer) return;
+
+        // Dwell Time in Yard (Wachtend)
+        if (d.status === 'IN_YARD' && d.statusTimestamps?.IN_YARD) {
+            const dwellMins = (now.getTime() - new Date(d.statusTimestamps.IN_YARD).getTime()) / 60000;
+            const limit = 60; // 1 hour limit for reefers in yard
             
-            if (!alreadyAlerted) {
-                const alert = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    deliveryId: d.id,
-                    warehouseId: d.warehouseId,
-                    type: 'WAIT_TIME',
-                    severity: waitedMins > threshold * 2 ? 'high' : 'medium',
-                    timestamp: now.toISOString(),
-                    message: `REEFER ALERT: ${d.licensePlate} (${d.reference}) wacht al ${Math.round(waitedMins)} minuten!`,
-                    resolved: false
-                };
-                saveYmsAlert(alert);
-                // We emit after the loop or inside? Inside is fine for immediate notification
-                io.emit("state_update", buildStaticState());
+            if (dwellMins > limit) {
+                const existingAlerts = getYmsAlerts(d.warehouseId);
+                const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'DWELL_TIME' && !a.resolved);
+                
+                if (!alreadyAlerted) {
+                    saveYmsAlert({
+                        id: Math.random().toString(36).substr(2, 9),
+                        deliveryId: d.id,
+                        warehouseId: d.warehouseId,
+                        type: 'DWELL_TIME',
+                        severity: 'high',
+                        timestamp: now.toISOString(),
+                        message: `REEFER DWELL ALERT: ${d.reference} wacht al >${limit}m in de yard!`,
+                        resolved: false
+                    });
+                    io.emit("state_update", buildStaticState());
+                }
+            }
+        }
+
+        // Existing Wait Time Logic (Arrived/GATE_IN but not moving)
+        if (d.status === 'GATE_IN' && d.statusTimestamps?.GATE_IN) {
+            const waitedMins = (now.getTime() - new Date(d.statusTimestamps.GATE_IN).getTime()) / 60000;
+            const threshold = d.tempAlertThreshold || 30;
+            
+            if (waitedMins > threshold) {
+                const existingAlerts = getYmsAlerts(d.warehouseId);
+                const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'WAIT_TIME' && !a.resolved);
+                
+                if (!alreadyAlerted) {
+                    saveYmsAlert({
+                        id: Math.random().toString(36).substr(2, 9),
+                        deliveryId: d.id,
+                        warehouseId: d.warehouseId,
+                        type: 'WAIT_TIME',
+                        severity: waitedMins > threshold * 2 ? 'high' : 'medium',
+                        timestamp: now.toISOString(),
+                        message: `REEFER WAIT ALERT: ${d.licensePlate} (${d.reference}) wacht al ${Math.round(waitedMins)} minuten!`,
+                        resolved: false
+                    });
+                    io.emit("state_update", buildStaticState());
+                }
             }
         }
     });

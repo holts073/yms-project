@@ -143,9 +143,11 @@ db.exec(`
     waitingAreaId INTEGER,
     transporterId TEXT,
     supplierId TEXT,
+    mainDeliveryId TEXT,
     registrationTime TEXT,
     isLate BOOLEAN,
-    status TEXT NOT NULL DEFAULT 'Scheduled',
+    status TEXT NOT NULL DEFAULT 'PLANNED',
+    statusTimestamps TEXT, -- JSON record of timestamps
     predictedEta TEXT,
     priorityScore INTEGER DEFAULT 0,
     estimatedDuration INTEGER DEFAULT 60,
@@ -258,6 +260,14 @@ reeferColumns.forEach(col => {
         db.prepare(`ALTER TABLE yms_deliveries ADD COLUMN ${col.name} ${col.type}`).run();
     } catch (e) {}
 });
+
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN statusTimestamps TEXT").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN mainDeliveryId TEXT").run();
+} catch (e) {}
 
 
 // Helper for settings

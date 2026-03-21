@@ -20,7 +20,9 @@ import {
   Bot
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { cn } from '../lib/utils';
 import { YmsDelivery, YmsTemperature, YmsDeliveryStatus, YmsDock, YmsWaitingArea } from '../types';
+import { getStatusLabel, YMS_STATUS_FLOW, isValidTransition } from '../lib/ymsRules';
 
 export default function YmsDashboard() {
   const { state, dispatch } = useSocket();
@@ -74,16 +76,19 @@ export default function YmsDashboard() {
   };
 
   const handleUpdateStatus = (d: YmsDelivery, status: YmsDeliveryStatus) => {
+    if (!isValidTransition(d.status, status)) {
+      if (!confirm(`Statusovergang van ${getStatusLabel(d.status)} naar ${getStatusLabel(status)} is ongebruikelijk. Doorgaan?`)) return;
+    }
+
     const updates: Partial<YmsDelivery> = { ...d, status };
     
-    if (status === 'Arrived') {
-      updates.arrivalTime = new Date().toISOString();
-    } else if (status === 'Completed') {
+    if (status === 'COMPLETED') {
       if (d.dockId) {
         const dock = currentDocks.find(dk => dk.id === d.dockId);
         if (dock) dispatch('YMS_UPDATE_DOCK', { ...dock, status: 'Available', currentDeliveryId: null });
         updates.dockId = undefined;
       }
+    } else if (status === 'GATE_OUT') {
       if (d.waitingAreaId) {
         const wa = currentWaitingAreas.find(w => w.id === d.waitingAreaId);
         if (wa) dispatch('YMS_UPDATE_WAITING_AREA', { ...wa, status: 'Available', currentDeliveryId: null });
@@ -108,7 +113,7 @@ export default function YmsDashboard() {
     }
 
     dispatch('YMS_UPDATE_DOCK', { ...dock, status: 'Occupied', currentDeliveryId: d.id });
-    dispatch('YMS_SAVE_DELIVERY', { ...d, dockId, waitingAreaId: null, status: 'At Dock' });
+    dispatch('YMS_SAVE_DELIVERY', { ...d, dockId, waitingAreaId: null, status: 'DOCKED' });
   };
 
   const handleAssignToWaitingArea = (d: YmsDelivery, waId: number) => {
@@ -125,7 +130,7 @@ export default function YmsDashboard() {
     }
 
     dispatch('YMS_UPDATE_WAITING_AREA', { ...wa, status: 'Occupied', currentDeliveryId: d.id });
-    dispatch('YMS_SAVE_DELIVERY', { ...d, waitingAreaId: waId, dockId: null, status: 'Arrived' });
+    dispatch('YMS_SAVE_DELIVERY', { ...d, waitingAreaId: waId, dockId: null, status: 'IN_YARD' });
   };
 
   const filteredDeliveries = currentDeliveries.filter(d => 
@@ -261,16 +266,19 @@ export default function YmsDashboard() {
       <div className="flex-1 overflow-hidden flex flex-col">
         {viewMode === 'list' ? (
           <div className="xl:col-span-3 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
-            <div className="flex gap-4 mb-2">
-              <div className="bg-blue-50 text-blue-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
-                Gepland ({filteredDeliveries.filter(d => d.status === 'Scheduled').length})
-              </div>
-              <div className="bg-amber-50 text-amber-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
-                Aangekomen ({filteredDeliveries.filter(d => d.status === 'Arrived').length})
-              </div>
-              <div className="bg-indigo-50 text-indigo-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
-                Aan Dock ({filteredDeliveries.filter(d => d.status === 'At Dock').length})
-              </div>
+            <div className="flex gap-4 mb-2 overflow-x-auto pb-2 scrollbar-hide">
+              {['PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'].map(s => (
+                <div key={s} className={cn(
+                  "px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap",
+                  s === 'PLANNED' ? "bg-slate-100 text-slate-600" :
+                  s === 'GATE_IN' ? "bg-amber-50 text-amber-700" :
+                  s === 'IN_YARD' ? "bg-orange-50 text-orange-700" :
+                  s === 'DOCKED' ? "bg-indigo-50 text-indigo-700" :
+                  s === 'UNLOADING' || s === 'LOADING' ? "bg-blue-50 text-blue-700" : "bg-emerald-50 text-emerald-700"
+                )}>
+                  {getStatusLabel(s as any)} ({currentDeliveries.filter(d => d.status === s).length})
+                </div>
+              ))}
             </div>
 
             <div className="grid gap-4">
@@ -279,9 +287,11 @@ export default function YmsDashboard() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                       <div className={`p-4 rounded-2xl ${
-                        delivery.status === 'Scheduled' ? 'bg-blue-50 text-blue-600' :
-                        delivery.status === 'Arrived' ? 'bg-amber-50 text-amber-600' :
-                        delivery.status === 'At Dock' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                        delivery.status === 'PLANNED' ? 'bg-slate-50 text-slate-400' :
+                        delivery.status === 'GATE_IN' ? 'bg-amber-50 text-amber-600' :
+                        delivery.status === 'IN_YARD' ? 'bg-orange-50 text-orange-600' :
+                        delivery.status === 'DOCKED' ? 'bg-indigo-50 text-indigo-600' :
+                        delivery.status === 'UNLOADING' || delivery.status === 'LOADING' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
                       }`}>
                         <Truck size={32} />
                       </div>
@@ -339,12 +349,12 @@ export default function YmsDashboard() {
                       </div>
                       <div className="h-10 w-px bg-slate-100" />
                       <div className="flex gap-2">
-                        {delivery.status === 'Scheduled' && (
-                          <button onClick={() => handleUpdateStatus(delivery, 'Arrived')} className="px-4 py-2 bg-amber-50 text-amber-700 rounded-xl font-bold text-sm hover:bg-amber-100 transition-all flex items-center gap-2"><Zap size={16} /> Melden</button>
+                        {delivery.status === 'PLANNED' && (
+                          <button onClick={() => handleUpdateStatus(delivery, 'GATE_IN')} className="px-4 py-2 bg-amber-50 text-amber-700 rounded-xl font-bold text-sm hover:bg-amber-100 transition-all flex items-center gap-2"><MapPin size={16} /> Melden</button>
                         )}
-                        {(delivery.status === 'Arrived' || delivery.status === 'Scheduled') && (
+                        {(delivery.status === 'GATE_IN' || delivery.status === 'PLANNED') && (
                           <div className="relative group/assign">
-                            <button className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-all flex items-center gap-2"><MapPin size={16} /> Dock</button>
+                            <button className="px-4 py-2 bg-orange-50 text-orange-700 rounded-xl font-bold text-sm hover:bg-orange-100 transition-all flex items-center gap-2"><Warehouse size={16} /> Yard/Dock</button>
                             <div className="absolute right-0 bottom-full mb-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl opacity-0 invisible group-hover/assign:opacity-100 group-hover/assign:visible transition-all z-10 p-4">
                               <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-tighter">Beschikbare Docks</p>
                               <div className="grid grid-cols-4 gap-2">
@@ -355,14 +365,35 @@ export default function YmsDashboard() {
                               <p className="text-xs font-bold text-slate-400 my-3 uppercase tracking-tighter">Wachtplaatsen</p>
                               <div className="grid grid-cols-5 gap-2">
                                 {currentWaitingAreas.filter(wa => wa.status === 'Available').map(wa => (
-                                  <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-slate-50 hover:bg-amber-600 hover:text-white rounded-lg text-xs font-bold transition-all">{wa.id}</button>
+                                  <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-slate-50 hover:bg-orange-600 hover:text-white rounded-lg text-xs font-bold transition-all">{wa.id}</button>
                                 ))}
                               </div>
                             </div>
                           </div>
                         )}
-                        {delivery.status === 'At Dock' && (
-                          <button onClick={() => handleUpdateStatus(delivery, 'Completed')} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-sm hover:bg-emerald-100 transition-all flex items-center gap-2"><CheckCircle2 size={16} /> Klaar</button>
+                        {delivery.status === 'IN_YARD' && (
+                           <div className="relative group/yard-to-dock">
+                              <button className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-all flex items-center gap-2"><MapPin size={16} /> Naar Dock</button>
+                              <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl opacity-0 invisible group-hover/yard-to-dock:opacity-100 group-hover/yard-to-dock:visible transition-all z-10 p-4">
+                                <div className="grid grid-cols-4 gap-2">
+                                  {currentDocks.filter(dk => dk.status === 'Available' && dk.allowedTemperatures.includes(delivery.temperature)).map(dk => (
+                                    <button key={dk.id} onClick={() => handleAssignToDock(delivery, dk.id)} className="p-2 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-bold transition-all">{dk.id}</button>
+                                  ))}
+                                </div>
+                              </div>
+                           </div>
+                        )}
+                        {delivery.status === 'DOCKED' && (
+                          <div className="flex gap-2">
+                             <button onClick={() => handleUpdateStatus(delivery, 'UNLOADING')} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold text-sm hover:bg-blue-100 transition-all flex items-center gap-2">Lossen</button>
+                             <button onClick={() => handleUpdateStatus(delivery, 'LOADING')} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold text-sm hover:bg-blue-100 transition-all flex items-center gap-2">Laden</button>
+                          </div>
+                        )}
+                        {(delivery.status === 'UNLOADING' || delivery.status === 'LOADING') && (
+                          <button onClick={() => handleUpdateStatus(delivery, 'COMPLETED')} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-sm hover:bg-emerald-100 transition-all flex items-center gap-2"><CheckCircle2 size={16} /> Gereed</button>
+                        )}
+                        {delivery.status === 'COMPLETED' && (
+                          <button onClick={() => handleUpdateStatus(delivery, 'GATE_OUT')} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all flex items-center gap-2">Vertrokken</button>
                         )}
                         <button onClick={() => { setEditingDelivery(delivery); setIsModalOpen(true); }} className="p-2 text-slate-400 hover:text-slate-600"><MoreVertical size={20} /></button>
                       </div>
@@ -442,9 +473,10 @@ export default function YmsDashboard() {
                           >
                             <div className="flex justify-between items-start">
                               <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase ${
-                                delivery.status === 'At Dock' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'
+                                delivery.status === 'DOCKED' ? 'bg-indigo-100 text-indigo-700' : 
+                                delivery.status === 'UNLOADING' || delivery.status === 'LOADING' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'
                               }`}>
-                                {delivery.status}
+                                {getStatusLabel(delivery.status)}
                               </span>
                               <MoreVertical size={12} className="text-slate-300 group-hover/card:text-slate-500" />
                             </div>

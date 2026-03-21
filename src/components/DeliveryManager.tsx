@@ -677,24 +677,6 @@ Tel: ${company.phone} | Email: ${company.email}
                           Markeer 'Onderweg naar Magazijn'
                         </button>
                       )}
-                      {delivery.type === 'container' && delivery.status >= 75 && delivery.status < 100 && canEdit && (
-                        <button 
-                          onClick={() => setManualStatus(delivery, 100)}
-                          className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
-                        >
-                          <Check size={12} />
-                          Zet op 'Afgeleverd'
-                        </button>
-                      )}
-                      {delivery.type === 'exworks' && delivery.status >= 50 && delivery.status < 100 && canEdit && (
-                        <button 
-                          onClick={() => setManualStatus(delivery, 100)}
-                          className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
-                        >
-                          <Check size={12} />
-                          Zet op 'Afgeleverd'
-                        </button>
-                      )}
                       {((delivery.type === 'container' && delivery.status >= 75) || (delivery.type === 'exworks' && delivery.status >= 50)) && delivery.status < 100 && (
                         <div className="relative group/dock-assign">
                            <button 
@@ -720,12 +702,14 @@ Tel: ${company.phone} | Email: ${company.email}
                                       // 3. Update/Save YmsDelivery
                                       dispatch('YMS_SAVE_DELIVERY', {
                                         id: ymsId,
+                                        mainDeliveryId: delivery.id,
                                         reference: delivery.reference,
                                         licensePlate: delivery.containerNumber || '',
                                         supplier: state.addressBook.suppliers.find(s => s.id === delivery.supplierId)?.name || 'Onbekend',
                                         temperature: delivery.cargoType || 'Droog',
+                                        isReefer: delivery.type === 'container' ? 1 : 0,
                                         scheduledTime: delivery.etaWarehouse || delivery.eta || new Date().toISOString(),
-                                        status: 'At Dock',
+                                        status: 'DOCKED',
                                         dockId: dk.id,
                                         transporterId: delivery.transporterId
                                       });
