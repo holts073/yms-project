@@ -27,7 +27,13 @@ import {
   saveYmsWaitingArea,
   getYmsDeliveries,
   saveYmsDelivery,
-  deleteYmsDelivery
+  deleteYmsDelivery,
+  getYmsWarehouses,
+  saveYmsWarehouse,
+  deleteYmsWarehouse,
+  getYmsDockOverrides,
+  saveYmsDockOverride,
+  deleteYmsDockOverride
 } from './src/db/queries';
 import { getSetting, saveSetting } from './src/db/sqlite';
 
@@ -55,9 +61,11 @@ async function startServer() {
       companySettings: getSetting('companySettings', {}),
       settings: getSetting('settings', {}),
       yms: {
+        warehouses: getYmsWarehouses(),
         docks: getYmsDocks(),
         waitingAreas: getYmsWaitingAreas(),
-        deliveries: getYmsDeliveries()
+        deliveries: getYmsDeliveries(),
+        dockOverrides: getYmsDockOverrides()
       }
     };
   };
@@ -427,6 +435,34 @@ async function startServer() {
             deleteYmsDelivery(payload);
             logEntry.action = "YMS Delivery Deleted";
             logEntry.details = `Deleted YMS Delivery ID: ${payload}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_SAVE_WAREHOUSE":
+            saveYmsWarehouse(payload);
+            logEntry.action = "YMS Warehouse Saved";
+            logEntry.details = `Saved YMS Warehouse: ${payload.name}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_DELETE_WAREHOUSE":
+            deleteYmsWarehouse(payload);
+            logEntry.action = "YMS Warehouse Deleted";
+            logEntry.details = `Deleted YMS Warehouse ID: ${payload}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_SAVE_DOCK_OVERRIDE":
+            saveYmsDockOverride(payload);
+            logEntry.action = "YMS Dock Override Saved";
+            logEntry.details = `Saved Override for Dock ${payload.dockId} on ${payload.date}`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "YMS_DELETE_DOCK_OVERRIDE":
+            deleteYmsDockOverride(payload);
+            logEntry.action = "YMS Dock Override Deleted";
+            logEntry.details = `Deleted Override ID: ${payload}`;
             io.emit("state_update", buildStaticState());
             break;
         }

@@ -162,8 +162,14 @@ export function addLog(log: any) {
 }
 
 // YMS Queries
-export function getYmsDocks(): any[] {
-  const rows = db.prepare('SELECT * FROM yms_docks').all() as any[];
+export function getYmsDocks(warehouseId?: string): any[] {
+  let query = 'SELECT * FROM yms_docks';
+  const params: any[] = [];
+  if (warehouseId) {
+    query += ' WHERE warehouseId = ?';
+    params.push(warehouseId);
+  }
+  const rows = db.prepare(query).all(...params) as any[];
   return rows.map(r => ({
     ...r,
     allowedTemperatures: JSON.parse(r.allowedTemperatures)
@@ -171,31 +177,43 @@ export function getYmsDocks(): any[] {
 }
 
 export function saveYmsDock(dock: any) {
-  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, currentDeliveryId = ? WHERE id = ?')
-    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.currentDeliveryId || null, dock.id);
+  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?')
+    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.currentDeliveryId || null, dock.id, dock.warehouseId);
 }
 
-export function getYmsWaitingAreas(): any[] {
-  return db.prepare('SELECT * FROM yms_waiting_areas').all();
+export function getYmsWaitingAreas(warehouseId?: string): any[] {
+  let query = 'SELECT * FROM yms_waiting_areas';
+  const params: any[] = [];
+  if (warehouseId) {
+    query += ' WHERE warehouseId = ?';
+    params.push(warehouseId);
+  }
+  return db.prepare(query).all(...params);
 }
 
 export function saveYmsWaitingArea(wa: any) {
-  db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, currentDeliveryId = ? WHERE id = ?')
-    .run(wa.name, wa.status, wa.currentDeliveryId || null, wa.id);
+  db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?')
+    .run(wa.name, wa.status, wa.currentDeliveryId || null, wa.id, wa.warehouseId);
 }
 
-export function getYmsDeliveries(): any[] {
-  return db.prepare('SELECT * FROM yms_deliveries').all();
+export function getYmsDeliveries(warehouseId?: string): any[] {
+  let query = 'SELECT * FROM yms_deliveries';
+  const params: any[] = [];
+  if (warehouseId) {
+    query += ' WHERE warehouseId = ?';
+    params.push(warehouseId);
+  }
+  return db.prepare(query).all(...params);
 }
 
 export function saveYmsDelivery(d: any) {
   db.prepare(`
     INSERT OR REPLACE INTO yms_deliveries (
-      id, reference, licensePlate, supplier, supplierId, temperature, 
+      id, warehouseId, reference, licensePlate, supplier, supplierId, temperature, 
       scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    d.id, d.reference, d.licensePlate, d.supplier, d.supplierId || null, d.temperature,
+    d.id, d.warehouseId || 'W01', d.reference, d.licensePlate, d.supplier, d.supplierId || null, d.temperature,
     d.scheduledTime, d.arrivalTime || null, d.registrationTime || null, d.isLate ? 1 : 0, 
     d.dockId || null, d.waitingAreaId || null, d.transporterId || null, d.status
   );
@@ -203,4 +221,48 @@ export function saveYmsDelivery(d: any) {
 
 export function deleteYmsDelivery(id: string) {
   db.prepare('DELETE FROM yms_deliveries WHERE id = ?').run(id);
+}
+
+export function getYmsWarehouses(): any[] {
+  return db.prepare('SELECT * FROM yms_warehouses').all();
+}
+
+export function saveYmsWarehouse(w: any) {
+  db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description) VALUES (?, ?, ?)')
+    .run(w.id, w.name, w.description || null);
+}
+
+export function deleteYmsWarehouse(id: string) {
+  db.transaction(() => {
+    db.prepare('DELETE FROM yms_docks WHERE warehouseId = ?').run(id);
+    db.prepare('DELETE FROM yms_waiting_areas WHERE warehouseId = ?').run(id);
+    db.prepare('DELETE FROM yms_deliveries WHERE warehouseId = ?').run(id);
+    db.prepare('DELETE FROM yms_dock_overrides WHERE warehouseId = ?').run(id);
+    db.prepare('DELETE FROM yms_warehouses WHERE id = ?').run(id);
+  })();
+}
+
+export function getYmsDockOverrides(warehouseId?: string): any[] {
+  let query = 'SELECT * FROM yms_dock_overrides';
+  const params: any[] = [];
+  if (warehouseId) {
+    query += ' WHERE warehouseId = ?';
+    params.push(warehouseId);
+  }
+  const rows = db.prepare(query).all(...params) as any[];
+  return rows.map(r => ({
+    ...r,
+    allowedTemperatures: JSON.parse(r.allowedTemperatures)
+  }));
+}
+
+export function saveYmsDockOverride(o: any) {
+  db.prepare(`
+    INSERT OR REPLACE INTO yms_dock_overrides (id, warehouseId, dockId, date, status, allowedTemperatures)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(o.id, o.warehouseId, o.dockId, o.date, o.status, JSON.stringify(o.allowedTemperatures));
+}
+
+export function deleteYmsDockOverride(id: string) {
+  db.prepare('DELETE FROM yms_dock_overrides WHERE id = ?').run(id);
 }

@@ -96,6 +96,15 @@ const Statistics = () => {
     return { name: supplier.name, cost: supplierTotalCost };
   }).sort((a, b) => b.cost - a.cost).slice(0, 5).filter(s => s.cost > 0) || [];
 
+  // YMS OTIF Statistics (per Transporter)
+  const ymsDeliveries = state?.yms?.deliveries || [];
+  const transporterOtifStats = addressBook?.transporters.map(transporter => {
+    const transporterDeliveries = ymsDeliveries.filter(d => d.transporterId === transporter.id);
+    const onTimeCount = transporterDeliveries.filter(d => !d.isLate).length;
+    const otif = transporterDeliveries.length > 0 ? Math.round((onTimeCount / transporterDeliveries.length) * 100) : 100;
+    return { name: transporter.name, otif, total: transporterDeliveries.length };
+  }).filter(t => t.total > 0).sort((a, b) => b.otif - a.otif) || [];
+
   return (
     <div className="space-y-10 max-w-7xl mx-auto">
       <header>
@@ -321,7 +330,49 @@ const Statistics = () => {
           </div>
         )}
 
-    </div>
+        {/* YMS OTIF Chart */}
+        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">YMS OTIF per Transporteur (%)</h3>
+              <p className="text-slate-500 text-sm mt-1">Percentage leveringen dat minimaal 24 uur van tevoren is aangemeld.</p>
+            </div>
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+              <TrendingUp size={24} />
+            </div>
+          </div>
+          
+          <div className="h-[300px] w-full">
+            {transporterOtifStats.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={transporterOtifStats} layout="vertical" margin={{ left: 40, right: 40 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <XAxis type="number" domain={[0, 100]} hide />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                    width={150}
+                  />
+                  <RechartsTooltip 
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Bar dataKey="otif" radius={[0, 20, 20, 0]} barSize={24}>
+                    {transporterOtifStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.otif === 100 ? '#10b981' : entry.otif > 80 ? '#6366f1' : '#f43f5e'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium">Nog geen YMS data beschikbaar voor transporteurs.</div>
+            )}
+          </div>
+        </div>
+      </div>
   );
 };
 

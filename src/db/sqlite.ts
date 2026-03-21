@@ -103,23 +103,36 @@ db.exec(`
     value TEXT NOT NULL -- JSON string
   );
 
+  CREATE TABLE IF NOT EXISTS yms_warehouses (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS yms_docks (
-    id INTEGER PRIMARY KEY,
+    id INTEGER,
+    warehouseId TEXT NOT NULL,
     name TEXT NOT NULL,
     allowedTemperatures TEXT NOT NULL, -- JSON array
     status TEXT NOT NULL DEFAULT 'Available',
-    currentDeliveryId TEXT
+    currentDeliveryId TEXT,
+    PRIMARY KEY(id, warehouseId),
+    FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS yms_waiting_areas (
-    id INTEGER PRIMARY KEY,
+    id INTEGER,
+    warehouseId TEXT NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'Available',
-    currentDeliveryId TEXT
+    currentDeliveryId TEXT,
+    PRIMARY KEY(id, warehouseId),
+    FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS yms_deliveries (
     id TEXT PRIMARY KEY,
+    warehouseId TEXT NOT NULL,
     reference TEXT NOT NULL,
     licensePlate TEXT NOT NULL,
     supplier TEXT NOT NULL,
@@ -133,55 +146,61 @@ db.exec(`
     registrationTime TEXT,
     isLate BOOLEAN,
     status TEXT NOT NULL DEFAULT 'Scheduled',
-    FOREIGN KEY(dockId) REFERENCES yms_docks(id),
-    FOREIGN KEY(waitingAreaId) REFERENCES yms_waiting_areas(id)
+    FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id),
+    FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId),
+    FOREIGN KEY(waitingAreaId, warehouseId) REFERENCES yms_waiting_areas(id, warehouseId)
+  );
+
+  CREATE TABLE IF NOT EXISTS yms_dock_overrides (
+    id TEXT PRIMARY KEY,
+    warehouseId TEXT NOT NULL,
+    dockId INTEGER NOT NULL,
+    date TEXT NOT NULL, -- YYYY-MM-DD
+    status TEXT NOT NULL,
+    allowedTemperatures TEXT NOT NULL, -- JSON array
+    FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId) ON DELETE CASCADE
   );
 `);
 
-// Initial Seed for docks
-const dockCount = db.prepare('SELECT COUNT(*) as count FROM yms_docks').get() as { count: number };
+// YMS V3 Migrations
+try {
+  db.exec(`
+    INSERT OR IGNORE INTO yms_warehouses (id, name, description) 
+    VALUES ('W01', 'Magazijn 01', 'Hoofdmagazijn');
+  `);
+} catch (e) {}
+
+const ymsTables = ['yms_docks', 'yms_waiting_areas', 'yms_deliveries', 'yms_dock_overrides'];
+ymsTables.forEach(table => {
+  try {
+    db.prepare(`ALTER TABLE ${table} ADD COLUMN warehouseId TEXT NOT NULL DEFAULT 'W01'`).run();
+  } catch (e) {}
+});
+
+// Update shipment_settings if needed, but warehouses are the priority now.
+
+// Initial Seed for docks (Refined for Warehouse 01)
+const dockCount = db.prepare("SELECT COUNT(*) as count FROM yms_docks WHERE warehouseId = 'W01'").get() as { count: number };
 if (dockCount.count === 0) {
-  const insertDock = db.prepare('INSERT INTO yms_docks (id, name, allowedTemperatures) VALUES (?, ?, ?)');
+  const insertDock = db.prepare("INSERT INTO yms_docks (id, warehouseId, name, allowedTemperatures) VALUES (?, 'W01', ?, ?)");
   for (let i = 1; i <= 20; i++) {
     insertDock.run(i, `Dock ${i}`, JSON.stringify(['Droog', 'Vries', 'Koel']));
   }
 }
 
-// Initial Seed for waiting areas
-const waitingAreaCount = db.prepare('SELECT COUNT(*) as count FROM yms_waiting_areas').get() as { count: number };
+// Initial Seed for waiting areas (Refined for Warehouse 01)
+const waitingAreaCount = db.prepare("SELECT COUNT(*) as count FROM yms_waiting_areas WHERE warehouseId = 'W01'").get() as { count: number };
 if (waitingAreaCount.count === 0) {
-  const insertWaitingArea = db.prepare('INSERT INTO yms_waiting_areas (id, name) VALUES (?, ?)');
+  const insertWaitingArea = db.prepare("INSERT INTO yms_waiting_areas (id, warehouseId, name) VALUES (?, 'W01', ?)");
   for (let i = 1; i <= 10; i++) {
     insertWaitingArea.run(i, `Wachtplaats ${i}`);
   }
 }
 
-// Initial Seed for shipment_settings
-const existingSettings = db.prepare('SELECT value FROM settings WHERE key = ?').get('shipment_settings');
-if (!existingSettings) {
-  const initialShipmentSettings = {
-    container: [
-      { name: 'Seaway Bill / B/L', required: true },
-      { name: 'Commercial Invoice', required: true },
-      { name: 'Packing List', required: true },
-      { name: 'Notification of Arrival', required: true },
-      { name: 'Certificate of Origin', required: false }
-    ],
-    exworks: [
-      { name: 'CMR / Vrachtbrief', required: true },
-      { name: 'Commercial Invoice', required: true },
-      { name: 'Packing List', required: true }
-    ]
-  };
-  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('shipment_settings', JSON.stringify(initialShipmentSettings));
-}
-
 // Migration for logs table
 try {
   db.prepare("ALTER TABLE logs ADD COLUMN reference TEXT").run();
-} catch (e) {
-  // Column already exists
-}
+} catch (e) {}
 
 try {
   db.prepare("ALTER TABLE deliveries ADD COLUMN loadingTime TEXT").run();

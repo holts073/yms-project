@@ -6,17 +6,23 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function YmsPublic() {
   const { state } = useSocket();
 
+  // Parse warehouseId from Hash query params
+  const hash = window.location.hash;
+  const urlParams = new URLSearchParams(hash.split('?')[1] || '');
+  const warehouseId = urlParams.get('warehouseId') || 'W01';
+
   if (!state?.yms) return (
     <div className="h-screen w-screen flex items-center justify-center bg-slate-900 text-white">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
     </div>
   );
 
-  const { deliveries } = state.yms;
+  const { deliveries = [], warehouses = [] } = state.yms;
+  const currentWarehouse = warehouses.find(w => w.id === warehouseId);
   
-  // Show only Arrived or At Dock deliveries for the public page
+  // Show only Arrived or At Dock deliveries for the public page, filtered by warehouse
   const activeDeliveries = deliveries
-    .filter(d => d.status === 'Arrived' || d.status === 'At Dock')
+    .filter(d => d.warehouseId === warehouseId && (d.status === 'Arrived' || d.status === 'At Dock'))
     .sort((a, b) => {
       // Prioritize "At Dock"
       if (a.status === 'At Dock' && b.status !== 'At Dock') return -1;
@@ -34,7 +40,9 @@ export default function YmsPublic() {
           </div>
           <div>
             <h1 className="text-6xl font-black tracking-tighter uppercase italic">Yard Monitor</h1>
-            <p className="text-2xl text-slate-400 font-bold tracking-widest uppercase mt-2">ILG Foodgroup Logistiek</p>
+            <p className="text-2xl text-slate-400 font-bold tracking-widest uppercase mt-2">
+                {currentWarehouse?.name || 'Magazijn'} - ILG Foodgroup
+            </p>
           </div>
         </div>
         <div className="text-right">
@@ -80,7 +88,7 @@ export default function YmsPublic() {
                   }`}
                 >
                   <div className="text-6xl font-black font-mono tracking-tighter uppercase tabular-nums">
-                    {delivery.licensePlate}
+                    {delivery.licensePlate || 'NR ONB'}
                   </div>
                   <div className="text-5xl font-bold text-slate-300 tabular-nums">
                     {new Date(delivery.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

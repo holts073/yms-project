@@ -128,17 +128,26 @@ export interface AppState {
   settings: AppSettings;
   companySettings?: CompanySettings;
   yms: {
+    warehouses: YmsWarehouse[];
     docks: YmsDock[];
     waitingAreas: YmsWaitingArea[];
     deliveries: YmsDelivery[];
+    dockOverrides: YmsDockOverride[];
   };
 }
 
 export type YmsTemperature = 'Droog' | 'Vries' | 'Koel';
 export type YmsDeliveryStatus = 'Scheduled' | 'Arrived' | 'At Dock' | 'Completed';
 
+export interface YmsWarehouse {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export interface YmsDock {
   id: number;
+  warehouseId: string;
   name: string;
   allowedTemperatures: YmsTemperature[];
   status: 'Available' | 'Occupied' | 'Blocked';
@@ -147,6 +156,7 @@ export interface YmsDock {
 
 export interface YmsWaitingArea {
   id: number;
+  warehouseId: string;
   name: string;
   status: 'Available' | 'Occupied';
   currentDeliveryId?: string;
@@ -154,6 +164,7 @@ export interface YmsWaitingArea {
 
 export interface YmsDelivery {
   id: string;
+  warehouseId: string;
   reference: string;
   licensePlate: string;
   supplier: string;
@@ -167,4 +178,13 @@ export interface YmsDelivery {
   waitingAreaId?: number;
   transporterId?: string;
   status: YmsDeliveryStatus;
+}
+
+export interface YmsDockOverride {
+  id: string;
+  dockId: number;
+  warehouseId: string;
+  date: string; // YYYY-MM-DD
+  status: 'Available' | 'Blocked';
+  allowedTemperatures: YmsTemperature[];
 }
