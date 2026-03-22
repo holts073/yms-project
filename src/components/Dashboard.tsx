@@ -17,7 +17,11 @@ import {
   MessageSquare,
   MapPin,
   Activity,
-  Layers
+  Layers,
+  Timer,
+  ParkingSquare,
+  AlertTriangle,
+  ArrowDown
 } from 'lucide-react';
 
 const formatDate = (dateStr: string) => {
@@ -198,6 +202,29 @@ Tel: ${company.phone} | Email: ${company.email}
   const occupiedDocks = ymsDocks.filter(d => d.status !== 'Available').length;
   const dockOccupancy = totalDocks > 0 ? Math.round((occupiedDocks / totalDocks) * 100) : 0;
 
+  // Additional YMS KPIs
+  const ymsWaitingAreas = state?.yms?.waitingAreas || [];
+  const occupiedWaitingAreas = ymsWaitingAreas.filter(wa => wa.status !== 'Available').length;
+  const yardOccupancy = ymsWaitingAreas.length > 0 ? Math.round((occupiedWaitingAreas / ymsWaitingAreas.length) * 100) : 0;
+
+  const lateArrivals = ymsDeliveries.filter(d => d.isLate).length;
+
+  const averageTurnaroundTime = useMemo(() => {
+    const completedToday = ymsDeliveries.filter(d => 
+      d.status === 'GATE_OUT' && 
+      d.statusTimestamps?.GATE_IN && 
+      d.statusTimestamps?.GATE_OUT &&
+      d.statusTimestamps?.GATE_OUT.startsWith(new Date().toISOString().split('T')[0])
+    );
+    if (completedToday.length === 0) return 0;
+    const totalMinutes = completedToday.reduce((acc, d) => {
+      const start = new Date(d.statusTimestamps!.GATE_IN!).getTime();
+      const end = new Date(d.statusTimestamps!.GATE_OUT!).getTime();
+      return acc + (end - start) / 60000;
+    }, 0);
+    return Math.round(totalMinutes / completedToday.length);
+  }, [ymsDeliveries]);
+
   const displayedDeliveries = useMemo(() => {
     let list = filterType === 'action' ? actionRequiredDeliveries : (filterType === 'enroute' ? enRouteToWarehouse : expectedTodayDeliveries);
     
@@ -345,6 +372,40 @@ Tel: ${company.phone} | Email: ${company.email}
               style={{ width: `${dockOccupancy}%` }}
             />
           </div>
+        </div>
+
+        {/* Row 2 of YMS KPIs */}
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm text-left">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <Timer size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Site Stay</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{averageTurnaroundTime} min</p>
+          <p className="text-slate-500 text-[11px] mt-1">Gemiddelde tijd op site vandaag</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm text-left">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+              <ParkingSquare size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Capaciteit</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{yardOccupancy}%</p>
+          <p className="text-slate-500 text-[11px] mt-1">{occupiedWaitingAreas} van {ymsWaitingAreas.length} plekken bezet</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm text-left">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+              <AlertTriangle size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vertraagd</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{lateArrivals}</p>
+          <p className="text-slate-500 text-[11px] mt-1">Voertuigen met aankomstvertraging</p>
         </div>
       </div>
 

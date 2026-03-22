@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
-import { YmsDelivery, YmsTemperature, YmsDeliveryStatus, YmsDock, YmsWaitingArea } from '../types';
+import { YmsDelivery, YmsTemperature, YmsDeliveryStatus, YmsDock, YmsWaitingArea, YmsDirection } from '../types';
 import { getStatusLabel, YMS_STATUS_FLOW, isValidTransition, isFastLaneEligible } from '../lib/ymsRules';
 
 export default function YmsDashboard({ view = 'planning', onNavigate }: { view?: 'arrivals' | 'planning', onNavigate?: (tab: string, reference?: string, id?: string) => void }) {
@@ -103,6 +103,31 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
     dispatch('YMS_SAVE_DELIVERY', delivery);
     setIsModalOpen(false);
     setEditingDelivery(null);
+  };
+
+  const handleRegisterExpected = (d: any) => {
+    const delivery = {
+      reference: d.reference,
+      supplier: d.supplier,
+      licensePlate: '', // To be filled by guard at gate
+      status: 'GATE_IN' as YmsDeliveryStatus,
+      scheduledTime: `${selectedDate}T${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}:00Z`,
+      direction: 'INBOUND' as YmsDirection,
+      isReefer: d.isReefer,
+      temperature: d.temperature,
+      palletCount: d.palletCount,
+      mainDeliveryId: d.mainDeliveryId,
+      warehouseId: selectedWarehouseId
+    };
+    dispatch('YMS_SAVE_DELIVERY', delivery);
+    
+    // Also update main delivery status to 80
+    if (d.mainDeliveryId) {
+        const mainDel = state.deliveries.find((md: any) => md.id === d.mainDeliveryId);
+        if (mainDel) {
+            dispatch('UPDATE_DELIVERY', { ...mainDel, status: 80, updatedAt: new Date().toISOString() });
+        }
+    }
   };
 
   const handleDeleteDelivery = (id: string) => {
@@ -210,11 +235,23 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                 >
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </select>
-                <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg">
+                <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg relative">
                     <button onClick={() => changeDate(-1)} className="p-1 hover:bg-white rounded transition-colors text-slate-400 hover:text-indigo-600"><ChevronLeft size={14}/></button>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 min-w-24 justify-center">
-                        <CalendarIcon size={14} className="text-slate-400" />
-                        {new Date(selectedDate).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' })}
+                    <div className="relative group/datepicker">
+                        <button 
+                            onClick={() => (document.getElementById('yms-calendar-picker') as any)?.showPicker()}
+                            className="flex items-center gap-2 text-xs font-bold text-slate-600 min-w-24 justify-center hover:text-indigo-600 transition-colors"
+                        >
+                            <CalendarIcon size={14} className="text-slate-400" />
+                            {new Date(selectedDate).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </button>
+                        <input 
+                            id="yms-calendar-picker"
+                            type="date" 
+                            className="absolute opacity-0 pointer-events-none inset-0"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                        />
                     </div>
                     <button onClick={() => changeDate(1)} className="p-1 hover:bg-white rounded transition-colors text-slate-400 hover:text-indigo-600"><ChevronRight size={14}/></button>
                 </div>
@@ -493,19 +530,13 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                       <div className="flex gap-2">
                         {delivery.status === 'EXPECTED' && (
                            <button 
-                             onClick={() => {
-                               // Quick register from planning
-                               onNavigate?.('yms-arrivals'); // This might need careful implementation if we want to stay in planning
-                             }} 
+                             onClick={() => handleRegisterExpected(delivery)} 
                              className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 transition-all flex items-center gap-2 shadow-lg shadow-purple-100"
                            >
                              <MapPin size={16} /> Aanmelden
                            </button>
                         )}
-                        {delivery.status === 'PLANNED' && (
-                          <button onClick={() => handleUpdateStatus(delivery, 'GATE_IN')} className="px-4 py-2 bg-amber-50 text-amber-700 rounded-xl font-bold text-sm hover:bg-amber-100 transition-all flex items-center gap-2"><MapPin size={16} /> Melden</button>
-                        )}
-                        {(delivery.status === 'GATE_IN' || delivery.status === 'PLANNED') && (
+                        {(delivery.status === 'GATE_IN' || delivery.status === 'PLANNED' || delivery.status === 'EXPECTED') && (
                           <div className="relative group/assign">
                             <button className="px-4 py-2 bg-orange-50 text-orange-700 rounded-xl font-bold text-sm hover:bg-orange-100 transition-all flex items-center gap-2"><Warehouse size={16} /> Yard/Dock</button>
                             <div className="absolute right-0 bottom-full mb-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl opacity-0 invisible group-hover/assign:opacity-100 group-hover/assign:visible transition-all z-10 p-4">
@@ -532,8 +563,11 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                         )}
                         {delivery.status === 'IN_YARD' && (
                            <div className="relative group/yard-to-dock">
-                              <button className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-all flex items-center gap-2"><MapPin size={16} /> Naar Dock</button>
+                              <button className="px-4 py-2 bg-orange-600 text-white rounded-xl font-bold text-sm hover:bg-orange-700 transition-all flex items-center gap-2 shadow-lg shadow-orange-100 animate-pulse">
+                                <Warehouse size={16} /> NU NAAR DOCK
+                              </button>
                               <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl opacity-0 invisible group-hover/yard-to-dock:opacity-100 group-hover/yard-to-dock:visible transition-all z-10 p-4">
+                                <p className="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-tighter italic">Kies Vrij Dock</p>
                                 <div className="grid grid-cols-4 gap-2">
                                   {currentDocks.filter(dk => dk.status === 'Available' && dk.allowedTemperatures.includes(delivery.temperature)).map(dk => (
                                     <button key={dk.id} onClick={() => handleAssignToDock(delivery, dk.id)} className="p-2 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-bold transition-all">{dk.id}</button>
@@ -728,6 +762,22 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Pallets</label>
                   <input type="number" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold" value={editingDelivery?.palletCount || 0} onChange={(e) => setEditingDelivery({...editingDelivery, palletCount: parseInt(e.target.value) || 0})} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Aangedockt bij</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold" value={editingDelivery?.dockId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, dockId: e.target.value ? parseInt(e.target.value) : undefined})}>
+                    <option value="">Geen</option>
+                    {state.yms.docks.map(dk => <option key={dk.id} value={dk.id}>{dk.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Wachtplaats</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold" value={editingDelivery?.waitingAreaId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, waitingAreaId: e.target.value ? parseInt(e.target.value) : undefined})}>
+                    <option value="">Geen</option>
+                    {state.yms.waitingAreas.map(wa => <option key={wa.id} value={wa.id}>Wachtplaats {wa.id}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
