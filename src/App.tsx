@@ -56,14 +56,11 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
   </button>
 );
 
-const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) => {
-  const [isOpen, setIsOpen] = useState(active);
-  React.useEffect(() => { if (active) setIsOpen(true); }, [active]);
-
+const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, onToggle }: any) => {
   return (
     <div className="w-full">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onToggle}
         className={cn(
           "flex items-center justify-between gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
           active 
@@ -113,21 +110,39 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
     const [activeTab, setActiveTab] = useState('dashboard');
     const [searchFilter, setSearchFilter] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const { state, currentUser, isAuthenticated, logout } = useSocket();
-  
+
+    // Sync openDropdown with activeTab on initial load or navigation
+    React.useEffect(() => {
+      if (['archive', 'statistics', 'reports', 'logs'].includes(activeTab)) {
+        setOpenDropdown('analysis');
+      } else if (activeTab.startsWith('settings')) {
+        setOpenDropdown('settings');
+      }
+    }, []);
+
     const handleNavigate = (tab: string, reference?: string, id?: string) => {
-    setActiveTab(tab);
-    if (id) {
-      setSelectedId(id);
-      setSearchFilter('');
-    } else if (reference) {
-      setSearchFilter(reference);
-      setSelectedId(null);
-    } else {
-      setSearchFilter('');
-      setSelectedId(null);
-    }
-  };
+      setActiveTab(tab);
+      if (['archive', 'statistics', 'reports', 'logs'].includes(tab)) {
+        setOpenDropdown('analysis');
+      } else if (tab.startsWith('settings')) {
+        setOpenDropdown('settings');
+      } else {
+        setOpenDropdown(null);
+      }
+
+      if (id) {
+        setSelectedId(id);
+        setSearchFilter('');
+      } else if (reference) {
+        setSearchFilter(reference);
+        setSelectedId(null);
+      } else {
+        setSearchFilter('');
+        setSelectedId(null);
+      }
+    };
 
   const handleSidebarClick = (tab: string) => {
     setActiveTab(tab);
@@ -135,6 +150,15 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
     if (tab === 'deliveries') {
       setSearchFilter(''); // Reset filter when clicking deliveries tab
     }
+    
+    // Close dropdowns when clicking a top-level item that isn't in a dropdown
+    if (!['archive', 'statistics', 'reports', 'logs'].includes(tab) && !tab.startsWith('settings')) {
+      setOpenDropdown(null);
+    }
+  };
+
+  const toggleDropdown = (name: string) => {
+    setOpenDropdown(openDropdown === name ? null : name);
   };
 
   if (!isAuthenticated) {
@@ -197,7 +221,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
           <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.3.0</span></h1>
         </div>
 
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
           <SidebarItem 
             icon={LayoutDashboard} 
             label="Dashboard" 
@@ -232,6 +256,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
             icon={BarChart3} 
             label="Analyse & Archief" 
             active={['archive', 'statistics', 'reports', 'logs'].includes(activeTab)} 
+            isOpen={openDropdown === 'analysis'}
+            onToggle={() => toggleDropdown('analysis')}
             items={[
               { id: 'archive', label: 'Archief', active: activeTab === 'archive' },
               { id: 'statistics', label: 'Statistieken', active: activeTab === 'statistics' },
@@ -247,6 +273,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
               icon={Settings} 
               label="Instellingen" 
               active={activeTab.startsWith('settings')} 
+              isOpen={openDropdown === 'settings'}
+              onToggle={() => toggleDropdown('settings')}
               items={[
                 { id: 'settings-company', label: 'Bedrijfsgegevens', active: activeTab === 'settings-company' },
                 { id: 'settings-documents', label: 'Documentinstellingen', active: activeTab === 'settings-documents' },

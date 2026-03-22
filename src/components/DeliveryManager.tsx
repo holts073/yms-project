@@ -686,15 +686,21 @@ Tel: ${company.phone} | Email: ${company.email}
                                  const ymsId = existingYms?.id || Math.random().toString(36).substr(2, 9);
                                  
                                  // 2. Update/Save YmsDelivery with status GATE_IN
+                                 const registrationTime = new Date().toISOString();
+                                 const scheduledTime = delivery.etaWarehouse || delivery.eta || registrationTime;
+                                 
+                                 // 2. Update/Save YmsDelivery with status GATE_IN
                                  dispatch('YMS_SAVE_DELIVERY', {
                                    id: ymsId,
                                    mainDeliveryId: delivery.id,
+                                   warehouseId: 'W01', // Default to primary warehouse
                                    reference: delivery.reference,
-                                   licensePlate: delivery.containerNumber || '',
+                                   licensePlate: delivery.containerNumber || 'NR ONBEKEND',
                                    supplier: state.addressBook.suppliers.find(s => s.id === delivery.supplierId)?.name || 'Onbekend',
                                    temperature: delivery.cargoType || 'Droog',
                                    isReefer: delivery.type === 'container' ? 1 : 0,
-                                   scheduledTime: delivery.etaWarehouse || delivery.eta || new Date().toISOString(),
+                                   scheduledTime: scheduledTime,
+                                   registrationTime: registrationTime,
                                    status: 'GATE_IN',
                                    transporterId: delivery.transporterId
                                  });

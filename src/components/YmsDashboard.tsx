@@ -61,7 +61,7 @@ export default function YmsDashboard() {
   const currentWaitingAreas = waitingAreas.filter(wa => wa.warehouseId === selectedWarehouseId);
   const currentDeliveries = deliveries.filter(d => 
     d.warehouseId === selectedWarehouseId && 
-    d.scheduledTime.startsWith(selectedDate)
+    (d.scheduledTime.startsWith(selectedDate) || d.status === 'GATE_IN' || d.status === 'IN_YARD' || d.status === 'DOCKED' || d.status === 'UNLOADING' || d.status === 'LOADING')
   );
 
   const handleSaveDelivery = (d: Partial<YmsDelivery>) => {
@@ -165,6 +165,7 @@ export default function YmsDashboard() {
 
   const handleAutoSchedule = () => {
     dispatch('YMS_AUTO_SCHEDULE', { warehouseId: selectedWarehouseId });
+    alert('AI Optimization gestart voor deze loods...');
   };
 
   return (
@@ -285,7 +286,7 @@ export default function YmsDashboard() {
       )}
 
       {/* Registered but not assigned list */}
-      {isToday && currentDeliveries.some(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId) && (
+      {currentDeliveries.some(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId) && (
         <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">

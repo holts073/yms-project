@@ -555,7 +555,7 @@ async function startServer() {
 
           case "YMS_AUTO_SCHEDULE": {
             const { warehouseId } = payload;
-            const dels = getYmsDeliveries(warehouseId).filter(d => d.status === 'Arrived' || d.status === 'Scheduled');
+            const dels = getYmsDeliveries(warehouseId).filter(d => d.status === 'GATE_IN' || d.status === 'IN_YARD' || d.status === 'PLANNED');
             const availableDocks = getYmsDocks(warehouseId).filter(d => d.status === 'Available');
 
             if (availableDocks.length === 0 || dels.length === 0) break;
@@ -579,8 +579,8 @@ async function startServer() {
                 else if (diffMins < 60) score += 20; // Within hour
 
                 // Wait Time Penalty (for arrived trucks)
-                if (d.status === 'Arrived' && d.arrivalTime) {
-                    const waitedMins = (now - new Date(d.arrivalTime).getTime()) / 60000;
+                if ((d.status === 'GATE_IN' || d.status === 'IN_YARD') && d.registrationTime) {
+                    const waitedMins = (now - new Date(d.registrationTime).getTime()) / 60000;
                     score += waitedMins * 0.5; // +0.5 pts per minute waiting
                 }
 
@@ -589,13 +589,14 @@ async function startServer() {
 
             // Assign to docks
             scoredDels.forEach((d, idx) => {
-                if (idx < availableDocks.length && d.status === 'Arrived') {
+                // Priority to GATE_IN or IN_YARD over PLANNED
+                if (idx < availableDocks.length && (d.status === 'GATE_IN' || d.status === 'IN_YARD' || d.status === 'PLANNED')) {
                     const dock = availableDocks[idx];
                     // Check compatibility
                     const allowed = JSON.parse(dock.allowedTemperatures || '[]');
-                    if (allowed.includes(d.temperature)) {
+                    if (allowed.includes(d.temperature) || (d.temperature === 'Droog' && dock.isFastLane)) {
                         d.dockId = dock.id;
-                        d.status = 'At Dock';
+                        d.status = 'DOCKED';
                         dock.status = 'Occupied';
                         dock.currentDeliveryId = d.id;
                         saveYmsDelivery(d);
