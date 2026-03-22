@@ -15,7 +15,8 @@ import {
   Shield,
   ChevronRight,
   FileText,
-  ClipboardList
+  ClipboardList,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -220,6 +221,12 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect }: any) =>
             label="YMS Dashboard" 
             active={activeTab === 'yms-dashboard'} 
             onClick={() => handleSidebarClick('yms-dashboard')} 
+          />
+          <SidebarItem 
+            icon={Zap} 
+            label="Monitor" 
+            active={activeTab === 'yms-public'} 
+            onClick={() => handleSidebarClick('yms-public')} 
           />
           <SidebarDropdown 
             icon={BarChart3} 

@@ -427,11 +427,12 @@ async function startServer() {
             const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             
             const stats = allDels.filter(d => 
-              d.arrivalTime && d.arrivalTime > last24h && 
+              (d.arrivalTime || d.registrationTime) && 
+              (d.arrivalTime > last24h || d.registrationTime > last24h) && 
               d.isLate && 
-              d.palletCount > 10 // FAST_LANE_THRESHOLD Hardcoded for now, or use getSetting
+              (d.palletCount || 0) > 10 // FAST_LANE_THRESHOLD
             ).map(d => ({
-              date: new Date(d.arrivalTime!).toLocaleDateString('nl-NL'),
+              date: new Date(d.arrivalTime || d.registrationTime!).toLocaleDateString('nl-NL'),
               supplier: d.supplier,
               reference: d.reference,
               id: d.id
@@ -467,6 +468,18 @@ async function startServer() {
               if (current.status === 'GATE_IN') {
                 current.registrationTime = timestamp;
                 current.arrivalTime = timestamp;
+                
+                // Calculate isLate: If registration is less than 24h before scheduledTime
+                if (current.scheduledTime) {
+                  const sched = new Date(current.scheduledTime).getTime();
+                  const reg = new Date(timestamp).getTime();
+                  const diffHours = (sched - reg) / (1000 * 60 * 60);
+                  if (diffHours < 24) {
+                    current.isLate = true;
+                  } else {
+                    current.isLate = false;
+                  }
+                }
               }
 
               // Sync back to main delivery on COMPLETED

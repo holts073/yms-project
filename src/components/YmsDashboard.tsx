@@ -284,6 +284,55 @@ export default function YmsDashboard() {
         </div>
       )}
 
+      {/* Registered but not assigned list */}
+      {isToday && currentDeliveries.some(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId) && (
+        <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Aangemelde Leveringen (Wacht op toewijzing)
+            </h3>
+            <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-black rounded-full uppercase">
+              {currentDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId).length} Voertuigen
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {currentDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId).map(delivery => (
+              <div key={delivery.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between group hover:border-indigo-300 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white rounded-xl text-amber-600 shadow-sm">
+                    <Truck size={20} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">{delivery.reference}</p>
+                    <p className="text-[10px] font-mono text-slate-500 font-bold uppercase">{delivery.licensePlate || 'NR ONBEKEND'}</p>
+                  </div>
+                </div>
+                <div className="relative group/assign-small">
+                  <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-2">
+                    <MapPin size={14} /> Toewijzen
+                  </button>
+                  <div className="absolute right-0 bottom-full mb-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl opacity-0 invisible group-hover/assign-small:opacity-100 group-hover/assign-small:visible transition-all z-50 p-4">
+                    <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase italic">Selecteer Bestemming</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {currentDocks.filter(dk => dk.status === 'Available' && dk.allowedTemperatures.includes(delivery.temperature)).map(dk => (
+                        <button key={dk.id} onClick={() => handleAssignToDock(delivery, dk.id)} className="p-2 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-bold transition-all">{dk.id}</button>
+                      ))}
+                    </div>
+                    <div className="h-px bg-slate-100 my-3" />
+                    <div className="grid grid-cols-5 gap-2">
+                      {currentWaitingAreas.filter(wa => wa.status === 'Available').map(wa => (
+                        <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-slate-100 hover:bg-orange-600 hover:text-white rounded-lg text-[10px] font-bold transition-all">{wa.id}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-hidden flex flex-col">
         {viewMode === 'list' ? (
           <div className="xl:col-span-3 space-y-6 overflow-y-auto pr-4 custom-scrollbar">

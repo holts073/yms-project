@@ -680,53 +680,33 @@ Tel: ${company.phone} | Email: ${company.email}
                       {((delivery.type === 'container' && delivery.status >= 75) || (delivery.type === 'exworks' && delivery.status >= 50)) && delivery.status < 100 && (
                         <div className="relative group/dock-assign">
                            <button 
+                             onClick={() => {
+                                 // 1. Find or create YmsDelivery for this reference
+                                 const existingYms = state.yms.deliveries.find(yd => yd.reference === delivery.reference);
+                                 const ymsId = existingYms?.id || Math.random().toString(36).substr(2, 9);
+                                 
+                                 // 2. Update/Save YmsDelivery with status GATE_IN
+                                 dispatch('YMS_SAVE_DELIVERY', {
+                                   id: ymsId,
+                                   mainDeliveryId: delivery.id,
+                                   reference: delivery.reference,
+                                   licensePlate: delivery.containerNumber || '',
+                                   supplier: state.addressBook.suppliers.find(s => s.id === delivery.supplierId)?.name || 'Onbekend',
+                                   temperature: delivery.cargoType || 'Droog',
+                                   isReefer: delivery.type === 'container' ? 1 : 0,
+                                   scheduledTime: delivery.etaWarehouse || delivery.eta || new Date().toISOString(),
+                                   status: 'GATE_IN',
+                                   transporterId: delivery.transporterId
+                                 });
+                                 
+                                 // 3. Update Main Delivery (mark as being handled by YMS)
+                                 dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 }); // Moved to YMS handling phase
+                             }}
                             className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-full hover:bg-slate-800 transition-all uppercase tracking-wider flex items-center gap-1.5 shadow-lg"
                           >
                             <MapPin size={12} />
-                            {delivery.dockId ? `Dock ${delivery.dockId}` : 'Dock Toewijzen'}
+                            {delivery.dockId ? `Dock ${delivery.dockId}` : 'Aanmelden'}
                           </button>
-                          <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl opacity-0 invisible group-hover/dock-assign:opacity-100 group-hover/dock-assign:visible transition-all z-50 p-3">
-                            <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase">Beschikbare Docks</p>
-                            <div className="grid grid-cols-4 gap-2">
-                              {state.yms?.docks.filter(dk => dk.status === 'Available' || dk.id === delivery.dockId).map(dk => (
-                                <button
-                                  key={dk.id}
-                                  onClick={() => {
-                                      // 1. Find or create YmsDelivery for this reference
-                                      const existingYms = state.yms.deliveries.find(yd => yd.reference === delivery.reference);
-                                      const ymsId = existingYms?.id || Math.random().toString(36).substr(2, 9);
-                                      
-                                      // 2. Update Dock
-                                      dispatch('YMS_UPDATE_DOCK', { ...dk, status: 'Occupied', currentDeliveryId: ymsId });
-                                      
-                                      // 3. Update/Save YmsDelivery
-                                      dispatch('YMS_SAVE_DELIVERY', {
-                                        id: ymsId,
-                                        mainDeliveryId: delivery.id,
-                                        reference: delivery.reference,
-                                        licensePlate: delivery.containerNumber || '',
-                                        supplier: state.addressBook.suppliers.find(s => s.id === delivery.supplierId)?.name || 'Onbekend',
-                                        temperature: delivery.cargoType || 'Droog',
-                                        isReefer: delivery.type === 'container' ? 1 : 0,
-                                        scheduledTime: delivery.etaWarehouse || delivery.eta || new Date().toISOString(),
-                                        status: 'DOCKED',
-                                        dockId: dk.id,
-                                        transporterId: delivery.transporterId
-                                      });
-                                      
-                                      // 4. Update Main Delivery
-                                      dispatch('UPDATE_DELIVERY', { ...delivery, dockId: dk.id });
-                                  }}
-                                  className={cn(
-                                    "p-1.5 rounded-lg text-xs font-bold transition-all",
-                                    dk.id === delivery.dockId ? "bg-indigo-600 text-white" : "bg-slate-50 hover:bg-slate-100 text-slate-600"
-                                  )}
-                                >
-                                  {dk.id}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
                         </div>
                       )}
                       {delivery.notes && (

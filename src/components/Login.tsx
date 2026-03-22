@@ -68,11 +68,11 @@ export const Login = () => {
             <div className="flex items-center gap-3 mb-12">
               <img src="/logo.jfif" alt="ILG Logo" className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-indigo-200" />
 
-              <span className="text-2xl font-black tracking-tight text-slate-900">ILG Foodgroup SCY/YMS</span>
+              <span className="text-2xl font-black tracking-tight text-slate-900">ILG Logistics & YMS Platform</span>
             </div>
 
-            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Welkom terug</h1>
-            <p className="text-slate-500 mb-10 text-lg">Log in om je leveringen te beheren.</p>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Project Logistics & YMS</h1>
+            <p className="text-slate-500 mb-10 text-lg">Beheer je volledige supply chain en yard operaties.</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2 relative">
@@ -153,18 +153,18 @@ export const Login = () => {
               Supply Chain Portal
             </motion.div>
             <h2 className="text-5xl font-black mb-6 leading-tight">
-              Grip op je hele <br/>supply chain.
+              Volledige controle <br/>over je yard.
             </h2>
             <p className="text-indigo-100 text-lg max-w-md opacity-90 leading-relaxed">
-              Beheer naadloos container en ex-works leveringen en volg statussen.
+              Van container tot dock: beheer naadloos je logistieke stromen en yard management.
             </p>
           </div>
 
           {/* Dashboard Preview Image */}
           <div className="relative z-10 w-full mt-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 p-2 shadow-2xl overflow-hidden">
             <img 
-              src="/dashboard-preview.png" 
-              alt="App Dashboard Preview" 
+              src="/login-bg.png" 
+              alt="YMS Monitor Preview" 
               className="w-full h-auto rounded-xl object-cover shadow-inner"
             />
           </div>
