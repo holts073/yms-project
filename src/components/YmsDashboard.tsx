@@ -24,7 +24,7 @@ import { cn } from '../lib/utils';
 import { YmsDelivery, YmsTemperature, YmsDeliveryStatus, YmsDock, YmsWaitingArea } from '../types';
 import { getStatusLabel, YMS_STATUS_FLOW, isValidTransition, isFastLaneEligible } from '../lib/ymsRules';
 
-export default function YmsDashboard() {
+export default function YmsDashboard({ view = 'planning', onNavigate }: { view?: 'arrivals' | 'planning', onNavigate?: (tab: string, reference?: string, id?: string) => void }) {
   const { state, dispatch, socket } = useSocket();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,6 +63,30 @@ export default function YmsDashboard() {
     d.warehouseId === selectedWarehouseId && 
     (d.scheduledTime.startsWith(selectedDate) || d.status === 'GATE_IN' || d.status === 'IN_YARD' || d.status === 'DOCKED' || d.status === 'UNLOADING' || d.status === 'LOADING')
   );
+
+  // Expected deliveries from main Supply Chain
+  const expectedDeliveries = (state.deliveries || [])
+    .filter(d => 
+      d.status < 100 && 
+      (d.etaWarehouse === selectedDate || d.eta === selectedDate) &&
+      !deliveries.some(yd => yd.mainDeliveryId === d.id) &&
+      (d.warehouseId === selectedWarehouseId || !d.warehouseId) // Match warehouse
+    )
+    .map(d => ({
+      id: `expected-${d.id}`,
+      reference: d.reference,
+      supplier: state.addressBook?.suppliers.find(s => s.id === d.supplierId)?.name || 'Onbekend',
+      status: 'EXPECTED' as any,
+      scheduledTime: `${selectedDate}T00:00:00Z`, // Placeholder time
+      direction: 'INBOUND',
+      isReefer: d.type === 'container' ? 1 : 0,
+      temperature: d.cargoType || 'Droog',
+      palletCount: d.palletCount || 0,
+      mainDeliveryId: d.id,
+      warehouseId: selectedWarehouseId
+    }));
+
+  const allVisibleDeliveries = [...currentDeliveries, ...expectedDeliveries];
 
   const handleSaveDelivery = (d: Partial<YmsDelivery>) => {
     const supplier = state.addressBook.suppliers.find(s => s.id === d.supplierId);
@@ -146,11 +170,13 @@ export default function YmsDashboard() {
     dispatch('YMS_SAVE_DELIVERY', { ...d, waitingAreaId: waId, dockId: null, status: 'IN_YARD' });
   };
 
-  const filteredDeliveries = currentDeliveries.filter(d => 
+  const filteredDeliveries = allVisibleDeliveries.filter(d => 
     d.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (d.licensePlate && d.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())) ||
     d.supplier.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a,b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
+  ).sort((a,b) => {
+    return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
+  });
 
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
@@ -173,7 +199,9 @@ export default function YmsDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">YMS Dashboard</h2>
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+                {view === 'arrivals' ? 'YMS Aankomst' : 'YMS Planning'}
+            </h2>
             <div className="flex items-center gap-4 mt-1">
                 <select 
                     value={selectedWarehouseId}
@@ -239,12 +267,16 @@ export default function YmsDashboard() {
           >
             <Zap size={20} /> Monitor
           </button>
-          <button
-            onClick={() => setViewMode(viewMode === 'list' ? 'timeline' : 'list')}
-            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all border border-slate-200"
-          >
-            {viewMode === 'list' ? 'Timeline' : 'Lijst'}
-          </button>
+          
+          {view === 'planning' && (
+            <button
+                onClick={() => setViewMode(viewMode === 'list' ? 'timeline' : 'list')}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all border border-slate-200"
+            >
+                {viewMode === 'list' ? 'Timeline' : 'Lijst'}
+            </button>
+          )}
+
           <button
             onClick={() => { setEditingDelivery({ status: 'Scheduled', temperature: 'Droog', isReefer: false, tempAlertThreshold: 30 }); setIsModalOpen(true); }}
             className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all shadow-md active:scale-95"
@@ -286,8 +318,9 @@ export default function YmsDashboard() {
       )}
 
       {/* Registered but not assigned list */}
-      {currentDeliveries.some(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId) && (
-        <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-6">
+      {/* Registered but not assigned list */}
+      {view === 'arrivals' && (
+        <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-6 flex-1 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
@@ -297,8 +330,13 @@ export default function YmsDashboard() {
               {currentDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId).length} Voertuigen
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {currentDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId).map(delivery => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2 custom-scrollbar">
+            {currentDeliveries
+              .filter(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId)
+              .sort((a,b) => {
+                  return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
+              })
+              .map(delivery => (
               <div key={delivery.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between group hover:border-indigo-300 transition-all">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-white rounded-xl text-amber-600 shadow-sm">
@@ -307,23 +345,48 @@ export default function YmsDashboard() {
                   <div>
                     <p className="font-bold text-slate-900 text-sm">{delivery.reference}</p>
                     <p className="text-[10px] font-mono text-slate-500 font-bold uppercase">{delivery.licensePlate || 'NR ONBEKEND'}</p>
+                    <p className="text-[10px] text-indigo-600 font-bold mt-0.5 whitespace-nowrap">
+                        ETA: {new Date(delivery.scheduledTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                    </p>
                   </div>
                 </div>
                 <div className="relative group/assign-small">
-                  <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-2">
+                  <button className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100">
                     <MapPin size={14} /> Toewijzen
                   </button>
-                  <div className="absolute right-0 bottom-full mb-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl opacity-0 invisible group-hover/assign-small:opacity-100 group-hover/assign-small:visible transition-all z-50 p-4">
-                    <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase italic">Selecteer Bestemming</p>
+                  <div className="absolute right-0 bottom-full mb-2 w-72 bg-white border border-slate-200 rounded-3xl shadow-2xl opacity-0 invisible group-hover/assign-small:opacity-100 group-hover/assign-small:visible transition-all z-50 p-6">
+                    <p className="text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-widest italic">Selecteer Bestemming</p>
                     <div className="grid grid-cols-4 gap-2">
-                      {currentDocks.filter(dk => dk.status === 'Available' && dk.allowedTemperatures.includes(delivery.temperature)).map(dk => (
-                        <button key={dk.id} onClick={() => handleAssignToDock(delivery, dk.id)} className="p-2 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-bold transition-all">{dk.id}</button>
-                      ))}
+                      {currentDocks
+                        .sort((a,b) => parseInt(a.name.replace(/\D/g,'') || '0') - parseInt(b.name.replace(/\D/g,'') || '0'))
+                        .map(dk => {
+                          const isOccupied = dk.status !== 'Available';
+                          const isTempMatch = dk.allowedTemperatures.includes(delivery.temperature);
+                          
+                          return (
+                            <button 
+                                key={dk.id} 
+                                disabled={isOccupied}
+                                onClick={() => handleAssignToDock(delivery, dk.id)} 
+                                className={cn(
+                                    "p-2 rounded-xl text-xs font-bold transition-all relative border",
+                                    isOccupied ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed" : 
+                                    isTempMatch ? "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-600 hover:text-white" : 
+                                    "bg-slate-50 text-slate-400 border-slate-100 hover:bg-indigo-600 hover:text-white"
+                                )}
+                            >
+                                {dk.name.replace('Dock ', '')}
+                                {isOccupied && <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full border border-white" />}
+                                {!isOccupied && <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white" />}
+                            </button>
+                          );
+                        })}
                     </div>
-                    <div className="h-px bg-slate-100 my-3" />
+                    <div className="h-px bg-slate-100 my-4" />
+                    <p className="text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-widest italic">Wachtplaatsen</p>
                     <div className="grid grid-cols-5 gap-2">
                       {currentWaitingAreas.filter(wa => wa.status === 'Available').map(wa => (
-                        <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-slate-100 hover:bg-orange-600 hover:text-white rounded-lg text-[10px] font-bold transition-all">{wa.id}</button>
+                        <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-slate-100 hover:bg-orange-600 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-slate-200">{wa.id}</button>
                       ))}
                     </div>
                   </div>
@@ -334,20 +397,21 @@ export default function YmsDashboard() {
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className={cn("flex-1 overflow-hidden flex flex-col", view === 'arrivals' && 'hidden')}>
         {viewMode === 'list' ? (
           <div className="xl:col-span-3 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
             <div className="flex gap-4 mb-2 overflow-x-auto pb-2 scrollbar-hide">
-              {['PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'].map(s => (
+              {['EXPECTED', 'PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'].map(s => (
                 <div key={s} className={cn(
                   "px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap",
+                  s === 'EXPECTED' ? "bg-purple-50 text-purple-700 border border-purple-100" :
                   s === 'PLANNED' ? "bg-slate-100 text-slate-600" :
                   s === 'GATE_IN' ? "bg-amber-50 text-amber-700" :
                   s === 'IN_YARD' ? "bg-orange-50 text-orange-700" :
                   s === 'DOCKED' ? "bg-indigo-50 text-indigo-700" :
                   s === 'UNLOADING' || s === 'LOADING' ? "bg-blue-50 text-blue-700" : "bg-emerald-50 text-emerald-700"
                 )}>
-                  {getStatusLabel(s as any)} ({currentDeliveries.filter(d => d.status === s).length})
+                  {getStatusLabel(s as any)} ({allVisibleDeliveries.filter(d => d.status === s).length})
                 </div>
               ))}
             </div>
@@ -358,6 +422,7 @@ export default function YmsDashboard() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                       <div className={`p-4 rounded-2xl ${
+                        delivery.status === 'EXPECTED' ? 'bg-purple-50 text-purple-400 border border-purple-100' :
                         delivery.status === 'PLANNED' ? 'bg-slate-50 text-slate-400' :
                         delivery.status === 'GATE_IN' ? 'bg-amber-50 text-amber-600' :
                         delivery.status === 'IN_YARD' ? 'bg-orange-50 text-orange-600' :
@@ -426,6 +491,17 @@ export default function YmsDashboard() {
                       </div>
                       <div className="h-10 w-px bg-slate-100" />
                       <div className="flex gap-2">
+                        {delivery.status === 'EXPECTED' && (
+                           <button 
+                             onClick={() => {
+                               // Quick register from planning
+                               onNavigate?.('yms-arrivals'); // This might need careful implementation if we want to stay in planning
+                             }} 
+                             className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 transition-all flex items-center gap-2 shadow-lg shadow-purple-100"
+                           >
+                             <MapPin size={16} /> Aanmelden
+                           </button>
+                        )}
                         {delivery.status === 'PLANNED' && (
                           <button onClick={() => handleUpdateStatus(delivery, 'GATE_IN')} className="px-4 py-2 bg-amber-50 text-amber-700 rounded-xl font-bold text-sm hover:bg-amber-100 transition-all flex items-center gap-2"><MapPin size={16} /> Melden</button>
                         )}

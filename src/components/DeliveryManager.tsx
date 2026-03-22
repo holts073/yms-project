@@ -204,6 +204,11 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.etaWarehouse) {
+      alert('SVP vul de verwachte aankomstdatum in (ETA Magazijn).');
+      return;
+    }
+    
     if (currentModalDelivery) {
       const formUpdates = { ...formData };
       delete formUpdates.status;

@@ -16,7 +16,8 @@ import {
   ChevronRight,
   FileText,
   ClipboardList,
-  Zap
+  Zap,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -152,7 +153,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     }
     
     // Close dropdowns when clicking a top-level item that isn't in a dropdown
-    if (!['archive', 'statistics', 'reports', 'logs'].includes(tab) && !tab.startsWith('settings')) {
+    if (!['archive', 'statistics', 'reports', 'logs', 'yms-arrivals', 'yms-planning'].includes(tab) && !tab.startsWith('settings')) {
       setOpenDropdown(null);
     }
   };
@@ -190,7 +191,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       case 'settings-users': return <SettingsPage currentSegment="users" />;
       case 'settings-yms': return <YmsSettings />;
       case 'reports': return <Reporting />;
-      case 'yms-dashboard': return <YmsDashboard />;
+      case 'yms-arrivals': return <YmsDashboard view="arrivals" onNavigate={handleNavigate} />;
+      case 'yms-planning': return <YmsDashboard view="planning" onNavigate={handleNavigate} />;
       case 'yms-public': return <YmsPublic />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
@@ -235,16 +237,16 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             onClick={() => handleSidebarClick('deliveries')} 
           />
           <SidebarItem 
-            icon={BookUser} 
-            label="Adressenboek" 
-            active={activeTab === 'addressbook'} 
-            onClick={() => handleSidebarClick('addressbook')} 
+            icon={Calendar} 
+            label="YMS Planning" 
+            active={activeTab === 'yms-planning'} 
+            onClick={() => handleSidebarClick('yms-planning')} 
           />
           <SidebarItem 
             icon={ClipboardList} 
-            label="YMS Dashboard" 
-            active={activeTab === 'yms-dashboard'} 
-            onClick={() => handleSidebarClick('yms-dashboard')} 
+            label="YMS Aankomst" 
+            active={activeTab === 'yms-arrivals'} 
+            onClick={() => handleSidebarClick('yms-arrivals')} 
           />
           <SidebarItem 
             icon={Zap} 
@@ -252,6 +254,13 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             active={activeTab === 'yms-public'} 
             onClick={() => handleSidebarClick('yms-public')} 
           />
+          <SidebarItem 
+            icon={BookUser} 
+            label="Adressenboek" 
+            active={activeTab === 'addressbook'} 
+            onClick={() => handleSidebarClick('addressbook')} 
+          />
+
           <SidebarDropdown 
             icon={BarChart3} 
             label="Analyse & Archief" 

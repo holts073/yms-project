@@ -3,6 +3,7 @@ import { YmsDeliveryStatus, YmsDelivery } from '../types';
 export const FAST_LANE_THRESHOLD = 10; // Default threshold
 
 export const YMS_STATUS_FLOW: YmsDeliveryStatus[] = [
+  'EXPECTED',
   'PLANNED',
   'GATE_IN',
   'IN_YARD',
@@ -14,6 +15,7 @@ export const YMS_STATUS_FLOW: YmsDeliveryStatus[] = [
 ];
 
 export const ALLOWED_TRANSITIONS: Record<YmsDeliveryStatus, YmsDeliveryStatus[]> = {
+  'EXPECTED': ['PLANNED', 'GATE_IN'],
   'PLANNED': ['GATE_IN'],
   'GATE_IN': ['IN_YARD', 'DOCKED'],
   'IN_YARD': ['DOCKED'],
@@ -31,6 +33,7 @@ export function isValidTransition(current: YmsDeliveryStatus, next: YmsDeliveryS
 
 export function getStatusLabel(status: YmsDeliveryStatus, direction?: 'INBOUND' | 'OUTBOUND'): string {
   const labels: Record<YmsDeliveryStatus, string> = {
+    'EXPECTED': 'Verwacht (SCM)',
     'PLANNED': 'Gepland',
     'GATE_IN': 'Aangekomen (Gate In)',
     'IN_YARD': 'In Yard (Wachtend)',

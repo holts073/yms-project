@@ -24,6 +24,12 @@ export default function YmsSettings() {
   const [activeTab, setActiveTab] = useState<'warehouses' | 'docks' | 'waitingAreas' | 'overrides'>('warehouses');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('W01');
   const [editingWarehouse, setEditingWarehouse] = useState<Partial<YmsWarehouse> | null>(null);
+  const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
+  const [newOverride, setNewOverride] = useState<Partial<YmsDockOverride>>({
+    date: new Date().toISOString().split('T')[0],
+    status: 'Available',
+    allowedTemperatures: ['Droog']
+  });
   
   if (!state?.yms) return null;
 
@@ -51,49 +57,131 @@ export default function YmsSettings() {
       id: w.id || `W0${warehouses.length + 1}`
     };
     dispatch('YMS_SAVE_WAREHOUSE', warehouse);
-    
-    // If it's a new warehouse, create 5 default docks
-    if (!w.id) {
-        for (let i = 1; i <= 5; i++) {
-           // This would ideally be handled by a dedicated action or server-side, 
-           // but for simplicity we'll assume the server handles initial dock creation for new warehouses if we send a specific signal.
-           // However, our current schema requires manual insertion. Let's just assume W01 is special and has 20, others have 5.
-        }
-    }
     setEditingWarehouse(null);
   };
 
+  const handleDeleteWarehouse = (id: string) => {
+    if (id === 'W01') {
+      alert('Het primaire magazijn (W01) kan niet worden verwijderd.');
+      return;
+    }
+    if (confirm('Weet u zeker dat u dit magazijn en alle bijbehorende docks en data wilt verwijderen?')) {
+      dispatch('YMS_DELETE_WAREHOUSE', id);
+    }
+  };
+
+  const handleSaveOverride = () => {
+    if (!newOverride.dockId || !newOverride.date) {
+        alert('Selecteer een dock en datum.');
+        return;
+    }
+    const override = {
+        ...newOverride,
+        id: Math.random().toString(36).substr(2, 9),
+        warehouseId: selectedWarehouseId
+    };
+    dispatch('YMS_SAVE_DOCK_OVERRIDE', override);
+    setIsOverrideModalOpen(false);
+  };
+
   const renderWarehouses = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {warehouses.map(w => (
-        <div key={w.id} className={`p-6 bg-white border rounded-3xl transition-all ${selectedWarehouseId === w.id ? 'border-indigo-600 ring-2 ring-indigo-50 shadow-xl' : 'border-slate-200 hover:border-slate-300'}`}>
-          <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-2xl ${selectedWarehouseId === w.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-              <Warehouse size={24} />
-            </div>
-            <button 
-              onClick={() => setSelectedWarehouseId(w.id)}
-              className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${selectedWarehouseId === w.id ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-50 text-slate-400'}`}
-            >
-              Selecteren
-            </button>
-          </div>
-          <h4 className="text-xl font-bold text-slate-900">{w.name}</h4>
-          <p className="text-slate-500 text-sm mt-1">{w.description || 'Geen beschrijving'}</p>
-          <div className="mt-4 flex items-center gap-4 text-xs font-bold text-slate-400">
-             <span className="flex items-center gap-1"><MapPin size={12}/> {docks.filter(d => d.warehouseId === w.id).length} Docks</span>
-          </div>
-        </div>
-      ))}
-      {warehouses.length < 3 && (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-bold text-slate-900">Magazijnen</h3>
         <button 
           onClick={() => setEditingWarehouse({})}
-          className="p-6 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400 hover:border-indigo-300 hover:text-indigo-400 transition-all gap-2"
+          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all"
         >
-          <Plus size={32} />
-          <span className="font-bold">Nieuw Magazijn Toevoegen</span>
+          <Plus size={20} /> Nieuw Magazijn Toevoegen
         </button>
-      )}
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <th className="px-8 py-5">Naam</th>
+              <th className="px-8 py-5">Adres</th>
+              <th className="px-8 py-5">Docks</th>
+              <th className="px-8 py-5">Omschrijving</th>
+              <th className="px-8 py-5 text-right">Acties</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {warehouses.map(w => (
+              <tr 
+                key={w.id} 
+                className={`group transition-colors ${selectedWarehouseId === w.id ? 'bg-indigo-50/30' : 'hover:bg-slate-50/50'}`}
+              >
+                <td className="px-8 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl ${selectedWarehouseId === w.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      <Warehouse size={18} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">{w.name}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{w.id}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-8 py-5 text-sm text-slate-600">
+                  {w.address ? (
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} className="text-slate-300" />
+                      {w.address}
+                    </div>
+                  ) : '-'}
+                </td>
+                <td className="px-8 py-5">
+                  <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
+                    {docks.filter(d => d.warehouseId === w.id).length}
+                  </span>
+                </td>
+                <td className="px-8 py-5 text-sm text-slate-500 italic max-w-xs truncate">
+                  {w.description || '-'}
+                </td>
+                <td className="px-8 py-5 text-right">
+                  <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => setSelectedWarehouseId(w.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${selectedWarehouseId === w.id ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-600 hover:text-indigo-600'}`}
+                    >
+                      {selectedWarehouseId === w.id ? 'Geselecteerd' : 'Selecteren'}
+                    </button>
+                    <button 
+                      onClick={() => setEditingWarehouse(w)}
+                      className="p-2 text-slate-400 hover:text-amber-600 transition-colors"
+                    >
+                      <SettingsIcon size={18} />
+                    </button>
+                    {w.id !== 'W01' && (
+                      <button 
+                        onClick={() => handleDeleteWarehouse(w.id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
+        <div>
+          <h4 className="font-bold text-slate-900 mb-2">Multi-Warehouse Werking</h4>
+          <p className="text-sm text-slate-500">Selecteer een magazijn in de tabel om de bijbehorende docks en waiting areas te beheren. De geselecteerde instellingen zijn van toepassing op alle andere tabbladen.</p>
+        </div>
+        <div className="flex items-center justify-center border-l border-slate-200 pl-6">
+           <div className="text-center">
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Geselecteerd Magazijn</p>
+             <p className="text-xl font-bold text-indigo-600">{warehouses.find(w => w.id === selectedWarehouseId)?.name}</p>
+           </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -103,7 +191,10 @@ export default function YmsSettings() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold">Dagelijkse Instellingen (Overrides)</h3>
-                <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-indigo-700 transition-all">
+                <button 
+                    onClick={() => setIsOverrideModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-indigo-700 transition-all"
+                >
                     <Plus size={16} /> Override Toevoegen
                 </button>
             </div>
@@ -233,10 +324,18 @@ export default function YmsSettings() {
                   <button
                     onClick={() => handleUpdateDock({ ...dock, isFastLane: !dock.isFastLane })}
                     className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all ${
-                      dock.isFastLane ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'
+                      dock.isFastLane ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-500/20 shadow-sm' : 'bg-slate-100 text-slate-400'
                     }`}
                   >
-                    {dock.isFastLane ? 'FAST LANE ACTIEF' : 'GEEN FAST LANE'}
+                    {dock.isFastLane ? 'FAST LANE: AAN' : 'GEEN FAST LANE'}
+                  </button>
+                  <button
+                    onClick={() => handleUpdateDock({ ...dock, isOutboundOnly: !dock.isOutboundOnly })}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all ${
+                      dock.isOutboundOnly ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-500/20 shadow-sm' : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {dock.isOutboundOnly ? 'OUTBOUND ONLY' : 'ALLE RICHTINGEN'}
                   </button>
                 </div>
                 <div className="mt-6 pt-6 border-t border-slate-100">
@@ -260,8 +359,14 @@ export default function YmsSettings() {
                   <div className="p-3 bg-slate-50 text-slate-600 rounded-2xl group-hover:bg-slate-900 group-hover:text-white transition-colors">
                     <MapPin size={24} />
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${wa.status === 'Available' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                    {wa.status === 'Available' ? 'Vrij' : 'Bezet'}
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                    wa.adminStatus === 'Blocked' ? 'bg-rose-100 text-rose-700' :
+                    wa.adminStatus === 'Deactivated' ? 'bg-slate-200 text-slate-600' :
+                    wa.status === 'Available' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                  }`}>
+                    {wa.adminStatus === 'Blocked' ? 'Geblokkeerd' :
+                     wa.adminStatus === 'Deactivated' ? 'Uitgeschakeld' :
+                     wa.status === 'Available' ? 'Vrij' : 'Bezet'}
                   </div>
                 </div>
                 <input
@@ -317,15 +422,94 @@ export default function YmsSettings() {
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Beschrijving</label>
                   <textarea
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold h-24 resize-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold h-20 resize-none"
                     value={editingWarehouse.description || ''}
                     onChange={(e) => setEditingWarehouse({...editingWarehouse, description: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Adres</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
+                    value={editingWarehouse.address || ''}
+                    onChange={(e) => setEditingWarehouse({...editingWarehouse, address: e.target.value})}
+                    placeholder="bijv. Newtonweg 15, Venlo"
                   />
                 </div>
             </div>
             <div className="flex gap-4 mt-10">
               <button onClick={() => setEditingWarehouse(null)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold">Annuleren</button>
               <button onClick={() => handleSaveWarehouse(editingWarehouse)} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg">Opslaan</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {isOverrideModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-10 overflow-hidden relative">
+            <h3 className="text-2xl font-bold mb-8">Override Toevoegen</h3>
+            <div className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Dock</label>
+                  <select 
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
+                    value={newOverride.dockId || ''}
+                    onChange={(e) => setNewOverride({...newOverride, dockId: parseInt(e.target.value)})}
+                  >
+                    <option value="">Selecteer dock...</option>
+                    {docks.filter(d => d.warehouseId === selectedWarehouseId).map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Datum</label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
+                    value={newOverride.date}
+                    onChange={(e) => setNewOverride({...newOverride, date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Status</label>
+                  <select 
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"
+                    value={newOverride.status}
+                    onChange={(e) => setNewOverride({...newOverride, status: e.target.value as any})}
+                  >
+                    <option value="Available">Vrij</option>
+                    <option value="Blocked">Blokkeren</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Temperaturen</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(['Droog', 'Koel', 'Vries'] as YmsTemperature[]).map((temp) => (
+                      <button
+                        key={temp}
+                        onClick={() => {
+                            const temps = newOverride.allowedTemperatures || [];
+                            const newTemps = temps.includes(temp) 
+                                ? temps.filter(t => t !== temp)
+                                : [...temps, temp];
+                            setNewOverride({...newOverride, allowedTemperatures: newTemps});
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          newOverride.allowedTemperatures?.includes(temp) ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        {temp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+            </div>
+            <div className="flex gap-4 mt-10">
+              <button onClick={() => setIsOverrideModalOpen(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold">Annuleren</button>
+              <button onClick={handleSaveOverride} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg">Opslaan</button>
             </div>
           </motion.div>
         </div>

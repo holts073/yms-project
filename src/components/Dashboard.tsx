@@ -14,7 +14,10 @@ import {
   Calendar,
   Plus,
   ArrowRight,
-  MessageSquare
+  MessageSquare,
+  MapPin,
+  Activity,
+  Layers
 } from 'lucide-react';
 
 const formatDate = (dateStr: string) => {
@@ -38,7 +41,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
   const { state, dispatch, currentUser } = useSocket();
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', true);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
-  const [filterType, setFilterType] = useState<'action' | 'today'>('action');
+  const [filterType, setFilterType] = useState<'action' | 'today' | 'enroute'>('action');
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
   const canMailTransport = currentUser?.role === 'admin' || currentUser?.role === 'manager';
@@ -80,6 +83,9 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
 
     // Construct the beautiful 3-section email template
     const company = state?.companySettings || { name: 'ILG Foodgroup', address: '', phone: '', email: '' };
+    const warehouse = state?.yms?.warehouses?.find(w => w.id === delivery.warehouseId);
+    const destinationAddress = warehouse?.address || company.address || '-';
+    const destinationName = warehouse?.name || company.name;
     
     const emailBody = `
 Beste ${transporter.name},
@@ -89,8 +95,8 @@ Hierbij bevestigen wij de volgende transportopdracht:
 --------------------------------------------------------------------------------
 | [LOADING INFORMATION]                     | [DELIVERY INFORMATION]           |
 --------------------------------------------------------------------------------
-| Supplier: ${supplier.name.padEnd(31)} | Destination: ${company.name.padEnd(19)} |
-| Address: ${(supplier.address || '-').padEnd(32)} | Address: ${(company.address || '-').padEnd(23)} |
+| Supplier: ${supplier.name.padEnd(31)} | Destination: ${destinationName.padEnd(19)} |
+| Address: ${(supplier.address || '-').padEnd(32)} | Address: ${destinationAddress.padEnd(23)} |
 | City: ${(delivery.loadingCity || '-').padEnd(35)} | ETA: ${(delivery.etaWarehouse || '-').padEnd(27)} |
 | Country: ${(delivery.loadingCountry || '-').padEnd(32)} | Contact: ${(company.phone || '-').padEnd(25)} |
 | Loading Time: ${(delivery.loadingTime || '-').padEnd(27)} |                                   |
@@ -174,9 +180,26 @@ Tel: ${company.phone} | Email: ${company.email}
   const activeDeliveries = deliveries.filter(d => d.status < 100);
   const enRouteToWarehouse = deliveries.filter(d => d.status >= 75 && d.status < 100);
   const inCustoms = deliveries.filter(d => d.type === 'container' && d.status >= 50 && d.status < 75);
+  const inTransit = deliveries.filter(d => d.status < 50);
+
+  // YMS Stats
+  const ymsDeliveries = state?.yms?.deliveries || [];
+  const ymsDocks = state?.yms?.docks || [];
+  const now = new Date();
+
+  const arrivalsNoDock = ymsDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId);
+  const plannedDockDelays = ymsDeliveries.filter(d => 
+    d.status === 'PLANNED' && 
+    d.dockId && 
+    new Date(d.scheduledTime) < now
+  );
+  
+  const totalDocks = ymsDocks.length;
+  const occupiedDocks = ymsDocks.filter(d => d.status !== 'Available').length;
+  const dockOccupancy = totalDocks > 0 ? Math.round((occupiedDocks / totalDocks) * 100) : 0;
 
   const displayedDeliveries = useMemo(() => {
-    let list = filterType === 'action' ? actionRequiredDeliveries : expectedTodayDeliveries;
+    let list = filterType === 'action' ? actionRequiredDeliveries : (filterType === 'enroute' ? enRouteToWarehouse : expectedTodayDeliveries);
     
     if (sortConfig) {
       list = [...list].sort((a, b) => {
@@ -244,20 +267,20 @@ Tel: ${company.phone} | Email: ${company.email}
         </button>
 
         <button 
-          onClick={() => setFilterType('today')}
+          onClick={() => setFilterType('enroute')}
           className={cn(
             "p-6 rounded-[2rem] border transition-all text-left group",
-            filterType === 'today' ? "bg-amber-50 border-amber-200 shadow-md ring-2 ring-amber-500/20" : "bg-white border-slate-200 shadow-sm hover:border-amber-200"
+            filterType === 'enroute' ? "bg-teal-50 border-teal-200 shadow-md ring-2 ring-teal-500/20" : "bg-white border-slate-200 shadow-sm hover:border-teal-200"
           )}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'today' ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-600 group-hover:bg-amber-100")}>
-              <Calendar size={20} />
+            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'enroute' ? "bg-teal-600 text-white" : "bg-teal-50 text-teal-600 group-hover:bg-teal-100")}>
+              <TruckIcon size={20} />
             </div>
-            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vandaag</span>
+            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Onderweg</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{expectedTodayDeliveries.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Verwacht</p>
+          <p className="text-3xl font-bold text-slate-900">{enRouteToWarehouse.length}</p>
+          <p className="text-slate-500 text-[11px] mt-1">Onderweg naar Magazijn</p>
         </button>
 
         <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
@@ -267,30 +290,61 @@ Tel: ${company.phone} | Email: ${company.email}
             </div>
             <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">In Transit</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{activeDeliveries.filter(d => d.status < 50).length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">In Transit</p>
+          <p className="text-3xl font-bold text-slate-900">{inTransit.length}</p>
+          <p className="text-slate-500 text-[11px] mt-1">Niet geladen / Onderweg</p>
         </div>
+      </div>
+
+      {/* YMS Operating Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <button 
+          onClick={() => onNavigate?.('yms-arrivals')}
+          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:border-indigo-200 transition-all text-left group"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-100 transition-colors">
+              <MapPin size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">YMS Aankomst</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{arrivalsNoDock.length}</p>
+          <p className="text-slate-500 text-[11px] mt-1">Aangemeld, Geen Dock Toegewezen</p>
+        </button>
+
+        <button 
+          onClick={() => onNavigate?.('yms-planning')}
+          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:border-rose-200 transition-all text-left group"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl group-hover:bg-rose-100 transition-colors">
+              <Clock size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vertragingen</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{plannedDockDelays.length}</p>
+          <p className="text-slate-500 text-[11px] mt-1">Gepland met Dock, Niet gearriveerd</p>
+        </button>
 
         <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-              <Shield size={20} />
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <Activity size={20} />
             </div>
-            <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Douane</span>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Bezetting</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{inCustoms.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Douane</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
-              <TruckIcon size={20} />
-            </div>
-            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Onderweg naar Magazijn</span>
+          <div className="flex items-end gap-2">
+            <p className="text-3xl font-bold text-slate-900">{dockOccupancy}%</p>
+            <p className="text-slate-400 text-sm font-bold mb-1">({occupiedDocks}/{totalDocks})</p>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{enRouteToWarehouse.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Onderweg naar Magazijn</p>
+          <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+            <div 
+              className={cn(
+                "h-full transition-all duration-1000",
+                dockOccupancy > 80 ? "bg-rose-500" : dockOccupancy > 50 ? "bg-amber-500" : "bg-emerald-500"
+              )}
+              style={{ width: `${dockOccupancy}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -302,7 +356,7 @@ Tel: ${company.phone} | Email: ${company.email}
               {filterType === 'action' ? <AlertCircle size={20} /> : <Calendar size={20} />}
             </div>
             <h3 className="text-xl font-bold text-slate-900">
-              {filterType === 'action' ? 'Actie Vereist' : 'Verwacht Vandaag'}
+              {filterType === 'action' ? 'Actie Vereist' : (filterType === 'enroute' ? 'Onderweg naar Magazijn' : 'Verwacht Vandaag')}
             </h3>
           </div>
         </div>
@@ -463,11 +517,35 @@ Tel: ${company.phone} | Email: ${company.email}
                           )}
                           {delivery.status >= 50 && delivery.status < 100 && canEdit && (
                             <button 
-                              onClick={() => setManualStatus(delivery, 100)}
+                              onClick={() => {
+                                 // Register in YMS
+                                 const existingYms = state?.yms?.deliveries.find(yd => yd.reference === delivery.reference);
+                                 const ymsId = existingYms?.id || Math.random().toString(36).substr(2, 9);
+                                 const registrationTime = new Date().toISOString();
+                                 const scheduledTime = delivery.etaWarehouse || delivery.eta || registrationTime;
+                                 
+                                 dispatch('YMS_SAVE_DELIVERY', {
+                                   id: ymsId,
+                                   mainDeliveryId: delivery.id,
+                                   warehouseId: 'W01',
+                                   reference: delivery.reference,
+                                   licensePlate: delivery.containerNumber || 'NR ONBEKEND',
+                                   supplier: state?.addressBook?.suppliers.find(s => s.id === delivery.supplierId)?.name || 'Onbekend',
+                                   temperature: delivery.cargoType || 'Droog',
+                                   isReefer: delivery.type === 'container' ? 1 : 0,
+                                   scheduledTime: scheduledTime,
+                                   registrationTime: registrationTime,
+                                   status: 'GATE_IN',
+                                   transporterId: delivery.transporterId
+                                 });
+                                 
+                                 dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 });
+                                 alert('Vracht is aangemeld bij YMS module.');
+                              }}
                               className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
                             >
-                              <Check size={12} />
-                              Geleverd
+                              <MapPin size={12} />
+                              Aanmelden
                             </button>
                           )}
                           <button className="text-indigo-600 hover:text-indigo-700 text-sm font-bold flex items-center gap-1 ml-2">

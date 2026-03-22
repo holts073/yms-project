@@ -106,8 +106,16 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS yms_warehouses (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    description TEXT
+    description TEXT,
+    address TEXT
   );
+
+  // Migration for existing yms_warehouses
+  try {
+    db.prepare('ALTER TABLE yms_warehouses ADD COLUMN address TEXT').run();
+  } catch (e) {
+    // Column already exists
+  }
 
   CREATE TABLE IF NOT EXISTS yms_docks (
     id INTEGER,
@@ -118,9 +126,17 @@ db.exec(`
     adminStatus TEXT NOT NULL DEFAULT 'Active',
     currentDeliveryId TEXT,
     isFastLane INTEGER DEFAULT 0,
+    isOutboundOnly INTEGER DEFAULT 0,
     PRIMARY KEY(id, warehouseId),
     FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id) ON DELETE CASCADE
   );
+
+  // Migration for yms_docks
+  try {
+    db.prepare('ALTER TABLE yms_docks ADD COLUMN isOutboundOnly INTEGER DEFAULT 0').run();
+  } catch (e) {
+    // Column already exists
+  }
 
   CREATE TABLE IF NOT EXISTS yms_waiting_areas (
     id INTEGER,

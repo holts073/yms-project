@@ -177,8 +177,8 @@ export function getYmsDocks(warehouseId?: string): any[] {
 }
 
 export function saveYmsDock(dock: any) {
-  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, adminStatus = ?, currentDeliveryId = ?, isFastLane = ? WHERE id = ? AND warehouseId = ?')
-    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.id, dock.warehouseId);
+  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, adminStatus = ?, currentDeliveryId = ?, isFastLane = ?, isOutboundOnly = ? WHERE id = ? AND warehouseId = ?')
+    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.isOutboundOnly ? 1 : 0, dock.id, dock.warehouseId);
 }
 
 export function getYmsWaitingAreas(warehouseId?: string): any[] {
@@ -240,8 +240,8 @@ export function getYmsWarehouses(): any[] {
 }
 
 export function saveYmsWarehouse(w: any) {
-  db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description) VALUES (?, ?, ?)')
-    .run(w.id, w.name, w.description || null);
+  db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address) VALUES (?, ?, ?, ?)')
+    .run(w.id, w.name, w.description || null, w.address || null);
 }
 
 export function deleteYmsWarehouse(id: string) {

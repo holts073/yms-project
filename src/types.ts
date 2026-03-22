@@ -139,12 +139,13 @@ export interface AppState {
 
 export type YmsTemperature = 'Droog' | 'Vries' | 'Koel' | 'Fast Lane';
 export type YmsDirection = 'INBOUND' | 'OUTBOUND';
-export type YmsDeliveryStatus = 'PLANNED' | 'GATE_IN' | 'IN_YARD' | 'DOCKED' | 'UNLOADING' | 'LOADING' | 'COMPLETED' | 'GATE_OUT';
+export type YmsDeliveryStatus = 'EXPECTED' | 'PLANNED' | 'GATE_IN' | 'IN_YARD' | 'DOCKED' | 'UNLOADING' | 'LOADING' | 'COMPLETED' | 'GATE_OUT';
 
 export interface YmsWarehouse {
   id: string;
   name: string;
   description?: string;
+  address?: string;
 }
 
 export interface YmsDock {
@@ -155,6 +156,7 @@ export interface YmsDock {
   status: 'Available' | 'Occupied' | 'Blocked';
   currentDeliveryId?: string;
   isFastLane?: boolean;
+  isOutboundOnly?: boolean;
 }
 
 export type YmsWaitingAreaStatus = 'Active' | 'Deactivated' | 'Blocked';
