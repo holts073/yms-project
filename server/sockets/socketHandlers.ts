@@ -9,13 +9,36 @@ import {
 import { saveSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
 import { buildStaticState } from '../routes/deliveries';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
 
 export const setupSocketHandlers = (io: Server) => {
+  // Middleware to verify JWT on connection
+  io.use((socket, next) => {
+    const token = socket.handshake.auth.token || socket.handshake.query.token;
+    if (!token) {
+      return next(new Error("Authentication error: No token provided"));
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      socket.data.user = decoded;
+      next();
+    } catch (err) {
+      next(new Error("Authentication error: Invalid token"));
+    }
+  });
+
   io.on("connection", (socket: Socket) => {
     socket.emit("init", buildStaticState());
 
     socket.on("action", (data) => {
-      const { type, payload, user } = data;
+      const { type, payload } = data;
+      const user = socket.data.user; // Securely get user from socket data
+      if (!user) {
+        socket.emit("error", { message: "Internal Auth Error: User not found in socket session" });
+        return;
+      }
       const timestamp = new Date().toISOString();
 
       const checkRole = (required: string) => {

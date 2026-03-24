@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { getYmsDeliveries, getYmsAlerts, saveYmsAlert } from '../../src/db/queries';
+import { getYmsDeliveries, getYmsAlerts, saveYmsAlert, getYmsDocks, resolveYmsAlert } from '../../src/db/queries';
 import { buildStaticState } from '../routes/deliveries';
 
 export const startInventoryWorker = (io: Server) => {
@@ -8,6 +8,36 @@ export const startInventoryWorker = (io: Server) => {
     const now = new Date();
     
     allDeliveries.forEach(d => {
+        // Auto-Resolution of resolved alerts
+        const activeAlerts = getYmsAlerts(d.warehouseId).filter(a => a.deliveryId === d.id && !a.resolved);
+        
+        if (d.status === 'GATE_OUT' || d.status === 'COMPLETED') {
+            activeAlerts.forEach(a => resolveYmsAlert(a.id));
+        }
+
+        // Direction Validation (Truck Direction vs Dock Capability)
+        if (d.dockId && d.status === 'DOCKED') {
+            const allDocks = getYmsDocks(d.warehouseId);
+            const dock = allDocks.find(dk => dk.id === d.dockId);
+            if (dock && dock.direction_capability !== 'BOTH' && dock.direction_capability !== d.direction) {
+                const alreadyAlerted = activeAlerts.find(a => a.type === 'DIRECTION_MISMATCH');
+                if (!alreadyAlerted) {
+                    const newAlert = {
+                        id: Math.random().toString(36).substr(2, 9),
+                        deliveryId: d.id,
+                        warehouseId: d.warehouseId,
+                        type: 'DIRECTION_MISMATCH',
+                        severity: 'medium',
+                        timestamp: now.toISOString(),
+                        message: `DIRECTION MISMATCH: ${d.reference} (${d.direction}) staat aan ${dock.name} (${dock.direction_capability})!`,
+                        resolved: false
+                    };
+                    saveYmsAlert(newAlert);
+                    io.emit("NEW_ALERT", newAlert);
+                }
+            }
+        }
+
         if (!d.isReefer) return;
 
         // Dwell Time in Yard

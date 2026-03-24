@@ -125,6 +125,7 @@ db.exec(`
     currentDeliveryId TEXT,
     isFastLane INTEGER DEFAULT 0,
     isOutboundOnly INTEGER DEFAULT 0,
+    direction_capability TEXT NOT NULL DEFAULT 'BOTH', -- INBOUND, OUTBOUND, BOTH
     PRIMARY KEY(id, warehouseId),
     FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id) ON DELETE CASCADE
   );
@@ -180,7 +181,8 @@ db.exec(`
     id TEXT PRIMARY KEY,
     warehouseId TEXT NOT NULL,
     dockId INTEGER NOT NULL,
-    date TEXT NOT NULL, -- YYYY-MM-DD
+    startDate TEXT NOT NULL, -- YYYY-MM-DD
+    endDate TEXT NOT NULL,   // YYYY-MM-DD
     status TEXT NOT NULL,
     allowedTemperatures TEXT NOT NULL, -- JSON array
     FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId) ON DELETE CASCADE
@@ -268,6 +270,18 @@ migrations.forEach(m => {
     db.prepare(`ALTER TABLE ${m.table} ADD COLUMN ${m.column} ${m.type}`).run();
   } catch (e) {}
 });
+
+// Structural migration for yms_dock_overrides
+try {
+    db.prepare('ALTER TABLE yms_dock_overrides ADD COLUMN startDate TEXT').run();
+    db.prepare('ALTER TABLE yms_dock_overrides ADD COLUMN endDate TEXT').run();
+    // Copy date to startDate if startDate is null
+    db.exec("UPDATE yms_dock_overrides SET startDate = date, endDate = date WHERE startDate IS NULL");
+} catch (e) {}
+
+try {
+    db.prepare("ALTER TABLE yms_docks ADD COLUMN direction_capability TEXT NOT NULL DEFAULT 'BOTH'").run();
+} catch (e) {}
 
 // Helper for settings
 export function getSetting(key: string, defaultValue: any = null) {

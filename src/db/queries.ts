@@ -48,7 +48,23 @@ const stmts = {
   `),
   deleteYmsDelivery: db.prepare('DELETE FROM yms_deliveries WHERE id = ?'),
   getYmsWarehouses: db.prepare('SELECT * FROM yms_warehouses'),
-  insertYmsWarehouse: db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address) VALUES (?, ?, ?, ?)')
+  insertYmsWarehouse: db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address) VALUES (?, ?, ?, ?)'),
+  saveAddressBookEntry: db.prepare('INSERT OR REPLACE INTO address_book (id, type, name, contact, email, address, pickupAddress, otif, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+  getYmsDockOverrides: db.prepare('SELECT * FROM yms_dock_overrides'),
+  getYmsDockOverridesByWarehouse: db.prepare('SELECT * FROM yms_dock_overrides WHERE warehouseId = ?'),
+  insertYmsDockOverride: db.prepare(`
+    INSERT OR REPLACE INTO yms_dock_overrides (id, warehouseId, dockId, startDate, endDate, status, allowedTemperatures)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `),
+  deleteYmsDockOverride: db.prepare('DELETE FROM yms_dock_overrides WHERE id = ?'),
+  getYmsAlerts: db.prepare('SELECT * FROM yms_alerts'),
+  getYmsAlertsByWarehouse: db.prepare('SELECT * FROM yms_alerts WHERE warehouseId = ?'),
+  insertYmsAlert: db.prepare(`
+    INSERT OR REPLACE INTO yms_alerts (id, deliveryId, warehouseId, type, severity, timestamp, message, resolved)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `),
+  deleteYmsAlert: db.prepare('DELETE FROM yms_alerts WHERE id = ?'),
+  resolveYmsAlert: db.prepare('UPDATE yms_alerts SET resolved = 1 WHERE id = ?')
 };
 
 export function getDeliveries(page: number = 1, limit: number = 15, search: string = '', typeFilter: string = 'all', sort: string = 'eta', statusLess100: boolean = false) {
@@ -126,18 +142,31 @@ export function getDeliveries(page: number = 1, limit: number = 15, search: stri
 
 export function getAllDeliveries() {
   const rows = db.prepare('SELECT * FROM deliveries').all() as any[];
-  return rows.map(r => {
-    const docs = db.prepare('SELECT * FROM documents WHERE deliveryId = ?').all(r.id) as any[];
-    const audit = db.prepare('SELECT * FROM audit_logs WHERE deliveryId = ?').all(r.id) as any[];
+  if (rows.length === 0) return [];
 
-    return {
-      ...r,
-      palletExchange: r.palletExchange === 1,
-      statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
-      documents: docs.map(d => ({ ...d, required: d.required === 1 })),
-      auditTrail: audit
-    };
-  });
+  const ids = rows.map(r => r.id);
+  const allDocs = stmts.getDocsBatch(ids).all(...ids) as any[];
+  const allAudit = stmts.getAuditBatch(ids).all(...ids) as any[];
+
+  const docsMap = allDocs.reduce((acc, d) => {
+    if (!acc[d.deliveryId]) acc[d.deliveryId] = [];
+    acc[d.deliveryId].push({ ...d, required: d.required === 1 });
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const auditMap = allAudit.reduce((acc, a) => {
+    if (!acc[a.deliveryId]) acc[a.deliveryId] = [];
+    acc[a.deliveryId].push(a);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  return rows.map(r => ({
+    ...r,
+    palletExchange: r.palletExchange === 1,
+    statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
+    documents: docsMap[r.id] || [],
+    auditTrail: auditMap[r.id] || []
+  }));
 }
 
 export function insertDelivery(d: Delivery) {
@@ -198,8 +227,7 @@ export function getAddressBook() {
 }
 
 export function saveAddressBookEntry(entry: AddressEntry) {
-  db.prepare('INSERT OR REPLACE INTO address_book (id, type, name, contact, email, address, pickupAddress, otif, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(entry.id, entry.type, entry.name, entry.contact, entry.email, entry.address, entry.pickupAddress, entry.otif, entry.remarks);
+  stmts.saveAddressBookEntry.run(entry.id, entry.type, entry.name, entry.contact, entry.email, entry.address, entry.pickupAddress, entry.otif, entry.remarks);
 }
 
 export function deleteAddressEntry(id: string) {
@@ -281,13 +309,7 @@ export function deleteYmsWarehouse(id: string) {
 }
 
 export function getYmsDockOverrides(warehouseId?: string): any[] {
-  let query = 'SELECT * FROM yms_dock_overrides';
-  const params: any[] = [];
-  if (warehouseId) {
-    query += ' WHERE warehouseId = ?';
-    params.push(warehouseId);
-  }
-  const rows = db.prepare(query).all(...params) as any[];
+  const rows = warehouseId ? stmts.getYmsDockOverridesByWarehouse.all(warehouseId) : stmts.getYmsDockOverrides.all() as any[];
   return rows.map(r => ({
     ...r,
     allowedTemperatures: JSON.parse(r.allowedTemperatures)
@@ -295,24 +317,15 @@ export function getYmsDockOverrides(warehouseId?: string): any[] {
 }
 
 export function saveYmsDockOverride(o: any) {
-  db.prepare(`
-    INSERT OR REPLACE INTO yms_dock_overrides (id, warehouseId, dockId, date, status, allowedTemperatures)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(o.id, o.warehouseId, o.dockId, o.date, o.status, JSON.stringify(o.allowedTemperatures));
+  stmts.insertYmsDockOverride.run(o.id, o.warehouseId, o.dockId, o.startDate, o.endDate, o.status, JSON.stringify(o.allowedTemperatures));
 }
 
 export function deleteYmsDockOverride(id: string) {
-  db.prepare('DELETE FROM yms_dock_overrides WHERE id = ?').run(id);
+  stmts.deleteYmsDockOverride.run(id);
 }
 
 export function getYmsAlerts(warehouseId?: string): any[] {
-  let query = 'SELECT * FROM yms_alerts';
-  const params: any[] = [];
-  if (warehouseId) {
-    query += ' WHERE warehouseId = ?';
-    params.push(warehouseId);
-  }
-  const rows = db.prepare(query).all(...params) as any[];
+  const rows = warehouseId ? stmts.getYmsAlertsByWarehouse.all(warehouseId) : stmts.getYmsAlerts.all() as any[];
   return rows.map(r => ({
     ...r,
     resolved: r.resolved === 1
@@ -320,16 +333,13 @@ export function getYmsAlerts(warehouseId?: string): any[] {
 }
 
 export function saveYmsAlert(a: any) {
-  db.prepare(`
-    INSERT OR REPLACE INTO yms_alerts (id, deliveryId, warehouseId, type, severity, timestamp, message, resolved)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(a.id, a.deliveryId || null, a.warehouseId, a.type, a.severity, a.timestamp, a.message, a.resolved ? 1 : 0);
+  stmts.insertYmsAlert.run(a.id, a.deliveryId || null, a.warehouseId, a.type, a.severity, a.timestamp, a.message, a.resolved ? 1 : 0);
 }
 
 export function deleteYmsAlert(id: string) {
-  db.prepare('DELETE FROM yms_alerts WHERE id = ?').run(id);
+  stmts.deleteYmsAlert.run(id);
 }
 
 export function resolveYmsAlert(id: string) {
-  db.prepare('UPDATE yms_alerts SET resolved = 1 WHERE id = ?').run(id);
+  stmts.resolveYmsAlert.run(id);
 }

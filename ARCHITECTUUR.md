@@ -25,9 +25,7 @@ De server is opgedeeld in gespecialiseerde modules:
 *   **Database**: SQLite (`better-sqlite3`) in WAL-modus.
 *   **Toegang**: `queries.ts` bevat alle SQL-voorbereide statements.
 
-## Datastroom (Uni-directioneel)
-
-Het systeem volgt een strikte flow om inconsistenties te voorkomen:
+### Systeem Architectuur (Source of Truth)
 
 ```mermaid
 graph TD
@@ -35,31 +33,24 @@ graph TD
         UI[React Components]
         SC[SocketContext]
     end
-
     subgraph "Integration Layer (Sockets/API)"
         SH[Socket Handlers]
         RT[API Routes]
     end
-
     subgraph "Logic Layer (Workers/Services)"
         BW[Inventory Worker]
         SV[Services]
     end
-
     subgraph "Persistence Layer (SQL)"
         QU[Prepared Queries]
         DB[(SQLite DB)]
     end
-
-    %% Flow
     UI -- "dispatch(Action)" --> SC
     SC -- "Socket.emit('action')" --> SH
     SH -- "Call" --> QU
     SH -- "Broadcast" --> SC
-    
     BW -- "Monitor & Alert" --> QU
     BW -- "IO.emit('state_update')" --> SC
-    
     QU <--> DB
     RT -- "REST" --> UI
     SH -- "Use" --> SV

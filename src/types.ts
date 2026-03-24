@@ -154,7 +154,8 @@ export interface YmsDock {
   status: 'Available' | 'Occupied' | 'Blocked';
   currentDeliveryId?: string;
   isFastLane?: boolean;
-  isOutboundOnly?: boolean;
+  isOutboundOnly?: boolean; // Keep for compatibility, but prefer direction_capability
+  direction_capability: 'INBOUND' | 'OUTBOUND' | 'BOTH';
 }
 
 export type YmsWaitingAreaStatus = 'Active' | 'Deactivated' | 'Blocked';
@@ -210,7 +211,8 @@ export interface YmsDockOverride {
   id: string;
   dockId: number;
   warehouseId: string;
-  date: string; // YYYY-MM-DD
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
   status: 'Available' | 'Blocked';
   allowedTemperatures: YmsTemperature[];
 }

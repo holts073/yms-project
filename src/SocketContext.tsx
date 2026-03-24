@@ -45,7 +45,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
 
-    const newSocket = io();
+    const token = localStorage.getItem('token');
+    const newSocket = io({
+      auth: { token }
+    });
     setSocket(newSocket);
 
     newSocket.on('init', (initialState: AppState) => {
@@ -97,8 +100,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const dispatch = (type: string, payload: any) => {
-    if (socket && currentUser) {
-      socket.emit('action', { type, payload, user: currentUser });
+    if (socket && isAuthenticated) {
+      socket.emit('action', { type, payload });
     }
   };
 

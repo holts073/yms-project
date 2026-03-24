@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SocketProvider, useSocket } from './SocketContext';
 import { 
   LayoutDashboard, 
@@ -115,6 +115,17 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const { state, currentUser, isAuthenticated, logout } = useSocket();
+    const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+
+    useEffect(() => {
+      if (darkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    }, [darkMode]);
 
     // Sync openDropdown with activeTab on initial load or navigation
     React.useEffect(() => {
