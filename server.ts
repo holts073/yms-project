@@ -9,6 +9,7 @@ import authRoutes from './server/routes/auth';
 import deliveryRoutes from './server/routes/deliveries';
 import { setupSocketHandlers } from './server/sockets/socketHandlers';
 import { startInventoryWorker } from './server/workers/inventory-worker';
+import { authMiddleware } from './server/middleware/auth';
 
 async function startServer() {
   const app = express();
@@ -22,6 +23,7 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  app.use("/api", authMiddleware); // Apply to all /api routes
   app.use("/api", authRoutes);
   app.use("/api", deliveryRoutes);
 

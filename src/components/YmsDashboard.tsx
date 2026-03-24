@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useSocket } from '../SocketContext';
 import { 
   Truck, 
@@ -34,6 +35,8 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
   const [showAlerts, setShowAlerts] = useState(false);
   const [showCompliance, setShowCompliance] = useState(false);
   const [complianceStats, setComplianceStats] = useState<any[]>([]);
+  const [showQuickAssign, setShowQuickAssign] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   React.useEffect(() => {
     socket?.on("YMS_COMPLIANCE_STATS_RESULT", (stats: any[]) => {
@@ -194,11 +197,19 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
     dispatch('YMS_SAVE_DELIVERY', { ...d, waitingAreaId: waId, dockId: null, status: 'IN_YARD' });
   };
 
-  const filteredDeliveries = allVisibleDeliveries.filter(d => 
-    d.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (d.licensePlate && d.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    d.supplier.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a,b) => {
+  const filteredDeliveries = allVisibleDeliveries.filter(d => {
+    const matchesSearch = d.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.licensePlate && d.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      d.supplier.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    if (activeFilters.includes('REEFER') && !d.isReefer) return false;
+    if (activeFilters.includes('LATE') && !d.isLate) return false;
+    if (activeFilters.includes('FASTLANE') && !isFastLaneEligible(d)) return false;
+    
+    return true;
+  }).sort((a,b) => {
     return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
   });
 
@@ -265,6 +276,25 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
             />
           </div>
 
+          <div className="flex items-center gap-2">
+            {[
+                { id: 'REEFER', label: 'Reefer', color: 'bg-rose-100 text-rose-700' },
+                { id: 'LATE', label: 'Te Laat', color: 'bg-amber-100 text-amber-700' },
+                { id: 'FASTLANE', label: 'Fast Lane', color: 'bg-emerald-100 text-emerald-700' }
+            ].map(f => (
+                <button
+                    key={f.id}
+                    onClick={() => setActiveFilters(prev => prev.includes(f.id) ? prev.filter(x => x !== f.id) : [...prev, f.id])}
+                    className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border",
+                        activeFilters.includes(f.id) ? f.color + " border-transparent scale-105 shadow-sm" : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                    )}
+                >
+                    {f.label}
+                </button>
+            ))}
+          </div>
+
           {reeferAlertCount > 0 && (
             <button 
               onClick={() => setShowAlerts(!showAlerts)}
@@ -301,6 +331,16 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                 {viewMode === 'list' ? 'Timeline' : 'Lijst'}
             </button>
           )}
+
+          <button
+            onClick={() => setShowQuickAssign(!showQuickAssign)}
+            className={cn(
+                "flex items-center gap-2 px-6 py-2 rounded-xl font-bold transition-all shadow-md active:scale-95",
+                showQuickAssign ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 border border-slate-200"
+            )}
+          >
+            <Truck size={20} /> Quick-Assign
+          </button>
 
           <button
             onClick={() => { setEditingDelivery({ status: 'Scheduled', temperature: 'Droog', isReefer: false, tempAlertThreshold: 30 }); setIsModalOpen(true); }}
@@ -422,7 +462,8 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
         </div>
       )}
 
-      <div className={cn("flex-1 overflow-hidden flex flex-col", view === 'arrivals' && 'hidden')}>
+      <div className="flex-1 flex overflow-hidden gap-6 relative">
+        <div className={cn("flex-1 overflow-hidden flex flex-col", view === 'arrivals' && 'hidden')}>
         {viewMode === 'list' ? (
           <div className="xl:col-span-3 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
             <div className="flex gap-4 mb-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -617,30 +658,51 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                           <motion.div
                             layoutId={delivery.id}
                             key={delivery.id}
-                            drag
+                            drag={viewMode === 'timeline' ? "x" : false}
+                            dragConstraints={{ left: 0, right: 3200 }}
                             dragMomentum={false}
                             onDragEnd={(_, info) => {
-                              const rowHeight = 96;
-                              const dockDelta = Math.round(info.offset.y / rowHeight);
-                              if (dockDelta !== 0) {
-                                const dockIndex = currentDocks.findIndex(dk => dk.id === dock.id);
-                                const newDockIdx = dockIndex + dockDelta;
-                                if (newDockIdx >= 0 && newDockIdx < currentDocks.length) {
-                                  handleAssignToDock(delivery, currentDocks[newDockIdx].id);
-                                }
-                              }
-                              
-                              const hourWidth = 200;
-                              const timeDeltaMinutes = (info.offset.x / hourWidth) * 60;
-                              if (Math.abs(timeDeltaMinutes) > 5) {
-                                const newDate = new Date(delivery.scheduledTime);
-                                newDate.setMinutes(newDate.getMinutes() + timeDeltaMinutes);
-                                handleSaveDelivery({ ...delivery, scheduledTime: newDate.toISOString() });
-                              }
+                               const hourWidth = 200;
+                               const timeDeltaMinutes = (info.offset.x / hourWidth) * 60;
+                               if (Math.abs(timeDeltaMinutes) > 5) {
+                                 const newDate = new Date(delivery.scheduledTime);
+                                 newDate.setMinutes(newDate.getMinutes() + timeDeltaMinutes);
+                                 handleSaveDelivery({ ...delivery, scheduledTime: newDate.toISOString() });
+                               }
                             }}
-                            className="absolute top-2 h-20 w-48 bg-white border border-slate-200 rounded-2xl shadow-lg p-3 cursor-grab active:cursor-grabbing z-10 hover:border-indigo-500 transition-colors group/card"
-                            style={{ left: leftPos }}
+                            className="absolute top-2 h-20 bg-white border border-slate-200 rounded-2xl shadow-lg p-3 cursor-grab active:cursor-grabbing z-10 hover:border-indigo-500 transition-colors group/card overflow-hidden"
+                            style={{ 
+                                left: leftPos,
+                                width: (delivery.estimatedDuration || 90) / 60 * 200
+                            }}
                           >
+                            <div 
+                                className="absolute right-0 top-0 bottom-0 w-2 hover:bg-indigo-500/10 cursor-ew-resize z-20 group-hover/card:bg-slate-50 transition-colors"
+                                onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    const startX = e.clientX;
+                                    const startWidth = (delivery.estimatedDuration || 90) / 60 * 200;
+                                    
+                                    const onMouseMove = (moveE: MouseEvent) => {
+                                        const deltaX = moveE.clientX - startX;
+                                        const newWidth = Math.max(50, startWidth + deltaX);
+                                        const newDuration = (newWidth / 200) * 60;
+                                        // Update locally for feedback would be nice, but here we just update on mouseup
+                                    };
+                                    
+                                    const onMouseUp = (upE: MouseEvent) => {
+                                        const deltaX = upE.clientX - startX;
+                                        const newWidth = Math.max(50, startWidth + deltaX);
+                                        const newDuration = Math.round((newWidth / 200) * 60);
+                                        handleSaveDelivery({ ...delivery, estimatedDuration: newDuration });
+                                        document.removeEventListener('mousemove', onMouseMove);
+                                        document.removeEventListener('mouseup', onMouseUp);
+                                    };
+                                    
+                                    document.addEventListener('mousemove', onMouseMove);
+                                    document.addEventListener('mouseup', onMouseUp);
+                                }}
+                            />
                             <div className="flex justify-between items-start">
                               <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase ${
                                 delivery.status === 'DOCKED' ? 'bg-indigo-100 text-indigo-700' : 
@@ -656,6 +718,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                               <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600">
                                 <Clock size={10} />
                                 {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <span className="text-[8px] text-slate-300 ml-1">({delivery.estimatedDuration || 90}m)</span>
                               </div>
                               {delivery.isLate && <AlertCircle size={10} className="text-rose-500 animate-pulse" />}
                             </div>
@@ -676,6 +739,69 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
             </div>
           </div>
         )}
+        </div>
+
+        {/* Quick-Assign Sidebar */}
+        <div 
+            className={cn(
+                "w-80 bg-white border border-slate-200 rounded-[2.5rem] flex flex-col overflow-hidden transition-all duration-500 shadow-xl",
+                showQuickAssign ? "translate-x-0 opacity-100" : "w-0 translate-x-12 opacity-0 pointer-events-none"
+            )}
+        >
+            <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div>
+                    <h3 className="font-bold text-slate-900">Quick-Assign</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Wacht op Dock</p>
+                </div>
+                <button onClick={() => setShowQuickAssign(false)} className="p-2 hover:bg-white rounded-full transition-colors text-slate-400"><Plus size={18} className="rotate-45" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {currentDeliveries
+                    .filter(d => d.status === 'GATE_IN' && !d.dockId)
+                    .map(delivery => (
+                        <div key={delivery.id} className="p-4 bg-slate-50 border border-slate-100 rounded-3xl hover:border-indigo-300 transition-all group">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className={cn(
+                                    "text-[10px] font-black px-2 py-0.5 rounded-full uppercase",
+                                    delivery.temperature === 'Vries' ? 'bg-blue-100 text-blue-700' :
+                                    delivery.temperature === 'Koel' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
+                                )}>{delivery.temperature}</span>
+                                <span className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter uppercase">{delivery.licensePlate || 'NR ONBEKEND'}</span>
+                            </div>
+                            <h4 className="font-bold text-slate-900 text-sm mb-1">{delivery.reference}</h4>
+                            <p className="text-[11px] text-slate-500 truncate mb-4">{delivery.supplier}</p>
+                            
+                            <div className="grid grid-cols-4 gap-1.5">
+                                {currentDocks
+                                    .filter(dk => dk.status === 'Available' && dk.allowedTemperatures.includes(delivery.temperature))
+                                    .slice(0, 8)
+                                    .map(dk => (
+                                        <button 
+                                            key={dk.id} 
+                                            onClick={() => handleAssignToDock(delivery, dk.id)}
+                                            className="h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                                        >
+                                            {dk.name.replace('Dock ', '')}
+                                        </button>
+                                    ))
+                                }
+                                {currentDocks.filter(dk => dk.status === 'Available' && dk.allowedTemperatures.includes(delivery.temperature)).length === 0 && (
+                                    <div className="col-span-4 py-2 text-center text-[10px] font-bold text-rose-400 uppercase tracking-widest bg-rose-50 rounded-xl">Geen Docks Vrij</div>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                }
+                {currentDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId).length === 0 && (
+                    <div className="py-20 text-center">
+                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-inner">
+                            <CheckCircle2 size={24} className="text-emerald-400" />
+                        </div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Alles Toegewezen</p>
+                    </div>
+                )}
+            </div>
+        </div>
       </div>
 
       {isModalOpen && (

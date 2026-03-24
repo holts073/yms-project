@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useSocket } from '../SocketContext';
 import { 
   Plus, 
@@ -205,7 +206,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     e.preventDefault();
     
     if (!formData.etaWarehouse) {
-      alert('SVP vul de verwachte aankomstdatum in (ETA Magazijn).');
+      toast.error('SVP vul de verwachte aankomstdatum in (ETA Magazijn).');
       return;
     }
     
@@ -319,7 +320,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     const transporter = addressBook?.transporters.find(t => t.id === delivery.transporterId);
     
     if (!supplier || !transporter) {
-      alert('Leverancier of transporteur niet gevonden.');
+      toast.error('Leverancier of transporteur niet gevonden.');
       return;
     }
 
@@ -421,6 +422,7 @@ Tel: ${company.phone} | Email: ${company.email}
       link.download = `actieve_leveringen_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
     } catch (err) {
+      toast.error("Export mislukt");
       console.error("Export failed", err);
     }
   };

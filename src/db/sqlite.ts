@@ -196,6 +196,16 @@ db.exec(`
     message TEXT NOT NULL,
     resolved INTEGER DEFAULT 0
   );
+
+  -- Performance Indices
+  CREATE INDEX IF NOT EXISTS idx_docs_deliveryId ON documents(deliveryId);
+  CREATE INDEX IF NOT EXISTS idx_audit_deliveryId ON audit_logs(deliveryId);
+  CREATE INDEX IF NOT EXISTS idx_deliveries_ref ON deliveries(reference);
+  CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries(status);
+  CREATE INDEX IF NOT EXISTS idx_deliveries_etaW ON deliveries(etaWarehouse);
+  CREATE INDEX IF NOT EXISTS idx_yms_del_ref ON yms_deliveries(reference);
+  CREATE INDEX IF NOT EXISTS idx_yms_del_status ON yms_deliveries(status);
+  CREATE INDEX IF NOT EXISTS idx_yms_del_dock ON yms_deliveries(dockId);
 `);
 
 // YMS V3 Migrations

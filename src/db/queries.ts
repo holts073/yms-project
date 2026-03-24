@@ -1,6 +1,56 @@
 import { db } from './sqlite';
 import { Delivery, Document, AuditEntry, AddressEntry, User } from '../types';
 
+// Cached Prepared Statements
+const stmts = {
+  getDocsByDeliveryId: db.prepare('SELECT * FROM documents WHERE deliveryId = ?'),
+  getAuditByDeliveryId: db.prepare('SELECT * FROM audit_logs WHERE deliveryId = ?'),
+  getAllDocs: db.prepare('SELECT * FROM documents'),
+  getAllAudit: db.prepare('SELECT * FROM audit_logs'),
+  getDocsBatch: (ids: string[]) => db.prepare(`SELECT * FROM documents WHERE deliveryId IN (${ids.map(() => '?').join(',')})`),
+  getAuditBatch: (ids: string[]) => db.prepare(`SELECT * FROM audit_logs WHERE deliveryId IN (${ids.map(() => '?').join(',')})`),
+  insertDelivery: db.prepare(`
+    INSERT OR REPLACE INTO deliveries (
+      id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt,
+      transportCost, weight, palletType, palletCount, cargoType, loadingCountry, loadingCity, palletExchange,
+      etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
+      notes, statusHistory, loadingTime, dockId
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `),
+  deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
+  insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required) VALUES (?, ?, ?, ?, ?)'),
+  deleteAudit: db.prepare('DELETE FROM audit_logs WHERE deliveryId = ?'),
+  insertAudit: db.prepare('INSERT INTO audit_logs (id, deliveryId, timestamp, user, action, details) VALUES (?, ?, ?, ?, ?, ?)'),
+  deleteDelivery: db.prepare('DELETE FROM deliveries WHERE id = ?'),
+  getUsers: db.prepare('SELECT * FROM users'),
+  getUserPassword: db.prepare('SELECT passwordHash FROM users WHERE id = ?'),
+  insertUser: db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions) VALUES (?, ?, ?, ?, ?, ?)'),
+  deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
+  getAddressBookByEmail: (type: string) => db.prepare("SELECT * FROM address_book WHERE type = ?"),
+  deleteAddressEntry: db.prepare('DELETE FROM address_book WHERE id = ?'),
+  getLogs: db.prepare('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 100'),
+  insertLog: db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)'),
+  getYmsDocks: db.prepare('SELECT * FROM yms_docks'),
+  getYmsDocksByWarehouse: db.prepare('SELECT * FROM yms_docks WHERE warehouseId = ?'),
+  updateYmsDock: db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, adminStatus = ?, currentDeliveryId = ?, isFastLane = ?, isOutboundOnly = ? WHERE id = ? AND warehouseId = ?'),
+  getYmsWaitingAreas: db.prepare('SELECT * FROM yms_waiting_areas'),
+  getYmsWaitingAreasByWarehouse: db.prepare('SELECT * FROM yms_waiting_areas WHERE warehouseId = ?'),
+  updateYmsWaitingArea: db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, adminStatus = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?'),
+  getYmsDeliveries: db.prepare('SELECT * FROM yms_deliveries'),
+  getYmsDeliveriesByWarehouse: db.prepare('SELECT * FROM yms_deliveries WHERE warehouseId = ?'),
+  insertYmsDelivery: db.prepare(`
+    INSERT OR REPLACE INTO yms_deliveries (
+      id, warehouseId, reference, licensePlate, supplier, supplierId, mainDeliveryId, temperature, 
+      scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
+      estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate,
+      direction, palletCount
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `),
+  deleteYmsDelivery: db.prepare('DELETE FROM yms_deliveries WHERE id = ?'),
+  getYmsWarehouses: db.prepare('SELECT * FROM yms_warehouses'),
+  insertYmsWarehouse: db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address) VALUES (?, ?, ?, ?)')
+};
+
 export function getDeliveries(page: number = 1, limit: number = 15, search: string = '', typeFilter: string = 'all', sort: string = 'eta', statusLess100: boolean = false) {
   const offset = (page - 1) * limit;
 
@@ -37,19 +87,34 @@ export function getDeliveries(page: number = 1, limit: number = 15, search: stri
 
   const rows = db.prepare(query).all(...params) as any[];
 
-  // Fetch documents and audit logs
-  const deliveries: Delivery[] = rows.map(r => {
-    const docs = db.prepare('SELECT * FROM documents WHERE deliveryId = ?').all(r.id) as any[];
-    const audit = db.prepare('SELECT * FROM audit_logs WHERE deliveryId = ?').all(r.id) as any[];
+  if (rows.length === 0) {
+    return { deliveries: [], total: totalRow.count, totalPages: Math.ceil(totalRow.count / limit), currentPage: page };
+  }
 
-    return {
-      ...r,
-      palletExchange: r.palletExchange === 1,
-      statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
-      documents: docs.map(d => ({ ...d, required: d.required === 1 })),
-      auditTrail: audit
-    };
-  });
+  // Optimized Fetch: Batch documents and audit logs for all rows on the page
+  const ids = rows.map(r => r.id);
+  const allDocs = stmts.getDocsBatch(ids).all(...ids) as any[];
+  const allAudit = stmts.getAuditBatch(ids).all(...ids) as any[];
+
+  const docsMap = allDocs.reduce((acc, d) => {
+    if (!acc[d.deliveryId]) acc[d.deliveryId] = [];
+    acc[d.deliveryId].push({ ...d, required: d.required === 1 });
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const auditMap = allAudit.reduce((acc, a) => {
+    if (!acc[a.deliveryId]) acc[a.deliveryId] = [];
+    acc[a.deliveryId].push(a);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const deliveries: Delivery[] = rows.map(r => ({
+    ...r,
+    palletExchange: r.palletExchange === 1,
+    statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
+    documents: docsMap[r.id] || [],
+    auditTrail: auditMap[r.id] || []
+  }));
 
   return {
     deliveries,
@@ -77,14 +142,7 @@ export function getAllDeliveries() {
 
 export function insertDelivery(d: Delivery) {
   db.transaction(() => {
-    db.prepare(`
-      INSERT OR REPLACE INTO deliveries (
-        id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt,
-        transportCost, weight, palletType, palletCount, cargoType, loadingCountry, loadingCity, palletExchange,
-        etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
-        notes, statusHistory, loadingTime, dockId
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    stmts.insertDelivery.run(
       d.id, d.type, d.reference, d.supplierId, d.transporterId, d.forwarderId, d.status, d.eta, d.createdAt, d.updatedAt,
       d.transportCost, d.weight, d.palletType, d.palletCount, d.cargoType, d.loadingCountry, d.loadingCity, d.palletExchange ? 1 : 0,
       d.etd, d.etaPort, d.etaWarehouse, d.originalEtaWarehouse, d.portOfArrival, d.billOfLading, d.containerNumber,
@@ -92,32 +150,30 @@ export function insertDelivery(d: Delivery) {
     );
 
     // Documents
-    db.prepare('DELETE FROM documents WHERE deliveryId = ?').run(d.id);
-    const insertDoc = db.prepare('INSERT INTO documents (id, deliveryId, name, status, required) VALUES (?, ?, ?, ?, ?)');
+    stmts.deleteDocs.run(d.id);
     if (d.documents) {
       for (const doc of d.documents) {
-        insertDoc.run(doc.id, d.id, doc.name, doc.status, doc.required ? 1 : 0);
+        stmts.insertDoc.run(doc.id, d.id, doc.name, doc.status, doc.required ? 1 : 0);
       }
     }
 
     // Audit logs
-    db.prepare('DELETE FROM audit_logs WHERE deliveryId = ?').run(d.id);
+    stmts.deleteAudit.run(d.id);
     if (d.auditTrail) {
-      const insertAudit = db.prepare('INSERT INTO audit_logs (id, deliveryId, timestamp, user, action, details) VALUES (?, ?, ?, ?, ?, ?)');
       for (const a of d.auditTrail) {
-        insertAudit.run((a as any).id || Math.random().toString(36).substr(2, 9), d.id, a.timestamp, a.user, a.action, a.details);
+        stmts.insertAudit.run((a as any).id || Math.random().toString(36).substr(2, 9), d.id, a.timestamp, a.user, a.action, a.details);
       }
     }
   })();
 }
 
 export function deleteDelivery(id: string) {
-  db.prepare('DELETE FROM deliveries WHERE id = ?').run(id);
+  stmts.deleteDelivery.run(id);
 }
 
 // Helpers for other entities...
 export function getUsers(): User[] {
-  const users = db.prepare('SELECT * FROM users').all() as any[];
+  const users = stmts.getUsers.all() as any[];
   return users.map(u => ({
     ...u,
     permissions: u.permissions ? JSON.parse(u.permissions) : undefined
@@ -125,15 +181,14 @@ export function getUsers(): User[] {
 }
 
 export function saveUser(u: User) {
-  const existing = db.prepare('SELECT passwordHash FROM users WHERE id = ?').get(u.id) as { passwordHash: string } | undefined;
+  const existing = stmts.getUserPassword.get(u.id) as { passwordHash: string } | undefined;
   const passwordHash = u.passwordHash || existing?.passwordHash || null;
   
-  db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(u.id, u.name, u.email, passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null);
+  stmts.insertUser.run(u.id, u.name, u.email, passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null);
 }
 
 export function deleteUser(id: string) {
-  db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  stmts.deleteUser.run(id);
 }
 
 export function getAddressBook() {
@@ -148,28 +203,21 @@ export function saveAddressBookEntry(entry: AddressEntry) {
 }
 
 export function deleteAddressEntry(id: string) {
-  db.prepare('DELETE FROM address_book WHERE id = ?').run(id);
+  stmts.deleteAddressEntry.run(id);
 }
 
 export function getLogs() {
-  return db.prepare('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 100').all();
+  return stmts.getLogs.all();
 }
 
 
 export function addLog(log: any) {
-  db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details, log.reference || null);
+  stmts.insertLog.run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details, log.reference || null);
 }
 
 // YMS Queries
 export function getYmsDocks(warehouseId?: string): any[] {
-  let query = 'SELECT * FROM yms_docks';
-  const params: any[] = [];
-  if (warehouseId) {
-    query += ' WHERE warehouseId = ?';
-    params.push(warehouseId);
-  }
-  const rows = db.prepare(query).all(...params) as any[];
+  const rows = warehouseId ? stmts.getYmsDocksByWarehouse.all(warehouseId) : stmts.getYmsDocks.all() as any[];
   return rows.map(r => ({
     ...r,
     allowedTemperatures: JSON.parse(r.allowedTemperatures)
@@ -177,33 +225,19 @@ export function getYmsDocks(warehouseId?: string): any[] {
 }
 
 export function saveYmsDock(dock: any) {
-  db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, adminStatus = ?, currentDeliveryId = ?, isFastLane = ?, isOutboundOnly = ? WHERE id = ? AND warehouseId = ?')
-    .run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.isOutboundOnly ? 1 : 0, dock.id, dock.warehouseId);
+  stmts.updateYmsDock.run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.isOutboundOnly ? 1 : 0, dock.id, dock.warehouseId);
 }
 
 export function getYmsWaitingAreas(warehouseId?: string): any[] {
-  let query = 'SELECT * FROM yms_waiting_areas';
-  const params: any[] = [];
-  if (warehouseId) {
-    query += ' WHERE warehouseId = ?';
-    params.push(warehouseId);
-  }
-  return db.prepare(query).all(...params);
+  return warehouseId ? stmts.getYmsWaitingAreasByWarehouse.all(warehouseId) : stmts.getYmsWaitingAreas.all() as any[];
 }
 
 export function saveYmsWaitingArea(wa: any) {
-  db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, adminStatus = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?')
-    .run(wa.name, wa.status, wa.adminStatus || 'Active', wa.currentDeliveryId || null, wa.id, wa.warehouseId);
+  stmts.updateYmsWaitingArea.run(wa.name, wa.status, wa.adminStatus || 'Active', wa.currentDeliveryId || null, wa.id, wa.warehouseId);
 }
 
 export function getYmsDeliveries(warehouseId?: string): any[] {
-  let query = 'SELECT * FROM yms_deliveries';
-  const params: any[] = [];
-  if (warehouseId) {
-    query += ' WHERE warehouseId = ?';
-    params.push(warehouseId);
-  }
-  const rows = db.prepare(query).all(...params) as any[];
+  const rows = warehouseId ? stmts.getYmsDeliveriesByWarehouse.all(warehouseId) : stmts.getYmsDeliveries.all() as any[];
   return rows.map(r => ({
     ...r,
     isReefer: r.isReefer === 1,
@@ -215,14 +249,7 @@ export function getYmsDeliveries(warehouseId?: string): any[] {
 }
 
 export function saveYmsDelivery(d: any) {
-  db.prepare(`
-    INSERT OR REPLACE INTO yms_deliveries (
-      id, warehouseId, reference, licensePlate, supplier, supplierId, mainDeliveryId, temperature, 
-      scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
-      estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate,
-      direction, palletCount
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  stmts.insertYmsDelivery.run(
     d.id, d.warehouseId || 'W01', d.reference, d.licensePlate, d.supplier, d.supplierId || null, d.mainDeliveryId || null, d.temperature,
     d.scheduledTime, d.arrivalTime || null, d.registrationTime || null, d.isLate ? 1 : 0, 
     d.dockId || null, d.waitingAreaId || null, d.transporterId || null, d.status, d.statusTimestamps ? JSON.stringify(d.statusTimestamps) : null,
@@ -232,16 +259,15 @@ export function saveYmsDelivery(d: any) {
 }
 
 export function deleteYmsDelivery(id: string) {
-  db.prepare('DELETE FROM yms_deliveries WHERE id = ?').run(id);
+  stmts.deleteYmsDelivery.run(id);
 }
 
 export function getYmsWarehouses(): any[] {
-  return db.prepare('SELECT * FROM yms_warehouses').all();
+  return stmts.getYmsWarehouses.all() as any[];
 }
 
 export function saveYmsWarehouse(w: any) {
-  db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address) VALUES (?, ?, ?, ?)')
-    .run(w.id, w.name, w.description || null, w.address || null);
+  stmts.insertYmsWarehouse.run(w.id, w.name, w.description || null, w.address || null);
 }
 
 export function deleteYmsWarehouse(id: string) {

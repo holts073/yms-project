@@ -1,83 +1,72 @@
 # Project Architectuur - Yard Management System (YMS)
 
-Dit document beschrijft de technische architectuur van het YMS-project, de verschillende componenten en hoe deze met elkaar communiceren na de modularisatie en de-AI fase.
+Dit document beschrijft de technische architectuur van het YMS-project na de succesvolle modularisatie en het verwijderen van AI-componenten.
 
 ## Overzicht
 
-Het systeem is een moderne webapplicatie bestaande uit een **React-frontend** en een **Node.js/Express-backend**. De applicatie maakt gebruik van real-time communicatie via **Socket.io** om alle gebruikers direct op de hoogte te stellen van wijzigingen in de status van leveringen, docks en magazijnen. Het systeem is geoptimaliseerd voor een **handmatig** en stabiel workflow-beheer zonder AI-predicties.
+Het systeem is een moderne webapplicatie bestaande uit een **React-frontend** en een **Node.js/Express-backend**. De architectuur is ontworpen voor maximale stabiliteit en real-time inzicht in een handmatig beheerde logistieke omgeving.
 
-## Componenten
+## Componenten & Mappenstructuur
 
 ### 1. Frontend (Client-side)
-*   **Technologie**: React (19), TypeScript, Vite.
-*   **Browsing/Routing**: Single Page Application (SPA) met state-based routing in `App.tsx`.
-*   **State Management**: `SocketContext.tsx` beheert de globale applicatiestatus (`AppState`) en de geauthenticeerde gebruiker. Het luistert naar `init` en `state_update` events van de server.
-*   **UI Framework**: Tailwind CSS voor styling en Lucide-React voor iconen. Framer Motion wordt gebruikt voor animaties.
+*   **Locatie**: `src/`
+*   **Technologie**: React 19, Vite, Tailwind CSS, Framer Motion.
+*   **State**: `SocketContext.tsx` fungeert als de "Single Source of Truth", gesynchroniseerd via Socket.io.
 
-### 2. Backend (Node.js & Express)
-De backend is modulair opgebouwd voor schaalbaarheid en onderhoudbaarheid:
-- **`server.ts`**: De centrale entry point die Express, Socket.io en alle sub-modules initialiseert.
-- **`/server/routes/`**: Bevat de REST API endpoints (zoals `/api/login` en `/api/deliveries`).
-- **`/server/sockets/`**: Bevat de Socket.io action-handlers voor real-time updates.
-- **`/server/workers/`**: Bevat background workers (zoals de `inventory-worker` voor Reefer alerts en dwell-time monitoring).
-- **`/server/services/`**: Bevat business logica diensten.
-- **`/src/db/`**: Bevat de SQLite database logica (`queries.ts` en `sqlite.ts`).
+### 2. Backend (Server-side)
+De server is opgedeeld in gespecialiseerde modules:
+- **`/server/routes/`**: RESTful API endpoints voor authenticatie en data-export.
+- **`/server/sockets/`**: Real-time action handlers (de "Command" zijde van de applicatie).
+- **`/server/workers/`**: Autonome achtergrondtaken (zoals Reefer monitoring) die status-alerts genereren.
+- **`/server/services/`**: Gedeelde business logica die door zowel routes als sockets wordt gebruikt.
 
-### 3. Database (Persistentie)
-*   **Technologie**: SQLite via `better-sqlite3`.
-*   **Modus**: WAL (Write-Ahead Logging) voor optimale concurrency.
-*   **Schema**:
-    *   `deliveries` & `yms_deliveries`: Kerngegevens van transport en yard-registraties.
-    *   `yms_warehouses`, `yms_docks`, `yms_waiting_areas`: De fysieke layout.
-    *   `users`: Gebruikersbeheer en rollen.
-    *   `address_book`: Relaties met leveranciers en vervoerders.
-    *   `logs` & `audit_logs`: Systeem- en entiteit-specifieke activiteit.
+### 3. Data Layer
+*   **Locatie**: `src/db/`
+*   **Database**: SQLite (`better-sqlite3`) in WAL-modus.
+*   **Toegang**: `queries.ts` bevat alle SQL-voorbereide statements.
 
-## Datastroom & Communicatie
+## Datastroom (Uni-directioneel)
 
-Het systeem volgt een uni-directionele datastroom voor statusupdates:
-
-1.  **Gebruiker voert actie uit** (bijv. Truck aanmelden).
-2.  Frontend roept `dispatch(type, payload)` aan via de `SocketContext`.
-3.  Server ontvangt het `action` event.
-4.  Server valideert de actie, voert database-queries uit en berekent eventuele bijwerkingen.
-5.  Server broadcast een `state_update` (of `DELIVERY_UPDATED`) naar **alle** verbonden clients.
-6.  Frontends ontvangen de update en renderen de UI opnieuw met de nieuwste data.
-
-### Mermaid Diagram
+Het systeem volgt een strikte flow om inconsistenties te voorkomen:
 
 ```mermaid
 graph TD
-    subgraph "Frontend (React SPA)"
-        UI[User Interface Components]
-        SC[SocketContext / State]
-        UI -- dispatch(Action) --> SC
+    subgraph "Client Layer (Frontend)"
+        UI[React Components]
+        SC[SocketContext]
     end
 
-    subgraph "Backend (Express / Node.js)"
-        SE[Socket.io Server]
-        API[REST API Routes]
-        BW[Background Worker / Alerts]
-        
-        SC -- action (Socket) --> SE
-        SE -- broadcast (state_update) --> SC
-        UI -- fetch (REST) --> API
+    subgraph "Integration Layer (Sockets/API)"
+        SH[Socket Handlers]
+        RT[API Routes]
     end
 
-    subgraph "Database (SQLite)"
-        DB[(database.sqlite)]
-        QU[Queries / src/db/queries.ts]
-        
-        SE --> QU
-        API --> QU
-        QU <--> DB
-        BW --> QU
+    subgraph "Logic Layer (Workers/Services)"
+        BW[Inventory Worker]
+        SV[Services]
     end
+
+    subgraph "Persistence Layer (SQL)"
+        QU[Prepared Queries]
+        DB[(SQLite DB)]
+    end
+
+    %% Flow
+    UI -- "dispatch(Action)" --> SC
+    SC -- "Socket.emit('action')" --> SH
+    SH -- "Call" --> QU
+    SH -- "Broadcast" --> SC
     
-    BW -- trigger alert --> SE
+    BW -- "Monitor & Alert" --> QU
+    BW -- "IO.emit('state_update')" --> SC
+    
+    QU <--> DB
+    RT -- "REST" --> UI
+    SH -- "Use" --> SV
+    RT -- "Use" --> SV
 ```
 
-## Beveiliging
-*   **Authenticatie**: JWT (JSON Web Tokens) opgeslagen in localStorage.
-*   **Autorisatie**: Role-based access control (Admin, Staff, Manager, Viewer).
-*   **Hashing**: Wachtwoorden worden gehashed met `bcryptjs`.
+## Belangrijke Kenmerken (Post-AI)
+1.  **Voorspelbaarheid**: Geen automatische verschuivingen in de planning; de gebruiker heeft volledige controle.
+2.  **Prestaties**: Door AI-berekeningen te verwijderen is de server-load aanzienlijk verminderd.
+3.  **Real-time Alerts**: De `inventory-worker` bewaakt nu alleen harde limieten (zoals dwell-time), wat meer transparantie geeft.

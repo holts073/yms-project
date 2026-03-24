@@ -38,6 +38,8 @@ import YmsDashboard from './components/YmsDashboard';
 import YmsSettings from './components/YmsSettings';
 import YmsPublic from './components/YmsPublic';
 
+import { Toaster } from 'sonner';
+
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -346,6 +348,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
 export default function App() {
   return (
     <SocketProvider>
+      <Toaster position="top-right" richColors />
       <AppContent />
     </SocketProvider>
   );

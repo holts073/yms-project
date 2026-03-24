@@ -4,7 +4,7 @@ import {
   saveAddressBookEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
   getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, saveYmsWarehouse, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
-  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, addLog, getYmsDocks
+  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, addLog, getYmsDocks, getYmsAlerts
 } from '../../src/db/queries';
 import { saveSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
@@ -18,6 +18,14 @@ export const setupSocketHandlers = (io: Server) => {
       const { type, payload, user } = data;
       const timestamp = new Date().toISOString();
 
+      const checkRole = (required: string) => {
+        if (user.role === 'admin') return true;
+        if (user.role === required) return true;
+        return false;
+      };
+
+      const isAdmin = user.role === 'admin';
+
       let logEntry = {
         timestamp,
         user: user.name,
@@ -29,6 +37,7 @@ export const setupSocketHandlers = (io: Server) => {
       try {
         switch (type) {
           case "ADD_DELIVERY": {
+            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
             const newDelivery = { 
               ...payload, 
               auditTrail: [{
@@ -47,6 +56,7 @@ export const setupSocketHandlers = (io: Server) => {
             break;
           }
           case "UPDATE_DELIVERY": {
+            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
             const allDels = getAllDeliveries();
             const existing = allDels.find(d => d.id === payload.id);
             let newPayload = { ...payload };
@@ -110,6 +120,7 @@ export const setupSocketHandlers = (io: Server) => {
             break;
           }
           case "DELETE_DELIVERY":
+            if (!isAdmin) throw new Error("Alleen admins kunnen leveringen verwijderen");
             deleteDelivery(payload);
             logEntry.action = "Deleted Delivery";
             logEntry.details = `Removed delivery ID: ${payload}`;
@@ -117,6 +128,7 @@ export const setupSocketHandlers = (io: Server) => {
             break;
 
           case "BULK_UPDATE_DELIVERIES":
+            if (!isAdmin) throw new Error("Alleen admins kunnen bulk updates uitvoeren");
             const allDelList = getAllDeliveries().filter(d => payload.ids.includes(d.id));
             for (const d of allDelList) {
               const updated = { ...d, ...payload.updates, updatedAt: timestamp };
@@ -128,6 +140,7 @@ export const setupSocketHandlers = (io: Server) => {
             break;
 
           case "YMS_SAVE_DELIVERY": {
+            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
             const current = payload;
             const ymsDeliveries = getYmsDeliveries();
             const existing = ymsDeliveries.find(d => d.id === current.id);
@@ -142,6 +155,13 @@ export const setupSocketHandlers = (io: Server) => {
                   current.registrationTime = timestamp;
                   current.arrivalTime = timestamp;
                 }
+
+                // Auto-resolve alerts when moving out of waiting/yard
+                if (current.status === 'DOCKED' || current.status === 'GATE_OUT') {
+                  const alerts = getYmsAlerts(current.warehouseId);
+                  const activeAlerts = alerts.filter(a => a.deliveryId === current.id && !a.resolved);
+                  activeAlerts.forEach(a => resolveYmsAlert(a.id));
+                }
               }
             }
             saveYmsDelivery(current);
@@ -152,6 +172,7 @@ export const setupSocketHandlers = (io: Server) => {
           default:
             // Generic save actions that don't need complex logic
             if (type.startsWith("YMS_SAVE_")) {
+              if (!isAdmin) throw new Error("Alleen admins kunnen configuraties wijzigen");
               const table = type.replace("YMS_SAVE_", "").toLowerCase();
               switch (table) {
                 case "dock": saveYmsDock(payload); break;
@@ -163,6 +184,7 @@ export const setupSocketHandlers = (io: Server) => {
               io.emit("state_update", buildStaticState());
               logEntry.action = `Saved YMS ${table}`;
             } else if (type.startsWith("YMS_DELETE_")) {
+              if (!isAdmin) throw new Error("Alleen admins kunnen gegevens verwijderen");
               const table = type.replace("YMS_DELETE_", "").toLowerCase();
               switch (table) {
                 case "delivery": deleteYmsDelivery(payload); break;
@@ -181,8 +203,9 @@ export const setupSocketHandlers = (io: Server) => {
         if (logEntry.action) {
           addLog(logEntry);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Action error:", error);
+        socket.emit("error", { message: error.message || "Er is een fout opgetreden" });
       }
     });
 

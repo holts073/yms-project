@@ -20,7 +20,7 @@ export const startInventoryWorker = (io: Server) => {
                 const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'DWELL_TIME' && !a.resolved);
                 
                 if (!alreadyAlerted) {
-                    saveYmsAlert({
+                    const newAlert = {
                         id: Math.random().toString(36).substr(2, 9),
                         deliveryId: d.id,
                         warehouseId: d.warehouseId,
@@ -29,8 +29,9 @@ export const startInventoryWorker = (io: Server) => {
                         timestamp: now.toISOString(),
                         message: `REEFER DWELL ALERT: ${d.reference} wacht al >${limit}m in de yard!`,
                         resolved: false
-                    });
-                    io.emit("state_update", buildStaticState());
+                    };
+                    saveYmsAlert(newAlert);
+                    io.emit("NEW_ALERT", newAlert); // Delta update
                 }
             }
         }
@@ -45,7 +46,7 @@ export const startInventoryWorker = (io: Server) => {
                 const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'WAIT_TIME' && !a.resolved);
                 
                 if (!alreadyAlerted) {
-                    saveYmsAlert({
+                    const newAlert = {
                         id: Math.random().toString(36).substr(2, 9),
                         deliveryId: d.id,
                         warehouseId: d.warehouseId,
@@ -54,8 +55,9 @@ export const startInventoryWorker = (io: Server) => {
                         timestamp: now.toISOString(),
                         message: `REEFER WAIT ALERT: ${d.licensePlate} (${d.reference}) wacht al ${Math.round(waitedMins)} minuten!`,
                         resolved: false
-                    });
-                    io.emit("state_update", buildStaticState());
+                    };
+                    saveYmsAlert(newAlert);
+                    io.emit("NEW_ALERT", newAlert); // Delta update
                 }
             }
         }

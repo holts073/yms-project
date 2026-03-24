@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useSocket } from '../SocketContext';
 import { 
   AlertCircle,
@@ -74,7 +75,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
     const transporter = state?.addressBook?.transporters.find(t => t.id === delivery.transporterId);
     
     if (!supplier || !transporter) {
-      alert('Leverancier of transporteur niet gevonden.');
+      toast.error('Leverancier of transporteur niet gevonden.');
       return;
     }
 
@@ -594,7 +595,7 @@ Tel: ${company.phone} | Email: ${company.email}
                                  });
                                  
                                  dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 });
-                                 alert('Vracht is aangemeld bij YMS module.');
+                                 toast.success('Vracht is aangemeld bij YMS module.');
                               }}
                               className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
                             >
