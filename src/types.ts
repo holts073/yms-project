@@ -53,6 +53,8 @@ export interface Delivery {
   portOfArrival?: string;
   billOfLading?: string;
   containerNumber?: string;
+  customsStatus?: 'Pending' | 'Cleared' | 'Inspection';
+  dischargeTerminal?: string;
 
   // Ex-Works specific
   palletCount?: number;
@@ -62,6 +64,10 @@ export interface Delivery {
   cargoType?: 'Dry' | 'Cool' | 'Frozen';
   loadingTime?: string;
   dockId?: number;
+  delayRisk?: 'low' | 'medium' | 'high';
+  predictionReason?: string;
+  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'DAP';
+  readyForPickupDate?: string;
 }
 
 export interface LogEntry {
@@ -180,6 +186,7 @@ export interface YmsDelivery {
   scheduledTime: string;
   arrivalTime?: string;
   registrationTime?: string;
+  updatedAt?: string;
   isLate?: boolean;
   dockId?: number;
   waitingAreaId?: number;

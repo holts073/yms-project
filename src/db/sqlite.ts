@@ -51,6 +51,8 @@ db.exec(`
     loadingCountry TEXT,
     loadingCity TEXT,
     palletExchange BOOLEAN,
+    incoterm TEXT,
+    readyForPickupDate TEXT,
     
     -- Container Specific
     etd TEXT,
@@ -61,6 +63,8 @@ db.exec(`
     billOfLading TEXT,
     containerNumber TEXT,
     dockId INTEGER,
+    customsStatus TEXT,
+    dischargeTerminal TEXT,
     
     -- Calculated/Metadata
     notes TEXT,
@@ -248,6 +252,10 @@ const migrations = [
   { table: 'logs', column: 'reference', type: 'TEXT' },
   { table: 'deliveries', column: 'loadingTime', type: 'TEXT' },
   { table: 'deliveries', column: 'dockId', type: 'INTEGER' },
+  { table: 'deliveries', column: 'customsStatus', type: 'TEXT' },
+  { table: 'deliveries', column: 'dischargeTerminal', type: 'TEXT' },
+  { table: 'deliveries', column: 'incoterm', type: 'TEXT' },
+  { table: 'deliveries', column: 'readyForPickupDate', type: 'TEXT' },
   { table: 'yms_deliveries', column: 'transporterId', type: 'TEXT' },
   { table: 'yms_deliveries', column: 'supplierId', type: 'TEXT' },
   { table: 'yms_deliveries', column: 'registrationTime', type: 'TEXT' },

@@ -1,98 +1,67 @@
 # Project Architectuur - Yard Management System (YMS)
 
-Dit document beschrijft de technische architectuur van het YMS-project na de succesvolle modularisatie en het verwijderen van AI-componenten.
+Dit document beschrijft de technische architectuur van het YMS-project na de succesvolle modularisatie en refactoring.
 
-## Overzicht
+## 1. Project Map (Folder Tree)
 
-Het systeem is een moderne webapplicatie bestaande uit een **React-frontend** en een **Node.js/Express-backend**. De architectuur is ontworpen voor maximale stabiliteit en real-time inzicht in een handmatig beheerde logistieke omgeving.
+```text
+/root/yms-project/
+├── server/                 # Backend Node.js/Express
+│   ├── routes/             # RESTful API endpoints (voornamelijk fallback & auth)
+│   ├── services/           # Gedeelde business logica server-side
+│   ├── sockets/            # Socket.io actie-handlers (Gecentraliseerde data-brug)
+│   └── workers/            # Achtergrond processen (zoals inventory-worker)
+├── src/                    # Frontend React/Vite
+│   ├── components/         # Atomic Design UI structuur
+│   │   ├── features/       # Samengestelde bedrijfslogica componenten (Cards, Tables, Timelines)
+│   │   ├── shared/         # Herbruikbare, 'dumb' thema-componenten (Button, Input, Badge, Modal)
+│   │   └── (pages)         # Hoofdpagina's geassembleerd uit features (YmsDashboard, Settings, e.d.)
+│   ├── db/                 # Database laag & SQLite initialisatie
+│   ├── hooks/              # Data-fetching en socket logica (useYmsData, useDeliveries)
+│   ├── lib/                # Utility functies en validaties (clsx, ymsRules)
+│   ├── App.tsx             # Hoofd React entry point (Routing, Auth)
+│   ├── ThemeContext.tsx    # Beheert overkoepelend Dark/Light modus
+│   └── SocketContext.tsx   # Globale WebSocket state en dispatcher
+└── database.sqlite         # SQLite database in WAL-modus
+```
 
-## Componenten & Mappenstructuur
-
-### 1. Frontend (Client-side)
-*   **Locatie**: `src/`
-*   **Technologie**: React 19, Vite, Tailwind CSS, Framer Motion.
-*   **State**: `SocketContext.tsx` fungeert als de "Single Source of Truth", gesynchroniseerd via Socket.io.
-
-### 2. Backend (Server-side)
-De server is opgedeeld in gespecialiseerde modules:
-- **`/server/routes/`**: RESTful API endpoints voor authenticatie en data-export.
-- **`/server/sockets/`**: Real-time action handlers (de "Command" zijde van de applicatie).
-- **`/server/workers/`**: Autonome achtergrondtaken (zoals Reefer monitoring) die status-alerts genereren.
-- **`/server/services/`**: Gedeelde business logica die door zowel routes als sockets wordt gebruikt.
-
-### 3. Data Layer
-*   **Locatie**: `src/db/`
-*   **Database**: SQLite (`better-sqlite3`) in WAL-modus.
-*   **Toegang**: `queries.ts` bevat alle SQL-voorbereide statements.
-
-### YMS Modulaire Architectuur (Verified)
-
-Dit document beschrijft de daadwerkelijke structuur van het Yard Management Systeem na de modulaire refactoring en de verwijdering van AI-componenten.
-
-## Systeem Overzicht
-
-Het systeem is gebouwd op een uni-directionele datastroom over Sockets, ondersteund door een modulaire Express-backend en een SQLite database met Prepared Statements.
-
-### Architectuur Diagram
+## 2. Atomic Design Hiërarchie
 
 ```mermaid
 graph TD
-    subgraph "Client Layer (React/Vite)"
-        UI["UI (Components)"]
-        SC["SocketContext (State & Dispatch)"]
-    end
-
-    subgraph "Integration Layer (Node.js/Express)"
-        SH["Socket Handlers (sockets/index.ts)"]
-        RT["API Routes (routes/)"]
-        MW["Auth Middleware (JWT)"]
-    end
-
-    subgraph "Logic Layer (Workers/Services)"
-        BW["Inventory Worker (workers/inventory-worker.ts)"]
-        SV["Services (Business Logic)"]
-    end
-
-    subgraph "Persistence Layer (SQLite)"
-        QU["Prepared Queries (db/queries.ts)"]
-        DB[("database.sqlite (WAL Mode)")]
-    end
-
-    %% Data Flow
-    UI -- "Action (Dispatch)" --> SC
-    SC -- "Socket.emit('action')" --> MW
-    MW -- "Verified JWT" --> SH
-    SH -- "DB Call" --> QU
-    QU <--> DB
-    SH -- "Broadcast / state_update" --> SC
+    TP[ThemeProvider & SocketContext] --> P[Pages / Dashboards]
+    P --> FC[Feature Components]
+    FC --> SC[Shared Components]
     
-    %% Background Work
-    BW -- "Poll status" --> QU
-    BW -- "IO.emit('NEW_ALERT')" --> SC
+    subgraph "Core App"
+    TP
+    end
     
-    %% REST fallback/initial
-    RT -- "GET /api/state" --> UI
-    RT -- "Validate" --> MW
+    subgraph "src/components/"
+    P
+    end
+    
+    subgraph "src/components/features/"
+    FC
+    end
+    
+    subgraph "src/components/shared/"
+    SC
+    end
 ```
 
-## Onderdelen
+## 3. Data Flow
+De uni-directionele stroom garandeert consistentie en maakt de frontend predictabel:
+1. **Actie (Frontend)**: Een gebeurtenis in een feature component roept een abstracte functie uit een Hook aan (bijv. `deliveryActions.assignDock()`).
+2. **Dispatch (SocketContext)**: De Hook vuurt een Socket.io event af naar de backend met een gedefinieerde `action` (bijv. `YMS_SAVE_DOCK`) en een payload.
+3. **Afhandeling (Backend)**: De `socketHandlers.ts` valideert de permissies (Admin / Staff), registreert dit direct in de Audit Log, en voert gecachete database operations uit.
+4. **Broadcast**: De backend pusht via `io.emit("state_update")` een nieuw, volledig statussnapshot naar alle verbonden clients.
+5. **Render (Frontend)**: De `SocketContext` update de reactieve locale state. De afhankelijke Hooks vangen dit op, en de `pages` en `features` schieten de zuivere data door naar de 'dumb' `shared` componenten voor de uiteindelijke visuele (re)render.
 
-### 1. Client Layer
-- **SocketContext.tsx**: Beheert de wereldwijde state, de JWT-verificatie in de handshake en faciliteert de `dispatch` functie om acties naar de server te sturen.
-- **YmsDashboard.tsx**: De interactieve UI die reageert op state-updates van de server.
+## 4. Database Laag (SQLite & Optimalisaties)
+De data persistence laag is ontworpen rond `better-sqlite3` en steunt op diverse optimalisaties voor maximale betrouwbaarheid in netwerkomgevingen:
 
-### 2. Integration Layer
-- **Socket Handlers**: Gecentraliseerd in `server/sockets/`. Luistert naar acties, valideert gebruikersrollen en voert database-operaties uit.
-- **Auth Middleware**: Valideert JWT-tokens voor zowel API-aanvragen als Socket-handshakes.
-
-### 3. Logic Layer
-- **Inventory Worker**: Een robuuste achtergrondprocess die elke minuut de database scant op kritieke statussen (bijv. Reefer dwell time, Wait time) en alerts genereert zonder AI-interventie.
-
-### 4. Persistence Layer
-- **Queries.ts**: Gebruikt een gecentraliseerde cache van Prepared Statements (`stmts`) om N+1 query-problemen te voorkomen en SQL-injectie uit te sluiten.
-- **SQLite**: Draait in WAL (Write-Ahead Logging) modus voor gelijktijdige lees- en schrijfacties zonder blokkades.
-
-## Belangrijke Kenmerken (Post-AI)
-1.  **Voorspelbaarheid**: Geen automatische verschuivingen in de planning; de gebruiker heeft volledige controle.
-2.  **Prestaties**: Door AI-berekeningen te verwijderen is de server-load aanzienlijk verminderd.
-3.  **Real-time Alerts**: De `inventory-worker` bewaakt nu alleen harde limieten (zoals dwell-time), wat meer transparantie geeft.
+- **Prepared Statements**: Alle queries in `src/db/queries.ts` worden bij het opstarten eenmalig gecompileerd en permanent in het geheugen opgeslagen (`stmts` cache). Dit versnelt iteraties drastisch, elimineert N+1 problemen en sluit SQL-injectie gegarandeerd uit.
+- **Indices & Relaties**: Om de complexe query's (die over dashboards verspreid worden) sub-milliseconde snel te houden, worden foreign keys strikt afgedwongen en indices (zoals op `status`, `warehouseId`, en datumvelden) pro-actief opgebouwd.
+- **WAL Modus**: De database functioneert in Write-Ahead Logging modus. Dit stelt de Socket-server in staat om gelijktijdige en ononderbroken asynchrone lees- en schrijfacties uit te voeren zonder database locks.
+- **Period Overrides Logica**: Periodieke overschrijvingen op Docks (aangepaste capaciteit en tijdelijke blokkades) verlopen asynchroon via de `yms_dock_overrides` tabel. Deze logica ligt los van de statische locaties; de backend fuseert actieve overrides over conventionele docks in-memory voordat de "state" naar de frontend vloeit. Hierdoor hoeven master-tabellen niet iteratief te worden overschreven voor tijdelijke gebeurtenissen.

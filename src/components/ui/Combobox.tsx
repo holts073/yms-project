@@ -34,16 +34,16 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, value, onChange, pl
     <div ref={containerRef} className="relative w-full">
       <button
         type="button"
-        className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 flex justify-between items-center text-left"
+        className="w-full px-6 py-4 bg-card border border-border rounded-full focus:ring-2 focus:ring-indigo-500 flex justify-between items-center text-left"
         onClick={() => {
           setSearch('');
           setIsOpen(!isOpen);
         }}
       >
-        <span className={value ? 'text-slate-900' : 'text-slate-400'}>
+        <span className={value ? 'text-foreground' : 'text-[var(--muted-foreground)]'}>
           {value ? selectedLabel : placeholder}
         </span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-slate-400 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-[var(--muted-foreground)] shrink-0">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -54,10 +54,10 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, value, onChange, pl
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-[2rem] shadow-xl overflow-hidden shadow-indigo-100"
+            className="absolute z-50 w-full mt-2 bg-card border border-border rounded-[2rem] shadow-xl overflow-hidden dark:shadow-indigo-500/10"
           >
-            <div className="p-2 border-b border-slate-100 flex items-center bg-slate-50/50">
-              <Search size={16} className="text-slate-400 ml-3" />
+            <div className="p-2 border-b border-border flex items-center bg-[var(--muted)]/50">
+              <Search size={16} className="text-[var(--muted-foreground)] ml-3" />
               <input
                 autoFocus
                 type="text"
@@ -77,14 +77,14 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, value, onChange, pl
                       setIsOpen(false);
                     }}
                     className={`px-4 py-2 text-sm rounded-xl cursor-pointer transition-colors ${
-                      option.value === value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                      option.value === value ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold' : 'text-foreground hover:bg-[var(--muted)]'
                     }`}
                   >
                     {option.label}
                   </li>
                 ))
               ) : (
-                <li className="px-4 py-3 text-sm text-slate-400 text-center">Niks gevonden</li>
+                <li className="px-4 py-3 text-sm text-[var(--muted-foreground)] text-center">Niks gevonden</li>
               )}
             </ul>
           </motion.div>

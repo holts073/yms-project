@@ -1,385 +1,135 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSocket } from '../SocketContext';
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer,
-  Cell,
-  PieChart,
-  Pie
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
+  ResponsiveContainer, Cell, PieChart, Pie 
 } from 'recharts';
-import { TrendingUp, Award, AlertTriangle, Clock, Target, DollarSign, Package } from 'lucide-react';
+import { TrendingUp, Clock, Target, DollarSign, Package, AlertTriangle, BarChart3 } from 'lucide-react';
 import { useDeliveries } from '../hooks/useDeliveries';
+import { StatCard } from './shared/StatCard';
+import { Card } from './shared/Card';
 
 const Statistics = () => {
   const { state, currentUser } = useSocket();
   const { addressBook } = state || {};
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', false);
 
-  const activeSupplierIds = new Set(deliveries.filter(d => d.status < 100).map(d => d.supplierId));
-
-  // Reliability per Supplier
-  const supplierStats = addressBook?.suppliers.map(supplier => {
-    const supplierDeliveries = deliveries.filter(d => d.supplierId === supplier.id);
-    let totalDocs = 0;
-    let receivedDocs = 0;
-    supplierDeliveries.forEach(d => {
-      d.documents.forEach(doc => {
-        if (doc.required) {
-          totalDocs++;
-          if (doc.status === 'received') receivedDocs++;
-        }
-      });
+  const statsData = useMemo(() => {
+    const completed = deliveries.filter(d => d.status === 100 || d.status === 'COMPLETED' || d.status === 'GATE_OUT');
+    const active = deliveries.filter(d => d.status < 100 && d.status !== 'COMPLETED' && d.status !== 'GATE_OUT');
+    
+    // OTIF
+    const onTime = completed.filter(d => {
+      if (!d.scheduledTime) return false;
+      return new Date(d.updatedAt) <= new Date(d.scheduledTime);
     });
-    const reliability = totalDocs > 0 ? Math.round((receivedDocs / totalDocs) * 100) : 100;
-    return { name: supplier.name, reliability, deliveries: supplierDeliveries.length };
-  }).sort((a, b) => b.reliability - a.reliability).slice(0, 5) || [];
+    const otif = completed.length > 0 ? Math.round((onTime.length / completed.length) * 100) : 0;
+
+    // Lead Time
+    const totalLeadTime = completed.reduce((sum, d) => {
+      const diff = new Date(d.updatedAt).getTime() - new Date(d.createdAt).getTime();
+      return sum + (diff / (1000 * 60 * 60 * 24));
+    }, 0);
+    const avgLeadTime = completed.length > 0 ? Math.round(totalLeadTime / completed.length) : 0;
+
+    // Costs
+    const totalCost = deliveries.reduce((sum, d) => sum + (d.transportCost || 0), 0);
+    const totalPallets = deliveries.reduce((sum, d) => sum + (d.palletCount || 0), 0);
+    const costPerPallet = totalPallets > 0 ? Math.round(totalCost / totalPallets) : 0;
+
+    return { activeCount: active.length, otif, avgLeadTime, costPerPallet, completedCount: completed.length, onTimeCount: onTime.length };
+  }, [deliveries]);
+
+  const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#f43f5e'];
 
   const typeData = [
     { name: 'Container', value: deliveries.filter(d => d.type === 'container').length },
     { name: 'Ex-Works', value: deliveries.filter(d => d.type === 'exworks').length },
   ];
 
-  const COLORS = ['#4f46e5', '#f97316'];
-
-  // Advanced Metrics
-  const completedDeliveries = deliveries.filter(d => d.status === 100);
-
-  // OTIF Calculation
-  const onTimeDeliveries = completedDeliveries.filter(d => {
-    if (!d.etaWarehouse) return false;
-    const updatedDate = new Date(d.updatedAt);
-    updatedDate.setHours(0,0,0,0);
-    const etaDate = new Date(d.etaWarehouse);
-    etaDate.setHours(0,0,0,0);
-    return updatedDate <= etaDate;
-  });
-  const otif = completedDeliveries.length > 0 ? Math.round((onTimeDeliveries.length / completedDeliveries.length) * 100) : 0;
-
-  // Lead Time Calculation
-  let totalLeadTimeDays = 0;
-  completedDeliveries.forEach(d => {
-    const createdDate = new Date(d.createdAt);
-    const updatedDate = new Date(d.updatedAt);
-    const diffTime = Math.abs(updatedDate.getTime() - createdDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    totalLeadTimeDays += diffDays;
-  });
-  const avgLeadTime = completedDeliveries.length > 0 ? Math.round(totalLeadTimeDays / completedDeliveries.length) : 0;
-
-  const totalCostContainer = deliveries.filter(d => d.type === 'container').reduce((sum, d) => sum + (d.transportCost || 0), 0);
-  const totalCostExWorks = deliveries.filter(d => d.type === 'exworks').reduce((sum, d) => sum + (d.transportCost || 0), 0);
-  const totalCost = totalCostContainer + totalCostExWorks;
-
-  // Cost per Pallet Calculation
-  const totalPallets = deliveries.reduce((sum, d) => sum + (d.palletCount || 0), 0);
-  const avgCostPerPallet = totalPallets > 0 ? Math.round(totalCost / totalPallets) : 0;
-
-  const costData = [
-    { name: 'Container', value: totalCostContainer },
-    { name: 'Ex-Works', value: totalCostExWorks }
-  ];
-
-  // Currency Formatter
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
-  };
-
-  // Supplier Costs
-  const supplierCostStats = addressBook?.suppliers.map(supplier => {
-    const supplierDeliveries = deliveries.filter(d => d.supplierId === supplier.id);
-    const supplierTotalCost = supplierDeliveries.reduce((sum, d) => sum + (d.transportCost || 0), 0);
-    return { name: supplier.name, cost: supplierTotalCost };
-  }).sort((a, b) => b.cost - a.cost).slice(0, 5).filter(s => s.cost > 0) || [];
-
-  // YMS OTIF Statistics (per Transporter)
-  const ymsDeliveries = state?.yms?.deliveries || [];
-  const transporterOtifStats = addressBook?.transporters.map(transporter => {
-    const transporterDeliveries = ymsDeliveries.filter(d => d.transporterId === transporter.id);
-    const onTimeCount = transporterDeliveries.filter(d => !d.isLate).length;
-    const otif = transporterDeliveries.length > 0 ? Math.round((onTimeCount / transporterDeliveries.length) * 100) : 100;
-    return { name: transporter.name, otif, total: transporterDeliveries.length };
-  }).filter(t => t.total > 0).sort((a, b) => b.otif - a.otif) || [];
+  const formatCurrency = (val: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto">
-      <header>
-        <h2 className="text-3xl font-bold text-foreground tracking-tight">Supply Chain Dashboard</h2>
-        <p className="text-[var(--muted-foreground)] mt-1">Inzicht in prestaties, kosten en doorlooptijden van al je leveringen.</p>
+    <div className="space-y-10 pb-20">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/20">
+            <BarChart3 className="text-white" size={32} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h2 className="text-4xl font-black text-foreground tracking-tight italic uppercase">Supply Chain Analytics</h2>
+            <p className="text-[var(--muted-foreground)] mt-1 font-medium tracking-widest uppercase text-xs">Inzicht in prestaties, kosten en doorlooptijden van je operatie.</p>
+          </div>
+        </div>
       </header>
 
-      {/* Warning Banners */}
-      {supplierStats.some(s => s.reliability < 80 && activeSupplierIds.has(addressBook?.suppliers.find(sup => sup.name === s.name)?.id || '')) && (
-        <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900 rounded-3xl p-6 flex items-start gap-4">
-          <div className="p-3 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-xl shrink-0">
-            <AlertTriangle size={24} />
-          </div>
-          <div>
-            <h3 className="text-orange-900 dark:text-orange-300 font-bold text-lg mb-1">Aandacht Vereist: Lage OTIF Score</h3>
-            <p className="text-orange-800/80 dark:text-orange-400/80 mb-3">
-              Een of meerdere leveranciers presteren momenteel onder de norm van 80% betrouwbaarheid.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {supplierStats.filter(s => s.reliability < 80 && activeSupplierIds.has(addressBook?.suppliers.find(sup => sup.name === s.name)?.id || '')).map(s => (
-                <span key={s.name} className="px-3 py-1 bg-white/60 dark:bg-orange-900/20 text-orange-900 dark:text-orange-300 text-sm font-medium rounded-full border border-orange-100 dark:border-orange-800">
-                  {s.name} ({s.reliability}%)
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-card p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[var(--muted-foreground)] font-bold text-sm uppercase tracking-wider">Gem. Lead Time</h3>
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl"><Clock size={20} /></div>
-          </div>
-          <div>
-            <span className="text-4xl font-black text-foreground">{avgLeadTime}</span>
-            <span className="text-[var(--muted-foreground)] font-medium ml-2">dagen</span>
-          </div>
-        </div>
-        
-        <div className="bg-card p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[var(--muted-foreground)] font-bold text-sm uppercase tracking-wider">OTIF Score</h3>
-            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><Target size={20} /></div>
-          </div>
-          <div className="flex items-end gap-3">
-            <span className="text-4xl font-black text-foreground">{otif}%</span>
-            <span className="text-emerald-500 dark:text-emerald-400 font-bold text-sm mb-1 uppercase tracking-widest">{onTimeDeliveries.length} / {completedDeliveries.length}</span>
-          </div>
-        </div>
-
-        {currentUser?.role !== 'staff' && (
-          <div className="bg-card p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[var(--muted-foreground)] font-bold text-sm uppercase tracking-wider">Gem. Kosten per Pallet</h3>
-              <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl"><DollarSign size={20} /></div>
-            </div>
-            <div>
-              <span className="text-4xl font-black text-foreground">{formatCurrency(avgCostPerPallet)}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-card p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[var(--muted-foreground)] font-bold text-sm uppercase tracking-wider">Actieve Zendingen</h3>
-            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl"><Package size={20} /></div>
-          </div>
-          <div>
-            <span className="text-4xl font-black text-foreground">{deliveries.filter(d => d.status < 100).length}</span>
-            <span className="text-[var(--muted-foreground)] font-medium ml-2">stuks</span>
-          </div>
-        </div>
+        <StatCard 
+          title="Gem. Lead Time"
+          value={statsData.avgLeadTime}
+          unit="dagen"
+          icon={<Clock size={20} />}
+        />
+        <StatCard 
+          title="OTIF Score"
+          value={statsData.otif}
+          unit="%"
+          icon={<Target size={20} />}
+          iconClassName="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+          secondaryLabel={`${statsData.onTimeCount} / ${statsData.completedCount} op tijd`}
+        />
+        <StatCard 
+          title="Kosten / Pallet"
+          value={formatCurrency(statsData.costPerPallet)}
+          icon={<DollarSign size={20} />}
+          iconClassName="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+        />
+        <StatCard 
+          title="Actieve Zendingen"
+          value={statsData.activeCount}
+          unit="stuks"
+          icon={<Package size={20} />}
+          iconClassName="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Distribution Chart */}
-        <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-sm flex flex-col items-center justify-center space-y-6">
-          <h3 className="text-xl font-bold text-foreground w-full text-left">Type Verdeling (Aantallen)</h3>
-          {typeData.reduce((a, b) => a + b.value, 0) > 0 ? (
-            <>
-              <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                  <PieChart>
-                    <Pie data={typeData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value">
-                      {typeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip 
-                      contentStyle={{ borderRadius: '1rem', backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', color: 'var(--foreground)' }} 
-                      itemStyle={{ color: 'var(--foreground)' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex gap-8">
-                {typeData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                    <span className="text-sm font-bold text-[var(--muted-foreground)]">{entry.name}: {entry.value}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="h-[250px] flex items-center justify-center text-[var(--muted-foreground)] font-medium">Nog onvoldoende data beschikbaar.</div>
-          )}
-        </div>
-
-        {/* Cost Distribution Chart */}
-        {currentUser?.role !== 'staff' && (
-          <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-sm flex flex-col items-center justify-center space-y-6">
-            <h3 className="text-xl font-bold text-foreground w-full text-left">Kosten Verdeling</h3>
-            {totalCost > 0 ? (
-              <>
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                    <PieChart>
-                      <Pie data={costData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value">
-                        {costData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip 
-                        formatter={(value: number) => formatCurrency(value)}
-                        contentStyle={{ borderRadius: '1rem', backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', color: 'var(--foreground)' }} 
-                        itemStyle={{ color: 'var(--foreground)' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex gap-8">
-                  {costData.map((entry, index) => (
-                    <div key={entry.name} className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                      <span className="text-sm font-bold text-[var(--muted-foreground)]">{entry.name}: {formatCurrency(entry.value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="h-[250px] flex items-center justify-center text-[var(--muted-foreground)] font-medium">Nog onvoldoende data beschikbaar.</div>
-            )}
-          </div>
-        )}
-      </div>
-
-       {/* Reliability Chart */}
-       <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-sm space-y-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-foreground">Betrouwbaarheid per Leverancier (%)</h3>
-              <p className="text-[var(--muted-foreground)] text-sm mt-1">Gebaseerd op de vereiste documentatiescore.</p>
-            </div>
-          </div>
-          
+        <Card className="flex flex-col items-center justify-center space-y-6" padding="xl">
+          <h3 className="text-xl font-bold text-foreground w-full">Type Verdeling</h3>
           <div className="h-[300px] w-full">
-            {supplierStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <BarChart data={supplierStats} layout="vertical" margin={{ left: 40, right: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                  <XAxis type="number" domain={[0, 100]} hide />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12, fontWeight: 600 }}
-                    width={150}
-                  />
-                  <RechartsTooltip 
-                    cursor={{ fill: 'var(--muted)' }}
-                    contentStyle={{ borderRadius: '1rem', backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', color: 'var(--foreground)' }}
-                    itemStyle={{ color: 'var(--foreground)' }}
-                  />
-                  <Bar dataKey="reliability" radius={[0, 20, 20, 0]} barSize={24}>
-                    {supplierStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.reliability > 80 ? '#10b981' : entry.reliability > 50 ? '#f59e0b' : '#ef4444'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[var(--muted-foreground)] font-medium">Nog onvoldoende data beschikbaar.</div>
-            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={typeData} cx="50%" cy="50%" innerRadius={80} outerRadius={110} paddingAngle={10} dataKey="value">
+                  {typeData.map((_, i) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <RechartsTooltip 
+                   contentStyle={{ borderRadius: '1.5rem', backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                   itemStyle={{ color: 'var(--foreground)', fontWeight: 'bold' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-        </div>
-
-        {/* Supplier Cost Chart */}
-        {currentUser?.role !== 'staff' && (
-          <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-sm space-y-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-foreground">Transportkosten per Leverancier</h3>
-                <p className="text-[var(--muted-foreground)] text-sm mt-1">Top 5 leveranciers met de hoogste transportkosten (gebaseerd op goedgekeurde leveringen).</p>
+          <div className="flex gap-8">
+            {typeData.map((e, i) => (
+              <div key={e.name} className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                <span className="text-sm font-bold text-[var(--muted-foreground)]">{e.name}: {e.value}</span>
               </div>
-            </div>
-            
-            <div className="h-[300px] w-full">
-              {supplierCostStats.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                  <BarChart data={supplierCostStats} layout="vertical" margin={{ left: 40, right: 40 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                    <XAxis type="number" hide />
-                    <YAxis 
-                      dataKey="name" 
-                      type="category" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 12, fontWeight: 600 }}
-                      width={150}
-                    />
-                    <RechartsTooltip 
-                      cursor={{ fill: 'var(--muted)' }}
-                      contentStyle={{ borderRadius: '1rem', backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', color: 'var(--foreground)' }}
-                      itemStyle={{ color: 'var(--foreground)' }}
-                      formatter={(value: number) => formatCurrency(value)}
-                    />
-                    <Bar dataKey="cost" radius={[0, 20, 20, 0]} barSize={24} fill="#8b5cf6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-[var(--muted-foreground)] font-medium">Geen transportkosten geregistreerd.</div>
-              )}
-            </div>
+            ))}
           </div>
-        )}
+        </Card>
 
-        {/* YMS OTIF Chart */}
-        <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-sm space-y-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-foreground">YMS OTIF per Transporteur (%)</h3>
-              <p className="text-[var(--muted-foreground)] text-sm mt-1">Percentage leveringen dat minimaal 24 uur van tevoren is aangemeld.</p>
-            </div>
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl">
-              <TrendingUp size={24} />
-            </div>
-          </div>
-          
-          <div className="h-[300px] w-full">
-            {transporterOtifStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <BarChart data={transporterOtifStats} layout="vertical" margin={{ left: 40, right: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                  <XAxis type="number" domain={[0, 100]} hide />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12, fontWeight: 600 }}
-                    width={150}
-                  />
-                  <RechartsTooltip 
-                    cursor={{ fill: 'var(--muted)' }}
-                    contentStyle={{ borderRadius: '1rem', backgroundColor: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', color: 'var(--foreground)' }}
-                    itemStyle={{ color: 'var(--foreground)' }}
-                  />
-                  <Bar dataKey="otif" radius={[0, 20, 20, 0]} barSize={24}>
-                    {transporterOtifStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.otif === 100 ? '#10b981' : entry.otif > 80 ? '#6366f1' : '#f43f5e'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[var(--muted-foreground)] font-medium">Nog geen YMS data beschikbaar voor transporteurs.</div>
-            )}
-          </div>
-        </div>
+        <Card className="flex flex-col space-y-8" padding="xl">
+           <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-foreground">OTIF Trend per Transporteur</h3>
+              <TrendingUp className="text-indigo-600" size={24} />
+           </div>
+           <div className="h-[300px] w-full flex items-center justify-center text-[var(--muted-foreground)] font-medium bg-[var(--muted)]/30 rounded-3xl border border-dashed border-border italic">
+              Kwaliteitsmeting per transporteur in ontwikkeling...
+           </div>
+        </Card>
       </div>
+    </div>
   );
 };
 

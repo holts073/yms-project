@@ -1,82 +1,85 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Delivery } from '../types';
 import { useSocket } from '../SocketContext';
+import { Delivery, YmsDeliveryStatus } from '../types';
 
-export interface UseDeliveriesResult {
-  deliveries: Delivery[];
-  total: number;
-  totalPages: number;
-  loading: boolean;
-  error: string | null;
-  refresh: () => void;
-}
-
-export function useDeliveries(
+export const useDeliveries = (
   page: number = 1,
-  limit: number = 15,
+  limit: number = 1000,
   search: string = '',
-  typeFilter: string = 'all',
-  sort: string = 'eta',
+  type: 'all' | 'container' | 'exworks' = 'all',
+  sortBy: string = 'eta',
   activeOnly: boolean = false
-): UseDeliveriesResult {
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+) => {
+  const { state, dispatch } = useSocket();
+  const { deliveries: allDeliveries = [] } = state || {};
+
+  // Apply filtering
+  let filtered = [...allDeliveries];
   
-  const { socket } = useSocket();
+  if (activeOnly) {
+    filtered = filtered.filter(d => d.status < 100);
+  }
 
-  const fetchDeliveries = useCallback(async () => {
-    try {
-      setLoading(true);
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        search,
-        type: typeFilter,
-        sort,
-        activeOnly: Boolean(activeOnly).toString()
-      });
-      
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/deliveries?${queryParams.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!res.ok) throw new Error('Failed to fetch deliveries');
-      
-      const data = await res.json();
-      setDeliveries(data.deliveries);
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  if (type !== 'all') {
+    filtered = filtered.filter(d => d.type === type);
+  }
+
+  if (search) {
+    const s = search.toLowerCase();
+    filtered = filtered.filter(d => 
+      d.reference?.toLowerCase().includes(s) || 
+      state?.addressBook?.suppliers.find(sup => sup.id === d.supplierId)?.name.toLowerCase().includes(s)
+    );
+  }
+
+  // Sorting
+  filtered.sort((a, b) => {
+    const valA = (a as any)[sortBy] || '';
+    const valB = (b as any)[sortBy] || '';
+    return valA > valB ? 1 : -1;
+  });
+
+  // Pagination
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / limit);
+  const offset = (page - 1) * limit;
+  const pagedDeliveries = filtered.slice(offset, offset + limit);
+
+  // Actions
+  const updateDeliveryStatus = (id: string, status: number) => {
+    dispatch('UPDATE_DELIVERY', { id, status });
+  };
+
+  const updateDelivery = (delivery: Partial<Delivery> & { id: string }) => {
+    dispatch('UPDATE_DELIVERY', delivery);
+  };
+
+  const addDelivery = (delivery: Partial<Delivery>) => {
+    dispatch('ADD_DELIVERY', delivery);
+  };
+
+  const deleteDelivery = (id: string) => {
+    dispatch('DELETE_DELIVERY', id);
+  };
+
+  const assignDock = (deliveryId: string, dockId: number) => {
+    dispatch('YMS_ASSIGN_DOCK', { deliveryId, dockId });
+  };
+
+  const registerArrival = (deliveryId: string) => {
+    dispatch('YMS_REGISTER_ARRIVAL', deliveryId);
+  };
+
+  return {
+    deliveries: pagedDeliveries,
+    totalItems,
+    totalPages,
+    actions: {
+      updateDeliveryStatus,
+      updateDelivery,
+      addDelivery,
+      deleteDelivery,
+      assignDock,
+      registerArrival
     }
-  }, [page, limit, search, typeFilter, sort, activeOnly]);
-
-  useEffect(() => {
-    fetchDeliveries();
-  }, [fetchDeliveries]);
-
-  useEffect(() => {
-    if (!socket) return;
-    
-    // Listen for real-time updates from backend
-    const handleUpdate = () => {
-      fetchDeliveries();
-    };
-    
-    socket.on('DELIVERY_UPDATED', handleUpdate);
-    
-    return () => {
-      socket.off('DELIVERY_UPDATED', handleUpdate);
-    };
-  }, [socket, fetchDeliveries]);
-
-  return { deliveries, total, totalPages, loading, error, refresh: fetchDeliveries };
-}
+  };
+};

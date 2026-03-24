@@ -204,25 +204,25 @@ export const setupSocketHandlers = (io: Server) => {
               if (!isAdmin) throw new Error("Alleen admins kunnen configuraties wijzigen");
               const table = type.replace("YMS_SAVE_", "").toLowerCase();
               switch (table) {
-                case "dock": saveYmsDock(payload); break;
-                case "waitingarea": saveYmsWaitingArea(payload); break;
-                case "warehouse": saveYmsWarehouse(payload); break;
-                case "dockoverride": saveYmsDockOverride(payload); break;
-                case "alert": saveYmsAlert(payload); break;
+                case "dock": saveYmsDock(payload); logEntry.details = `Dock ${payload.name} opgeslagen`; break;
+                case "waitingarea": saveYmsWaitingArea(payload); logEntry.details = `Wachtruimte ${payload.name} opgeslagen`; break;
+                case "warehouse": saveYmsWarehouse(payload); logEntry.details = `Magazijn ${payload.name} opgeslagen`; break;
+                case "dockoverride": saveYmsDockOverride(payload); logEntry.details = `Dock override opgeslagen`; break;
+                case "alert": saveYmsAlert(payload); logEntry.details = `Systeemwaarschuwing opgeslagen`; break;
               }
               io.emit("state_update", buildStaticState());
-              logEntry.action = `Saved YMS ${table}`;
+              logEntry.action = `Systeemconfiguratie: ${table} opgeslagen`;
             } else if (type.startsWith("YMS_DELETE_")) {
               if (!isAdmin) throw new Error("Alleen admins kunnen gegevens verwijderen");
               const table = type.replace("YMS_DELETE_", "").toLowerCase();
               switch (table) {
-                case "delivery": deleteYmsDelivery(payload); break;
-                case "warehouse": deleteYmsWarehouse(payload); break;
-                case "dockoverride": deleteYmsDockOverride(payload); break;
-                case "alert": deleteYmsAlert(payload); break;
+                case "delivery": deleteYmsDelivery(payload); logEntry.details = `YMS Levering ${payload} verwijderd`; break;
+                case "warehouse": deleteYmsWarehouse(payload); logEntry.details = `Magazijn ${payload} verwijderd`; break;
+                case "dockoverride": deleteYmsDockOverride(payload); logEntry.details = `Dock override ${payload} verwijderd`; break;
+                case "alert": deleteYmsAlert(payload); logEntry.details = `Waarschuwing ${payload} verwijderd`; break;
               }
               io.emit("state_update", buildStaticState());
-              logEntry.action = `Deleted YMS ${table}`;
+              logEntry.action = `Systeemconfiguratie: ${table} verwijderd`;
             } else if (type === "YMS_RESOLVE_ALERT") {
               resolveYmsAlert(payload);
               io.emit("state_update", buildStaticState());

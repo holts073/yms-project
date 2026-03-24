@@ -119,10 +119,11 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     const { state, currentUser, isAuthenticated, logout } = useSocket();
     const { theme, toggleTheme } = useTheme();
 
-    // Sync openDropdown with activeTab on initial load or navigation
     React.useEffect(() => {
-      if (['archive', 'statistics', 'reports', 'logs'].includes(activeTab)) {
+      if (['statistics', 'reports', 'logs'].includes(activeTab)) {
         setOpenDropdown('analysis');
+      } else if (['yms-arrivals', 'yms-planning'].includes(activeTab)) {
+        setOpenDropdown('yard');
       } else if (activeTab.startsWith('settings')) {
         setOpenDropdown('settings');
       }
@@ -130,8 +131,10 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
 
     const handleNavigate = (tab: string, reference?: string, id?: string) => {
       setActiveTab(tab);
-      if (['archive', 'statistics', 'reports', 'logs'].includes(tab)) {
+      if (['statistics', 'reports', 'logs'].includes(tab)) {
         setOpenDropdown('analysis');
+      } else if (['yms-arrivals', 'yms-planning'].includes(tab)) {
+        setOpenDropdown('yard');
       } else if (tab.startsWith('settings')) {
         setOpenDropdown('settings');
       } else {
@@ -158,7 +161,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     }
     
     // Close dropdowns when clicking a top-level item that isn't in a dropdown
-    if (!['archive', 'statistics', 'reports', 'logs', 'yms-arrivals', 'yms-planning'].includes(tab) && !tab.startsWith('settings')) {
+    if (!['statistics', 'reports', 'logs', 'yms-arrivals', 'yms-planning'].includes(tab) && !tab.startsWith('settings')) {
       setOpenDropdown(null);
     }
   };
@@ -199,8 +202,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       case 'settings-users': return <SettingsPage currentSegment="users" />;
       case 'settings-yms': return <YmsSettings />;
       case 'reports': return <Reporting />;
-      case 'yms-arrivals': return <YmsDashboard view="arrivals" onNavigate={handleNavigate} />;
-      case 'yms-planning': return <YmsDashboard view="planning" onNavigate={handleNavigate} />;
+      case 'yms-arrivals': return <YmsDashboard view="arrivals" />;
+      case 'yms-planning': return <YmsDashboard view="planning" />;
       case 'yms-public': return <YmsPublic onBack={() => handleNavigate('dashboard')} />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
@@ -241,45 +244,63 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             active={activeTab === 'dashboard'} 
             onClick={() => handleSidebarClick('dashboard')} 
           />
+          
+          <div className="pt-4 pb-1 px-6">
+            <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Logistieke Flow</p>
+          </div>
+          
           <SidebarItem 
             icon={Truck} 
-            label="Leveringen" 
+            label="Inkomend (Pipeline)" 
             active={activeTab === 'deliveries'} 
             onClick={() => handleSidebarClick('deliveries')} 
           />
-          <SidebarItem 
-            icon={Calendar} 
-            label="YMS Planning" 
-            active={activeTab === 'yms-planning'} 
-            onClick={() => handleSidebarClick('yms-planning')} 
-          />
-          <SidebarItem 
+          
+          <SidebarDropdown 
             icon={ClipboardList} 
-            label="YMS Aankomst" 
-            active={activeTab === 'yms-arrivals'} 
-            onClick={() => handleSidebarClick('yms-arrivals')} 
+            label="Yard (Operationeel)" 
+            active={['yms-arrivals', 'yms-planning'].includes(activeTab)} 
+            isOpen={openDropdown === 'yard'}
+            onToggle={() => toggleDropdown('yard')}
+            items={[
+              { id: 'yms-arrivals', label: 'Aankomst & Inspectie', active: activeTab === 'yms-arrivals' },
+              { id: 'yms-planning', label: 'Dock Planning', active: activeTab === 'yms-planning' }
+            ]}
+            onSelect={handleSidebarClick}
           />
+          
           <SidebarItem 
-            icon={Zap} 
-            label="Monitor" 
-            active={activeTab === 'yms-public'} 
-            onClick={() => handleSidebarClick('yms-public')} 
+            icon={History} 
+            label="Archief (Historie)" 
+            active={activeTab === 'archive'} 
+            onClick={() => handleSidebarClick('archive')} 
           />
+
+          <div className="pt-4 pb-1 px-6">
+            <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Overig</p>
+          </div>
+          
           <SidebarItem 
             icon={BookUser} 
             label="Adressenboek" 
             active={activeTab === 'addressbook'} 
             onClick={() => handleSidebarClick('addressbook')} 
           />
+          
+          <SidebarItem 
+            icon={Zap} 
+            label="Publieke Monitor" 
+            active={activeTab === 'yms-public'} 
+            onClick={() => handleSidebarClick('yms-public')} 
+          />
 
           <SidebarDropdown 
             icon={BarChart3} 
-            label="Analyse & Archief" 
-            active={['archive', 'statistics', 'reports', 'logs'].includes(activeTab)} 
+            label="Analyse & Rapportage" 
+            active={['statistics', 'reports', 'logs'].includes(activeTab)} 
             isOpen={openDropdown === 'analysis'}
             onToggle={() => toggleDropdown('analysis')}
             items={[
-              { id: 'archive', label: 'Archief', active: activeTab === 'archive' },
               { id: 'statistics', label: 'Statistieken', active: activeTab === 'statistics' },
               ...(currentUser.role === 'admin' || currentUser.role === 'manager' ? [
                 { id: 'reports', label: 'Rapportages', active: activeTab === 'reports' },
@@ -288,6 +309,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             ]}
             onSelect={handleSidebarClick}
           />
+          
           {currentUser.role === 'admin' && (
             <SidebarDropdown 
               icon={Settings} 
@@ -367,5 +389,5 @@ export default function App() {
 
 const ThemeAwareToaster = () => {
   const { theme } = useTheme();
-  return <Toaster position="top-right" richColors theme={theme} />;
+  return <Toaster position="top-right" richColors theme={theme} className="pointer-events-none" toastOptions={{ className: 'pointer-events-auto' }} style={{ zIndex: 9999 }} />;
 };

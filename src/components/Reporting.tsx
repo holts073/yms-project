@@ -1,182 +1,134 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useSocket } from '../SocketContext';
-import { 
-  FileText, 
-  Download, 
-  Search, 
-  Filter,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Table as TableIcon
-} from 'lucide-react';
-import { useDeliveries } from '../hooks/useDeliveries';
+import { Download, Search, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { useReportingData } from '../hooks/useReportingData';
+import { Table } from './shared/Table';
+import { Button } from './shared/Button';
+import { cn } from '../lib/utils';
 
 const Reporting = () => {
-  const { state, currentUser } = useSocket();
-  const { addressBook } = state || {};
-  const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', false);
-  
+  const { currentUser } = useSocket();
   const [reportType, setReportType] = useState<'volume' | 'costs'>('volume');
-  const [searchFilter, setSearchFilter] = useState('');
-
-  const reportData = useMemo(() => {
-    if (!addressBook?.suppliers) return [];
-
-    const stats = addressBook.suppliers.map(supplier => {
-      const supplierDeliveries = deliveries.filter(d => d.supplierId === supplier.id);
-      
-      const totalPallets = supplierDeliveries.reduce((sum, d) => sum + (d.palletCount || 0), 0);
-      const totalWeight = supplierDeliveries.reduce((sum, d) => sum + (d.weight || 0), 0);
-      const totalCost = supplierDeliveries.reduce((sum, d) => sum + (d.transportCost || 0), 0);
-      
-      return {
-        id: supplier.id,
-        name: supplier.name,
-        count: supplierDeliveries.length,
-        pallets: totalPallets,
-        weight: totalWeight,
-        costs: totalCost,
-        avgCostPerPallet: totalPallets > 0 ? (totalCost / totalPallets).toFixed(2) : '0.00'
-      };
-    });
-
-    return stats.filter(s => s.name.toLowerCase().includes(searchFilter.toLowerCase()));
-  }, [deliveries, addressBook?.suppliers, searchFilter]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { reportData, isLoading } = useReportingData(searchTerm);
 
   const exportToCSV = () => {
-    let headers = [];
-    let rows = [];
+    const headers = reportType === 'volume' 
+      ? ['Leverancier', 'Aantal Leveringen', 'Totaal Pallets', 'Totaal Gewicht (kg)']
+      : ['Leverancier', 'Aantal Leveringen', 'Totaal Kosten (€)', 'Gem. Kosten per Pallet (€)'];
+    
+    const rows = reportData.map(d => reportType === 'volume' 
+      ? [d.name, d.count, d.pallets, d.weight]
+      : [d.name, d.count, d.costs.toFixed(2), d.avgCostPerPallet]);
 
-    if (reportType === 'volume') {
-      headers = ['Leverancier', 'Aantal Leveringen', 'Totaal Pallets', 'Totaal Gewicht (kg)'];
-      rows = reportData.map(d => [d.name, d.count, d.pallets, d.weight]);
-    } else {
-      headers = ['Leverancier', 'Aantal Leveringen', 'Totaal Kosten (€)', 'Gem. Kosten per Pallet (€)'];
-      rows = reportData.map(d => [d.name, d.count, d.costs.toFixed(2), d.avgCostPerPallet]);
-    }
-
-    const csvContent = [
-      headers.join(';'),
-      ...rows.map(r => r.join(';'))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `ilg_rapport_${reportType}_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `ILG_Rapport_${reportType}_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
-    document.body.removeChild(link);
   };
+
+  const columns = [
+    {
+      header: 'Leverancier',
+      accessor: (row: any) => <span className="font-bold text-foreground">{row.name}</span>
+    },
+    {
+      header: 'Zendingen',
+      accessor: 'count' as any,
+      className: 'text-center'
+    },
+    ...(reportType === 'volume' ? [
+      {
+        header: 'Totaal Pallets',
+        accessor: 'pallets' as any,
+        className: 'text-right font-mono text-[var(--muted-foreground)]'
+      },
+      {
+        header: 'Gewicht (kg)',
+        accessor: (row: any) => row.weight.toLocaleString(),
+        className: 'text-right font-mono text-[var(--muted-foreground)]'
+      }
+    ] : [
+      {
+        header: 'Totaal Kosten',
+        accessor: (row: any) => <span className="text-indigo-600 dark:text-indigo-400 font-bold">€ {row.costs.toLocaleString()}</span>,
+        className: 'text-right font-mono'
+      },
+      {
+        header: 'Gem. / Pallet',
+        accessor: (row: any) => `€ ${row.avgCostPerPallet}`,
+        className: 'text-right font-mono text-[var(--muted-foreground)]'
+      }
+    ])
+  ];
 
   if (currentUser?.role === 'staff') {
     return (
-      <div className="p-20 text-center">
-        <h2 className="text-2xl font-bold text-foreground">Toegang Geweigerd</h2>
-        <p className="text-[var(--muted-foreground)] mt-2">Je hebt geen rechten om deze pagina te bekijken.</p>
+      <div className="py-20 text-center animate-in fade-in duration-500">
+        <h2 className="text-2xl font-black text-foreground">Toegang Geweigerd</h2>
+        <p className="text-[var(--muted-foreground)] mt-2 font-medium">Je hebt geen rechten om deze rapportages te bekijken.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto">
-      <header className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground tracking-tight">Rapportages</h2>
-          <p className="text-[var(--muted-foreground)] mt-1">Analyseer prestaties en exporteer data voor administratie.</p>
+    <div className="space-y-10 pb-20">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/20">
+            <FileSpreadsheet className="text-white" size={32} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h2 className="text-4xl font-black text-foreground tracking-tight italic uppercase">Rapportages</h2>
+            <p className="text-[var(--muted-foreground)] mt-1 font-medium tracking-widest uppercase text-xs">Analyseer prestaties en exporteer data voor administratie.</p>
+          </div>
         </div>
-        <button 
-          onClick={exportToCSV}
-          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20"
-        >
-          <Download size={20} />
+        <Button onClick={exportToCSV} leftIcon={<Download size={20} />}>
           Exporteer CSV
-        </button>
+        </Button>
       </header>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-1 flex gap-2 p-1 bg-[var(--muted)]/50 rounded-2xl w-fit border border-border">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="flex gap-2 p-1.5 bg-card rounded-3xl border border-border w-fit shadow-sm">
           <button 
             onClick={() => setReportType('volume')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${reportType === 'volume' ? 'bg-card text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-[var(--muted-foreground)] hover:text-foreground'}`}
+            className={cn(
+              "flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all",
+              reportType === 'volume' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20" : "text-[var(--muted-foreground)] hover:text-foreground"
+            )}
           >
-            <BarChart3 size={18} />
-            Volume Rapport
+            <BarChart3 size={18} /> Volume
           </button>
           <button 
             onClick={() => setReportType('costs')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${reportType === 'costs' ? 'bg-card text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-[var(--muted-foreground)] hover:text-foreground'}`}
+            className={cn(
+              "flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all",
+              reportType === 'costs' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20" : "text-[var(--muted-foreground)] hover:text-foreground"
+            )}
           >
-            <BarChart3 size={18} />
-            Kosten Rapport
+            <BarChart3 size={18} /> Kosten
           </button>
         </div>
 
-        <div className="relative flex-1 max-w-md">
+        <div className="relative w-full md:max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
           <input 
             type="text" 
             placeholder="Zoek leverancier..."
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full pl-12 pr-6 py-3 bg-[var(--muted)] border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-foreground placeholder:text-[var(--muted-foreground)] shadow-inner"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 bg-card border border-border rounded-3xl text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm text-foreground outline-none"
           />
         </div>
       </div>
 
-      <div className="bg-card rounded-[2.5rem] border border-border shadow-sm overflow-hidden text-left">
-        <table className="w-full">
-          <thead className="bg-[var(--muted)]/50 border-b border-border">
-            <tr>
-              <th className="px-8 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Leverancier</th>
-              <th className="px-8 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider text-center">Zendingen</th>
-              {reportType === 'volume' ? (
-                <>
-                  <th className="px-8 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider text-right">Totaal Pallets</th>
-                  <th className="px-8 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider text-right">Gewicht (kg)</th>
-                </>
-              ) : (
-                <>
-                  <th className="px-8 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider text-right">Totaal Kosten</th>
-                  <th className="px-8 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider text-right">Gem. / Pallet</th>
-                </>
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {reportData.map((row) => (
-              <tr key={row.id} className="hover:bg-[var(--muted)]/40 transition-colors">
-                <td className="px-8 py-6">
-                  <span className="text-sm font-bold text-foreground">{row.name}</span>
-                </td>
-                <td className="px-8 py-6 text-center">
-                  <span className="text-sm font-medium text-[var(--muted-foreground)]">{row.count}</span>
-                </td>
-                {reportType === 'volume' ? (
-                  <>
-                    <td className="px-8 py-6 text-right font-mono text-sm text-[var(--muted-foreground)]">{row.pallets}</td>
-                    <td className="px-8 py-6 text-right font-mono text-sm text-[var(--muted-foreground)]">{row.weight.toLocaleString()}</td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-8 py-6 text-right font-mono text-sm text-indigo-600 dark:text-indigo-400 font-bold">€ {row.costs.toLocaleString()}</td>
-                    <td className="px-8 py-6 text-right font-mono text-sm text-[var(--muted-foreground)]">€ {row.avgCostPerPallet}</td>
-                  </>
-                )}
-              </tr>
-            ))}
-            {reportData.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-8 py-20 text-center text-[var(--muted-foreground)] font-medium">
-                  Geen gegevens gevonden voor deze filter.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table 
+        data={reportData}
+        columns={columns}
+        isLoading={isLoading}
+        emptyMessage="Geen rapportagegegevens gevonden voor deze selectie."
+      />
     </div>
   );
 };
