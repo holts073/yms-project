@@ -16,8 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
-  ShieldAlert,
-  Bot
+  ShieldAlert
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -214,10 +213,6 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
   const activeAlerts = alerts.filter(a => !a.resolved);
   const reeferAlertCount = activeAlerts.length;
 
-  const handleAutoSchedule = () => {
-    dispatch('YMS_AUTO_SCHEDULE', { warehouseId: selectedWarehouseId });
-    alert('AI Optimization gestart voor deze loods...');
-  };
 
   return (
     <div className="space-y-8 h-full flex flex-col">
@@ -282,13 +277,6 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
             </button>
           )}
 
-          <button
-            onClick={handleAutoSchedule}
-            className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all transform hover:scale-105 active:scale-95 group text-sm"
-          >
-            <Bot size={18} className="group-hover:rotate-12 transition-transform" />
-            AI Optimize
-          </button>
 
           <button
             onClick={() => dispatch('GET_COMPLIANCE_STATS')}
@@ -477,11 +465,6 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                           }`}>
                             {delivery.temperature}
                           </span>
-                          {delivery.priorityScore && delivery.priorityScore > 0 && (
-                             <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-indigo-100">
-                               <TrendingUp size={10} /> {delivery.priorityScore} pts
-                             </span>
-                          )}
                           {delivery.isReefer && (
                              <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-rose-100">
                                Reefer
@@ -517,13 +500,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                       <div className="text-right">
                         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Tijdschema</p>
                         <div className="flex flex-col items-end">
-                          <p className={`font-bold ${delivery.predictedEta ? 'text-slate-400 line-through text-xs' : 'text-slate-900'}`}>{new Date(delivery.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                          {delivery.predictedEta && (
-                            <p className="font-black text-indigo-600 flex items-center gap-1">
-                               <Bot size={12} />
-                               {new Date(delivery.predictedEta).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </p>
-                          )}
+                          <p className="text-slate-900 font-bold">{new Date(delivery.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                         </div>
                       </div>
                       <div className="h-10 w-px bg-slate-100" />

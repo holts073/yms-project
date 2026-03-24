@@ -1,10 +1,10 @@
 # Project Architectuur - Yard Management System (YMS)
 
-Dit document beschrijft de technische architectuur van het YMS-project, de verschillende componenten en hoe deze met elkaar communiceren.
+Dit document beschrijft de technische architectuur van het YMS-project, de verschillende componenten en hoe deze met elkaar communiceren na de modularisatie en de-AI fase.
 
 ## Overzicht
 
-Het systeem is een moderne webapplicatie bestaande uit een **React-frontend** en een **Node.js/Express-backend**. De applicatie maakt gebruik van real-time communicatie via **Socket.io** om alle gebruikers direct op de hoogte te stellen van wijzigingen in de status van leveringen, docks en magazijnen.
+Het systeem is een moderne webapplicatie bestaande uit een **React-frontend** en een **Node.js/Express-backend**. De applicatie maakt gebruik van real-time communicatie via **Socket.io** om alle gebruikers direct op de hoogte te stellen van wijzigingen in de status van leveringen, docks en magazijnen. Het systeem is geoptimaliseerd voor een **handmatig** en stabiel workflow-beheer zonder AI-predicties.
 
 ## Componenten
 
@@ -19,8 +19,8 @@ De backend is modulair opgebouwd voor schaalbaarheid en onderhoudbaarheid:
 - **`server.ts`**: De centrale entry point die Express, Socket.io en alle sub-modules initialiseert.
 - **`/server/routes/`**: Bevat de REST API endpoints (zoals `/api/login` en `/api/deliveries`).
 - **`/server/sockets/`**: Bevat de Socket.io action-handlers voor real-time updates.
-- **`/server/workers/`**: Bevat background workers (zoals de `inventory-worker` voor Reefer alerts).
-- **`/server/services/`**: Bevat business logica (zoals `aiService` voor risico-analyse).
+- **`/server/workers/`**: Bevat background workers (zoals de `inventory-worker` voor Reefer alerts en dwell-time monitoring).
+- **`/server/services/`**: Bevat business logica diensten.
 - **`/src/db/`**: Bevat de SQLite database logica (`queries.ts` en `sqlite.ts`).
 
 ### 3. Database (Persistentie)
@@ -40,7 +40,7 @@ Het systeem volgt een uni-directionele datastroom voor statusupdates:
 1.  **Gebruiker voert actie uit** (bijv. Truck aanmelden).
 2.  Frontend roept `dispatch(type, payload)` aan via de `SocketContext`.
 3.  Server ontvangt het `action` event.
-4.  Server valideert de actie, voert database-queries uit en berekent eventuele bijwerkingen (zoals KPI updates).
+4.  Server valideert de actie, voert database-queries uit en berekent eventuele bijwerkingen.
 5.  Server broadcast een `state_update` (of `DELIVERY_UPDATED`) naar **alle** verbonden clients.
 6.  Frontends ontvangen de update en renderen de UI opnieuw met de nieuwste data.
 
@@ -57,7 +57,6 @@ graph TD
     subgraph "Backend (Express / Node.js)"
         SE[Socket.io Server]
         API[REST API Routes]
-        AL[AI Scheduling / Logic]
         BW[Background Worker / Alerts]
         
         SC -- action (Socket) --> SE
@@ -72,12 +71,10 @@ graph TD
         SE --> QU
         API --> QU
         QU <--> DB
-        AL --> QU
         BW --> QU
     end
     
     BW -- trigger alert --> SE
-    AL -- assign dock --> SE
 ```
 
 ## Beveiliging

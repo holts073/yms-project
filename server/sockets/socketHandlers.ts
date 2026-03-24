@@ -1,4 +1,4 @@
-import { Server, Socket } from 'socket.io';
+import { Server, Socket } from "socket.io";
 import { 
   insertDelivery, getAllDeliveries, deleteDelivery, saveUser, getUsers, 
   saveAddressBookEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
@@ -8,7 +8,6 @@ import {
 } from '../../src/db/queries';
 import { saveSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
-import { calculateRisk, performAutoScheduling } from '../services/aiService';
 import { buildStaticState } from '../routes/deliveries';
 
 export const setupSocketHandlers = (io: Server) => {
@@ -30,11 +29,8 @@ export const setupSocketHandlers = (io: Server) => {
       try {
         switch (type) {
           case "ADD_DELIVERY": {
-            const riskInfo = calculateRisk(payload);
             const newDelivery = { 
               ...payload, 
-              delayRisk: riskInfo.risk, 
-              predictionReason: riskInfo.reason,
               auditTrail: [{
                 timestamp,
                 user: user.name,
@@ -53,8 +49,7 @@ export const setupSocketHandlers = (io: Server) => {
           case "UPDATE_DELIVERY": {
             const allDels = getAllDeliveries();
             const existing = allDels.find(d => d.id === payload.id);
-            const updatedRisk = calculateRisk(payload);
-            let newPayload = { ...payload, delayRisk: updatedRisk.risk, predictionReason: updatedRisk.reason };
+            let newPayload = { ...payload };
             
             if (existing && existing.status !== newPayload.status) {
               const getStatusLabel = (p: any) => {
@@ -125,53 +120,11 @@ export const setupSocketHandlers = (io: Server) => {
             const allDelList = getAllDeliveries().filter(d => payload.ids.includes(d.id));
             for (const d of allDelList) {
               const updated = { ...d, ...payload.updates, updatedAt: timestamp };
-              const risk = calculateRisk(updated);
-              insertDelivery({ ...updated, delayRisk: risk.risk, predictionReason: risk.reason });
+              insertDelivery(updated);
             }
             logEntry.action = "Bulk Updated Deliveries";
             logEntry.details = `Updated ${payload.ids.length} deliveries`;
             io.emit("DELIVERY_UPDATED");
-            break;
-
-          case "UPDATE_USER":
-            saveUser(payload);
-            logEntry.action = "Updated User";
-            logEntry.details = `Updated profile/role`;
-            io.emit("state_update", buildStaticState());
-            break;
-          
-          case "ADD_USER":
-            saveUser(payload);
-            logEntry.action = "Added User";
-            logEntry.details = `Added new user: ${payload.name}`;
-            io.emit("state_update", buildStaticState());
-            break;
-
-          case "UPDATE_ADDRESS":
-            saveAddressBookEntry(payload.entry);
-            logEntry.action = "Updated Address Book";
-            io.emit("state_update", buildStaticState());
-            break;
-
-          case "ADD_ADDRESS":
-            saveAddressBookEntry(payload.entry);
-            logEntry.action = "Added to Address Book";
-            io.emit("state_update", buildStaticState());
-            break;
-
-          case "UPDATE_SETTINGS":
-            saveSetting('settings', payload);
-            io.emit("state_update", buildStaticState());
-            break;
-
-          case "YMS_UPDATE_DOCK":
-            saveYmsDock(payload);
-            io.emit("state_update", buildStaticState());
-            break;
-
-          case "YMS_UPDATE_WAITING_AREA":
-            saveYmsWaitingArea(payload);
-            io.emit("state_update", buildStaticState());
             break;
 
           case "YMS_SAVE_DELIVERY": {
@@ -196,28 +149,43 @@ export const setupSocketHandlers = (io: Server) => {
             break;
           }
 
-          case "YMS_AUTO_SCHEDULE":
-            performAutoScheduling(payload.warehouseId, io, buildStaticState);
-            break;
-
           default:
             // Generic save actions that don't need complex logic
             if (type.startsWith("YMS_SAVE_")) {
-               // ... generic save logic or map to specific queries
+              const table = type.replace("YMS_SAVE_", "").toLowerCase();
+              switch (table) {
+                case "dock": saveYmsDock(payload); break;
+                case "waitingarea": saveYmsWaitingArea(payload); break;
+                case "warehouse": saveYmsWarehouse(payload); break;
+                case "dockoverride": saveYmsDockOverride(payload); break;
+                case "alert": saveYmsAlert(payload); break;
+              }
+              io.emit("state_update", buildStaticState());
+              logEntry.action = `Saved YMS ${table}`;
+            } else if (type.startsWith("YMS_DELETE_")) {
+              const table = type.replace("YMS_DELETE_", "").toLowerCase();
+              switch (table) {
+                case "delivery": deleteYmsDelivery(payload); break;
+                case "warehouse": deleteYmsWarehouse(payload); break;
+                case "dockoverride": deleteYmsDockOverride(payload); break;
+                case "alert": deleteYmsAlert(payload); break;
+              }
+              io.emit("state_update", buildStaticState());
+              logEntry.action = `Deleted YMS ${table}`;
+            } else if (type === "YMS_RESOLVE_ALERT") {
+              resolveYmsAlert(payload);
+              io.emit("state_update", buildStaticState());
             }
-            break;
         }
 
-        if (logEntry.action) addLog(logEntry);
-        
-        // Final state sync for all non-monitored actions
-        if (!["ADD_DELIVERY", "UPDATE_DELIVERY", "DELETE_DELIVERY", "BULK_UPDATE_DELIVERIES"].includes(type)) {
-          io.emit("state_update", buildStaticState());
+        if (logEntry.action) {
+          addLog(logEntry);
         }
-
-      } catch (err: any) {
-        console.error("Action Error:", err.message);
+      } catch (error) {
+        console.error("Action error:", error);
       }
     });
+
+    socket.on("disconnect", () => {});
   });
 };

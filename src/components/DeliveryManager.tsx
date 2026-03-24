@@ -214,8 +214,6 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       delete formUpdates.status;
       delete formUpdates.statusHistory;
       delete formUpdates.documents;
-      delete formUpdates.delayRisk;
-      delete formUpdates.predictionReason;
 
       dispatch('UPDATE_DELIVERY', {
         ...currentModalDelivery,
@@ -529,36 +527,6 @@ Tel: ${company.phone} | Email: ${company.email}
               {paginatedDeliveries.map((delivery) => {
                   const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
                   
-                  // Dynamic Risk Calculation for Ex-Works
-                  let displayRisk = delivery.delayRisk;
-                  let displayReason = delivery.predictionReason;
-                  
-                  if (delivery.type === 'exworks' && delivery.status === 0 && delivery.etaWarehouse) {
-                    const etaDate = new Date(delivery.etaWarehouse);
-                    const today = new Date();
-                    etaDate.setHours(0,0,0,0);
-                    today.setHours(0,0,0,0);
-                    const diffDays = Math.ceil((etaDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                    if (diffDays <= 7) {
-                      displayRisk = 'high';
-                      displayReason = "Vraag direct transport aan (Minder dan 7 dagen tot ETA).";
-                    }
-                  } else if (delivery.type === 'container' && delivery.status < 50 && delivery.etaPort) {
-                    // Check if NOA is still missing and ETA Port is soon
-                    const noaMissing = delivery.documents.find(d => d.name === 'Notification of Arrival')?.status === 'missing';
-                    if (noaMissing) {
-                      const etaPortDate = new Date(delivery.etaPort);
-                      const today = new Date();
-                      etaPortDate.setHours(0,0,0,0);
-                      today.setHours(0,0,0,0);
-                      const diffDays = Math.ceil((etaPortDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                      if (diffDays <= 7) {
-                        displayRisk = 'high';
-                        displayReason = "Documentatie (NOA) ontbreekt en schip arriveert binnen 7 dagen.";
-                      }
-                    }
-                  }
-
                   return (
                 <tr 
                   key={delivery.id} 
@@ -588,18 +556,6 @@ Tel: ${company.phone} | Email: ${company.email}
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-slate-900">{delivery.reference}</span>
                       <span className="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">#{delivery.id.substring(0, 6).toUpperCase()}</span>
-                      {displayRisk === 'high' && (
-                        <div className="relative group/risk">
-                          <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full cursor-help">
-                            ACTIE
-                          </span>
-                          {displayReason && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover/risk:opacity-100 transition-opacity pointer-events-none z-50 text-center">
-                              {displayReason}
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                     <div className="flex flex-col gap-0.5 mt-1">
                       {delivery.containerNumber && (

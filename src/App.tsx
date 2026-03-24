@@ -162,7 +162,10 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     setOpenDropdown(openDropdown === name ? null : name);
   };
 
-  if (!isAuthenticated) {
+  // Special logic for Public Page (can be accessed without auth if specifically requested)
+  const isPublicHash = window.location.hash.includes('yms-public');
+  
+  if (!isAuthenticated && !isPublicHash) {
     return <Login />;
   }
 
@@ -193,7 +196,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       case 'reports': return <Reporting />;
       case 'yms-arrivals': return <YmsDashboard view="arrivals" onNavigate={handleNavigate} />;
       case 'yms-planning': return <YmsDashboard view="planning" onNavigate={handleNavigate} />;
-      case 'yms-public': return <YmsPublic />;
+      case 'yms-public': return <YmsPublic onBack={() => handleNavigate('dashboard')} />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
@@ -205,8 +208,11 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     return true;
   };
 
-  if (activeTab === 'yms-public') {
-    return <YmsPublic />;
+  if (activeTab === 'yms-public' || isPublicHash) {
+    return <YmsPublic onBack={() => {
+      if (isAuthenticated) handleNavigate('dashboard');
+      else window.location.hash = ''; // Return to Login
+    }} />;
   }
 
   return (

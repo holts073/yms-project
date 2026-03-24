@@ -63,8 +63,6 @@ db.exec(`
     dockId INTEGER,
     
     -- Calculated/Metadata
-    delayRisk TEXT,
-    predictionReason TEXT,
     notes TEXT,
     statusHistory TEXT, -- JSON string [0, 25, 50]
     loadingTime TEXT
@@ -167,8 +165,6 @@ db.exec(`
     isLate BOOLEAN,
     status TEXT NOT NULL DEFAULT 'PLANNED',
     statusTimestamps TEXT, -- JSON record of timestamps
-    predictedEta TEXT,
-    priorityScore INTEGER DEFAULT 0,
     estimatedDuration INTEGER DEFAULT 60,
     isReefer INTEGER DEFAULT 0,
     tempAlertThreshold INTEGER DEFAULT 30,
@@ -246,8 +242,6 @@ const migrations = [
   { table: 'yms_deliveries', column: 'isLate', type: 'BOOLEAN' },
   { table: 'yms_deliveries', column: 'statusTimestamps', type: 'TEXT' },
   { table: 'yms_deliveries', column: 'mainDeliveryId', type: 'TEXT' },
-  { table: 'yms_deliveries', column: 'predictedEta', type: 'TEXT' },
-  { table: 'yms_deliveries', column: 'priorityScore', type: 'INTEGER DEFAULT 0' },
   { table: 'yms_deliveries', column: 'estimatedDuration', type: 'INTEGER DEFAULT 60' },
   { table: 'yms_deliveries', column: 'isReefer', type: 'INTEGER DEFAULT 0' },
   { table: 'yms_deliveries', column: 'tempAlertThreshold', type: 'INTEGER DEFAULT 30' },

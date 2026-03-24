@@ -15,18 +15,12 @@
 
 ### 2. [System-Architect] (Agent B)
 - **Focus:** De "Brug" (Sockets & Integratie).
-- **Scope:** `server/sockets/**`, `src/SocketContext.tsx`, `server.ts`, `src/types.ts`.
+- **Scope:** `server/sockets/**`, `src/SocketContext.tsx`, `server.ts`, `src/types.ts`, `server/workers/**`.
 - **Expertise:** Socket.io, State Management, Event-handling.
-- **Taak:** Bewaak de consistentie tussen frontend dispatchers en backend listeners. Jij bent de eigenaar van de `ARCHITECTUUR.md` en het Mermaid-diagram.
+- **Taak:** Bewaak de consistentie tussen frontend dispatchers en backend listeners. Jij bent de eigenaar van de `ARCHITECTUUR.md` en het Mermaid-diagram. Nu ook verantwoordelijk voor de Background Workers (zonder AI).
 
 ### 3. [Data-Specialist] (Agent C)
 - **Focus:** Persistentie & API.
-- **Scope:** `server/routes/**`, `src/db/**` (Queries & SQLite), `database.sqlite`.
+- **Scope:** `server/routes/**`, `src/db/**` (Queries & SQLite), `database.sqlite`, `server/services/**`.
 - **Expertise:** Node.js, Express, SQLite (better-sqlite3), SQL Optimalisatie.
-- **Instructie:** Alle database wijzigingen moeten geaudit worden in `audit_logs` (via `src/db/queries.ts`). Gebruik WAL-mode voor concurrency.
-
-### 4. [AI-Optimizer] (Agent D)
-- **Focus:** Automatische Planning & Alerts.
-- **Scope:** `server/workers/**`, `server/services/**`, `src/lib/ymsRules.ts`.
-- **Expertise:** Algoritmes, Background Workers, Reefer-monitoring logica.
-- **Taak:** Beheer de AI Auto-Scheduling scores en KPI berekeningen. Zorg dat de Background Worker efficiënt draait in `server.ts`.
+- **Instructie:** Alle database wijzigingen worden geaudit in `audit_logs`. Jij beheert de REST endpoints en data-integriteit.

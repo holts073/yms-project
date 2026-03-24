@@ -169,8 +169,7 @@ Tel: ${company.phone} | Email: ${company.email}
   // Calculate stats
   const actionRequiredDeliveries = useMemo(() => deliveries.filter(d => 
     d.status < 100 && (
-      d.documents.some(doc => doc.required && doc.status === 'missing') ||
-      d.delayRisk === 'high'
+      d.documents.some(doc => doc.required && doc.status === 'missing')
     )
   ), [deliveries]);
 
@@ -509,12 +508,6 @@ Tel: ${company.phone} | Email: ${company.email}
                             <span className="text-xs font-medium text-amber-600 flex items-center gap-1.5">
                               <FileText size={12} />
                               Documenten ontbreken
-                            </span>
-                          )}
-                          {delivery.delayRisk === 'high' && (
-                            <span className="text-xs font-medium text-red-600 flex items-center gap-1.5">
-                              <AlertCircle size={12} />
-                              Hoog risico op vertraging
                             </span>
                           )}
                           {filterType === 'today' && delivery.status < 100 && (

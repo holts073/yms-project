@@ -37,8 +37,6 @@ export interface Delivery {
   createdAt: string;
   updatedAt: string;
   eta?: string;
-  delayRisk?: 'low' | 'medium' | 'high';
-  predictionReason?: string;
   statusHistory?: number[];
   notes?: string;
   auditTrail?: AuditEntry[];
@@ -190,9 +188,7 @@ export interface YmsDelivery {
   direction?: YmsDirection;
   palletCount?: number;
   
-  // AI & Reefer Features
-  predictedEta?: string;
-  priorityScore?: number;
+  // Reefer Features
   estimatedDuration?: number;
   isReefer?: boolean;
   tempAlertThreshold?: number;
