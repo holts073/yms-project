@@ -13,6 +13,10 @@
     --card: theme('colors.white');
     --card-foreground: theme('colors.slate.900');
     --border: theme('colors.slate.200');
+    --muted: theme('colors.slate.100');
+    --muted-foreground: theme('colors.slate.500');
+    --accent: theme('colors.indigo.50');
+    --accent-foreground: theme('colors.indigo.600');
   }
 
   .dark {
@@ -21,6 +25,10 @@
     --card: theme('colors.slate.900');
     --card-foreground: theme('colors.slate.100');
     --border: theme('colors.slate.800');
+    --muted: theme('colors.slate.800');
+    --muted-foreground: theme('colors.slate.400');
+    --accent: theme('colors.indigo.900/40');
+    --accent-foreground: theme('colors.indigo.400');
   }
 
   body {

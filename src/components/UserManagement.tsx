@@ -104,12 +104,12 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
       {!embedded && (
         <header className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Gebruikersbeheer</h2>
-            <p className="text-slate-500 mt-1">Beheer rollen en toegangsrechten voor het team.</p>
+            <h2 className="text-3xl font-bold text-foreground tracking-tight">Gebruikersbeheer</h2>
+            <p className="text-[var(--muted-foreground)] mt-1">Beheer rollen en toegangsrechten voor het team.</p>
           </div>
           <button 
             onClick={openNewModal}
-            className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
+            className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all active:scale-95"
           >
             <Plus size={20} />
             Nieuwe Gebruiker
@@ -129,33 +129,33 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
         </div>
       )}
 
-      <div className={cn("bg-white rounded-[2.5rem] overflow-hidden", embedded ? "border border-slate-100" : "border border-slate-200 shadow-sm")}>
+      <div className={cn("bg-card rounded-[2.5rem] overflow-hidden shadow-sm", embedded ? "border border-border" : "border border-border")}>
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[600px]">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Gebruiker</th>
-                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">E-mail</th>
-                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
-                <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Acties</th>
+              <tr className="bg-[var(--muted)]/50 border-b border-border">
+                <th className="px-6 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Gebruiker</th>
+                <th className="px-6 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">E-mail</th>
+                <th className="px-6 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Rol</th>
+                <th className="px-6 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Acties</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={user.id} className="hover:bg-[var(--muted)]/40 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 shrink-0">
+                      <div className="w-10 h-10 bg-[var(--muted)] rounded-full flex items-center justify-center text-[var(--muted-foreground)] shrink-0">
                         <UserIcon size={20} />
                       </div>
-                      <span className="font-bold text-slate-900 truncate max-w-[150px]">{user.name}</span>
+                      <span className="font-bold text-foreground truncate max-w-[150px]">{user.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-500 text-sm font-medium truncate max-w-[200px]">{user.email}</td>
+                  <td className="px-6 py-4 text-[var(--muted-foreground)] text-sm font-medium truncate max-w-[200px]">{user.email}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {getRoleIcon(user.role)}
-                      <span className="text-sm font-bold text-slate-700 capitalize">{user.role}</span>
+                      <span className="text-sm font-bold text-foreground capitalize">{user.role}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -164,7 +164,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                         value={user.role}
                         onChange={(e) => updateRole(user, e.target.value as UserRole)}
                         disabled={user.id === currentUser?.id}
-                        className="bg-slate-100 border-none rounded-full px-4 py-2 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                        className="bg-[var(--muted)] border-none rounded-full px-4 py-2 text-xs font-bold text-foreground focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 dark:bg-slate-800"
                       >
                         <option value="admin">Admin</option>
                         <option value="manager">Manager</option>
@@ -174,15 +174,15 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                       {user.id !== currentUser?.id && (
                         <button 
                           onClick={() => openEditModal(user)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors text-xs font-bold"
+                          className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full transition-colors text-xs font-bold"
                         >
-                          Rechten / Edit
+                          Rechten / Bewerken
                         </button>
                       )}
                       {user.id !== currentUser?.id && currentUser?.role === 'admin' && (
                         <button 
                           onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                          className="p-2 text-[var(--muted-foreground)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-full transition-all"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -204,18 +204,18 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => !feedback && setIsModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-background/40 backdrop-blur-md"
             />
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-white w-full max-w-lg rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-full"
+              className="relative bg-card w-full max-w-lg rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-full border border-border"
             >
               <form onSubmit={handleSaveUser} className="p-6 sm:p-10 space-y-6 sm:space-y-8 overflow-y-auto flex-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-slate-900">{editingUserId ? 'Gebruiker Aanpassen' : 'Nieuwe Gebruiker'}</h3>
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">
+                  <h3 className="text-2xl font-bold text-foreground">{editingUserId ? 'Gebruiker Aanpassen' : 'Nieuwe Gebruiker'}</h3>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-[var(--muted)] rounded-full text-[var(--muted-foreground)] transition-colors">
                     <X size={24} />
                   </button>
                 </div>
@@ -235,27 +235,27 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                 ) : (
                   <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">Naam</label>
+                    <label className="text-sm font-bold text-[var(--muted-foreground)] ml-4">Naam</label>
                     <input 
                       required
                       type="text" 
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-6 py-4 bg-[var(--muted)] border border-border rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground outline-none dark:bg-slate-800"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">E-mail</label>
+                    <label className="text-sm font-bold text-[var(--muted-foreground)] ml-4">E-mail</label>
                     <input 
                       required
                       type="email" 
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-6 py-4 bg-[var(--muted)] border border-border rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground outline-none dark:bg-slate-800"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">
+                    <label className="text-sm font-bold text-[var(--muted-foreground)] ml-4">
                       {editingUserId ? 'Wachtwoord (leeg laten om te behouden)' : 'Wachtwoord'}
                     </label>
                     <input 
@@ -263,15 +263,15 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                       type="password" 
                       value={formData.password}
                       onChange={e => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-6 py-4 bg-[var(--muted)] border border-border rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground outline-none dark:bg-slate-800"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">Rol</label>
+                    <label className="text-sm font-bold text-[var(--muted-foreground)] ml-4">Rol</label>
                     <select 
                       value={formData.role}
                       onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-6 py-4 bg-[var(--muted)] border border-border rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground outline-none dark:bg-slate-800"
                     >
                       <option value="admin">Admin (Alle rechten)</option>
                       <option value="manager">Manager</option>
@@ -281,35 +281,35 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                   </div>
 
                   {formData.role !== 'admin' && formData.role !== 'viewer' && (
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <h4 className="text-sm font-bold text-slate-900 ml-4">Specifieke Rechten</h4>
-                      <div className="space-y-3 bg-slate-50 p-6 rounded-3xl">
-                        <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="space-y-4 pt-4 border-t border-border">
+                      <h4 className="text-sm font-bold text-foreground ml-4">Specifieke Rechten</h4>
+                      <div className="space-y-4 bg-[var(--muted)]/50 p-6 rounded-3xl border border-border">
+                        <label className="flex items-center gap-3 cursor-pointer group">
                           <input 
                             type="checkbox" 
                             checked={formData.permissions?.manageDeliveries || false}
                             onChange={e => setFormData({ ...formData, permissions: { ...formData.permissions, manageDeliveries: e.target.checked } })}
-                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-border bg-card"
                           />
-                          <span className="text-sm font-bold text-slate-700">Leveringen Beheren (Aanmaken/Bewerken)</span>
+                          <span className="text-sm font-bold text-foreground group-hover:text-indigo-600 transition-colors">Leveringen Beheren (Aanmaken/Bewerken)</span>
                         </label>
-                        <label className="flex items-center gap-3 cursor-pointer">
+                        <label className="flex items-center gap-3 cursor-pointer group">
                           <input 
                             type="checkbox" 
                             checked={formData.permissions?.sendTransportOrder || false}
                             onChange={e => setFormData({ ...formData, permissions: { ...formData.permissions, sendTransportOrder: e.target.checked } })}
-                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-border bg-card"
                           />
-                          <span className="text-sm font-bold text-slate-700">Mail Transport Order versturen</span>
+                          <span className="text-sm font-bold text-foreground group-hover:text-indigo-600 transition-colors">Mail Transport Order versturen</span>
                         </label>
-                        <label className="flex items-center gap-3 cursor-pointer">
+                        <label className="flex items-center gap-3 cursor-pointer group">
                           <input 
                             type="checkbox" 
                             checked={formData.permissions?.manageAddressBook || false}
                             onChange={e => setFormData({ ...formData, permissions: { ...formData.permissions, manageAddressBook: e.target.checked } })}
-                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-border bg-card"
                           />
-                          <span className="text-sm font-bold text-slate-700">Adressenboek Beheren</span>
+                          <span className="text-sm font-bold text-foreground group-hover:text-indigo-600 transition-colors">Adressenboek Beheren</span>
                         </label>
                       </div>
                     </div>
@@ -318,7 +318,7 @@ const UserManagement = ({ embedded = false }: { embedded?: boolean }) => {
                 )}
 
                 <div className="pt-4">
-                  <button disabled={!!feedback} type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all disabled:opacity-50">
+                  <button disabled={!!feedback} type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20 hover:bg-indigo-700 transition-all disabled:opacity-50">
                     {editingUserId ? 'Opslaan' : 'Gebruiker Toevoegen'}
                   </button>
                 </div>

@@ -437,7 +437,7 @@ Tel: ${company.phone} | Email: ${company.email}
         <div className="flex items-center gap-4">
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-6 py-3 bg-card border border-border text-foreground font-bold rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-6 py-3 bg-card border border-border text-foreground font-bold rounded-full hover:bg-[var(--muted)] transition-colors shadow-sm"
           >
             <Download size={18} />
             CSV Export
@@ -463,7 +463,7 @@ Tel: ${company.phone} | Email: ${company.email}
             placeholder="Filter op referentie..." 
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full pl-12 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500 text-foreground"
+            className="w-full pl-12 pr-4 py-2 bg-[var(--muted)] border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500 text-foreground"
           />
         </div>
         <select
@@ -476,7 +476,7 @@ Tel: ${company.phone} | Email: ${company.email}
           <option value="container">Container</option>
           <option value="exworks">Ex-Works</option>
         </select>
-        <button className="flex items-center gap-2 px-6 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full border border-border transition-all">
+        <button className="flex items-center gap-2 px-6 py-2 text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)] rounded-full border border-border transition-all">
           <Filter size={18} />
           <span>Filters</span>
         </button>
@@ -487,7 +487,7 @@ Tel: ${company.phone} | Email: ${company.email}
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-border">
+              <tr className="bg-[var(--muted)] border-b border-border">
                 <th className="px-8 py-5 w-10">
                   <input 
                     type="checkbox" 
@@ -530,14 +530,14 @@ Tel: ${company.phone} | Email: ${company.email}
                   const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
                   
                   return (
-                <tr 
-                  key={delivery.id} 
-                  className={cn(
-                    "hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group",
-                    selectedIds.includes(delivery.id) ? "bg-indigo-50/50 dark:bg-indigo-900/10" : ""
-                  )}
-                  onClick={() => handleOpenModal(delivery)}
-                >
+                  <tr 
+                    key={delivery.id} 
+                    className={cn(
+                      "hover:bg-[var(--muted)]/50 transition-colors cursor-pointer group",
+                      selectedIds.includes(delivery.id) ? "bg-indigo-50/50 dark:bg-indigo-900/10" : ""
+                    )}
+                    onClick={() => handleOpenModal(delivery)}
+                  >
                   <td className="px-8 py-6" onClick={e => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
@@ -556,8 +556,8 @@ Tel: ${company.phone} | Email: ${company.email}
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{delivery.reference}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">#{delivery.id.substring(0, 6).toUpperCase()}</span>
+                      <span className="text-sm font-bold text-foreground">{delivery.reference}</span>
+                      <span className="text-[10px] text-[var(--muted-foreground)] font-mono bg-[var(--muted)] px-1.5 py-0.5 rounded">#{delivery.id.substring(0, 6).toUpperCase()}</span>
                     </div>
                     <div className="flex flex-col gap-0.5 mt-1">
                       {delivery.containerNumber && (
@@ -601,7 +601,7 @@ Tel: ${company.phone} | Email: ${company.email}
                             key={step}
                             className={cn(
                               "h-1.5 flex-1 rounded-full",
-                              idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600 dark:bg-indigo-500") : "bg-slate-100 dark:bg-slate-800"
+                              idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600 dark:bg-indigo-500") : "bg-[var(--muted)]"
                             )}
                           />
                         ))}
@@ -669,9 +669,9 @@ Tel: ${company.phone} | Email: ${company.email}
                                  });
                                  
                                  // 3. Update Main Delivery (mark as being handled by YMS)
-                                 dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 }); // Moved to YMS handling phase
+                                  dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 }); // Moved to YMS handling phase
                              }}
-                            className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-full hover:bg-slate-800 transition-all uppercase tracking-wider flex items-center gap-1.5 shadow-lg"
+                            className="px-3 py-1.5 bg-foreground text-background text-[10px] font-bold rounded-full hover:opacity-90 transition-all uppercase tracking-wider flex items-center gap-1.5 shadow-lg"
                           >
                             <MapPin size={12} />
                             {delivery.dockId ? `Dock ${delivery.dockId}` : 'Aanmelden'}
@@ -710,7 +710,7 @@ Tel: ${company.phone} | Email: ${company.email}
         
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="px-8 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-border flex items-center justify-between">
+          <div className="px-8 py-4 bg-[var(--muted)] dark:bg-slate-800/50 border-t border-border flex items-center justify-between">
             <span className="text-sm font-medium text-slate-500">
               Pagina {currentPage} van {totalPages}
             </span>
@@ -718,14 +718,14 @@ Tel: ${company.phone} | Email: ${company.email}
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-card border border-border rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-card border border-border rounded-full hover:bg-[var(--muted)] dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Vorige
               </button>
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-card border border-border rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-card border border-border rounded-full hover:bg-[var(--muted)] dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Volgende
               </button>
@@ -741,7 +741,7 @@ Tel: ${company.phone} | Email: ${company.email}
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-8 border border-slate-700 backdrop-blur-md"
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-foreground text-background px-8 py-4 rounded-full shadow-2xl flex items-center gap-8 border border-border backdrop-blur-md"
           >
             <div className="flex items-center gap-3 border-r border-slate-700 pr-8">
               <span className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-bold">
@@ -778,7 +778,7 @@ Tel: ${company.phone} | Email: ${company.email}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-background/40 backdrop-blur-sm"
             />
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -801,7 +801,7 @@ Tel: ${company.phone} | Email: ${company.email}
                 </div>
 
                 {editingDelivery && (
-                  <div className="flex gap-4 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full w-fit mb-6 shrink-0">
+                  <div className="flex gap-4 p-1.5 bg-[var(--muted)] rounded-full w-fit mb-6 shrink-0">
                     <button
                       type="button"
                       onClick={() => setActiveModalTab('details')}
@@ -861,7 +861,7 @@ Tel: ${company.phone} | Email: ${company.email}
                       value={formData.reference}
                       onChange={e => setFormData({ ...formData, reference: e.target.value })}
                       placeholder="Bijv. CONT-2024-001"
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground"
+                      className="w-full px-6 py-4 bg-[var(--muted)] dark:bg-slate-800 border-none rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground"
                     />
                   </div>
 
@@ -888,34 +888,34 @@ Tel: ${company.phone} | Email: ${company.email}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">ETD</label>
-                        <input type="date" value={formData.etd} onChange={e => setFormData({ ...formData, etd: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="date" value={formData.etd} onChange={e => setFormData({ ...formData, etd: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">ETA Port</label>
-                        <input type="date" value={formData.etaPort} onChange={e => setFormData({ ...formData, etaPort: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="date" value={formData.etaPort} onChange={e => setFormData({ ...formData, etaPort: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn *</label>
-                        <input required type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input required type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Port of Arrival</label>
-                        <input type="text" value={formData.portOfArrival} onChange={e => setFormData({ ...formData, portOfArrival: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="text" value={formData.portOfArrival} onChange={e => setFormData({ ...formData, portOfArrival: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Bill of Lading</label>
-                        <input type="text" value={formData.billOfLading} onChange={e => setFormData({ ...formData, billOfLading: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="text" value={formData.billOfLading} onChange={e => setFormData({ ...formData, billOfLading: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Containernummer</label>
-                        <input type="text" value={formData.containerNumber} onChange={e => setFormData({ ...formData, containerNumber: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="text" value={formData.containerNumber} onChange={e => setFormData({ ...formData, containerNumber: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Transporteur (Last Mile)</label>
                         <select 
                           value={formData.transporterId}
                           onChange={e => setFormData({ ...formData, transporterId: e.target.value })}
-                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                          className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
                         >
                           <option value="">Kies transporteur...</option>
                           {addressBook?.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -926,14 +926,14 @@ Tel: ${company.phone} | Email: ${company.email}
                     <>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">ETA Magazijn *</label>
-                        <input required type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input required type="date" value={formData.etaWarehouse} onChange={e => setFormData({ ...formData, etaWarehouse: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Transporteur</label>
                         <select 
                           value={formData.transporterId}
                           onChange={e => setFormData({ ...formData, transporterId: e.target.value })}
-                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                          className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
                         >
                           <option value="">Kies transporteur...</option>
                           {addressBook?.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -941,14 +941,14 @@ Tel: ${company.phone} | Email: ${company.email}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Aantal Pallets</label>
-                        <input type="number" value={formData.palletCount} onChange={e => setFormData({ ...formData, palletCount: parseInt(e.target.value) })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="number" value={formData.palletCount} onChange={e => setFormData({ ...formData, palletCount: parseInt(e.target.value) })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Type Pallets</label>
                         <select 
                           value={formData.palletType || 'EUR'}
                           onChange={e => setFormData({ ...formData, palletType: e.target.value })}
-                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                          className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
                         >
                           <option value="EUR">EUR</option>
                           <option value="BLOK">BLOK</option>
@@ -956,7 +956,7 @@ Tel: ${company.phone} | Email: ${company.email}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Gewicht (kg)</label>
-                        <input type="number" value={formData.weight || ''} onChange={e => setFormData({ ...formData, weight: parseFloat(e.target.value) })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="number" value={formData.weight || ''} onChange={e => setFormData({ ...formData, weight: parseFloat(e.target.value) })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2 flex items-center gap-4 pt-8">
                         <label className="text-sm font-bold text-slate-700 ml-4">Pallet Ruil</label>
@@ -964,18 +964,18 @@ Tel: ${company.phone} | Email: ${company.email}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Land van laden</label>
-                        <input type="text" value={formData.loadingCountry} onChange={e => setFormData({ ...formData, loadingCountry: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="text" value={formData.loadingCountry} onChange={e => setFormData({ ...formData, loadingCountry: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Stad van laden</label>
-                        <input type="text" value={formData.loadingCity} onChange={e => setFormData({ ...formData, loadingCity: e.target.value })} className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
+                        <input type="text" value={formData.loadingCity} onChange={e => setFormData({ ...formData, loadingCity: e.target.value })} className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-4">Soort lading</label>
                         <select 
                           value={formData.cargoType}
                           onChange={e => setFormData({ ...formData, cargoType: e.target.value })}
-                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
+                          className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500 appearance-none"
                         >
                           <option value="Dry">Droog</option>
                           <option value="Cool">Koel</option>
@@ -988,7 +988,7 @@ Tel: ${company.phone} | Email: ${company.email}
                           type="text" 
                           value={formData.loadingTime || ''} 
                           onChange={e => setFormData({ ...formData, loadingTime: e.target.value })} 
-                          className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
+                          className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
                           placeholder="Bijv. 09:00 - 17:00"
                         />
                       </div>
@@ -1004,7 +1004,7 @@ Tel: ${company.phone} | Email: ${company.email}
                         step="0.01"
                         value={formData.transportCost || ''} 
                         onChange={e => setFormData({ ...formData, transportCost: e.target.value ? parseFloat(e.target.value) : undefined })} 
-                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
+                        className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-full focus:ring-2 focus:ring-indigo-500" 
                         placeholder="Bijv. 450.00"
                       />
                     </div>
@@ -1015,12 +1015,12 @@ Tel: ${company.phone} | Email: ${company.email}
                     <textarea 
                       value={formData.notes}
                       onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 min-h-[100px] text-foreground"
+                      className="w-full px-6 py-4 bg-[var(--muted)] border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 min-h-[100px] text-foreground"
                     />
                   </div>
 
                   {currentModalDelivery && (
-                    <div className="space-y-4 col-span-2 bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[2rem]">
+                    <div className="space-y-4 col-span-2 bg-[var(--muted)] dark:bg-slate-800/50 p-8 rounded-[2rem]">
                       <div className="flex items-center justify-between">
                         <h4 className="text-lg font-bold text-foreground">Documenten Beheer</h4>
                         <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Klik om status te wijzigen</span>
@@ -1058,7 +1058,7 @@ Tel: ${company.phone} | Email: ${company.email}
                   <div className="space-y-3">
                     {currentModalDelivery?.auditTrail?.length ? (
                       currentModalDelivery.auditTrail.map((entry, idx) => (
-                        <div key={idx} className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-border">
+                        <div key={idx} className="flex gap-4 p-4 bg-[var(--muted)] dark:bg-slate-800/50 rounded-2xl border border-border">
                           <div className="w-10 h-10 bg-card rounded-full flex items-center justify-center shrink-0 border border-border">
                             <History size={16} className="text-slate-400" />
                           </div>

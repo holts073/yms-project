@@ -47,18 +47,18 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
-  <button
-    onClick={onClick}
-    className={cn(
-      "flex items-center gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
-      active 
-        ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-100 font-semibold shadow-sm" 
-        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-    )}
-  >
-    <Icon size={22} className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-500"} />
-    <span className="text-sm tracking-wide">{label}</span>
-  </button>
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
+        active 
+          ? "bg-[var(--accent)] text-[var(--accent-foreground)] font-semibold shadow-sm" 
+          : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]"
+      )}
+    >
+      <Icon size={22} className={active ? "text-[var(--accent-foreground)]" : "text-slate-400 dark:text-slate-500"} />
+      <span className="text-sm tracking-wide">{label}</span>
+    </button>
 );
 
 const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, onToggle }: any) => {
@@ -69,12 +69,12 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
         className={cn(
           "flex items-center justify-between gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
           active 
-            ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-100 font-semibold shadow-sm" 
-            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            ? "bg-[var(--accent)] text-[var(--accent-foreground)] font-semibold shadow-sm" 
+            : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]"
         )}
       >
         <div className="flex items-center gap-4">
-          <Icon size={22} className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-500"} />
+          <Icon size={22} className={active ? "text-[var(--accent-foreground)]" : "text-slate-400 dark:text-slate-500"} />
           <span className="text-sm tracking-wide">{label}</span>
         </div>
         <ChevronRight size={16} className={cn("transition-transform duration-300", isOpen && "rotate-90")} />
@@ -89,19 +89,19 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           >
             <div className="py-2 px-4 space-y-1 mt-1">
               {items.map((item: any) => (
-                <button
-                  key={item.id}
-                  onClick={() => onSelect(item.id)}
-                  className={cn(
-                    "flex items-center gap-3 w-full px-6 py-3 rounded-full text-sm transition-all",
-                    item.active 
-                      ? "text-indigo-700 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-900/20" 
-                      : "text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                  )}
-                >
-                  <span className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-indigo-600 dark:bg-indigo-400" : "bg-slate-400 dark:bg-slate-600")} />
-                  {item.label}
-                </button>
+                  <button
+                    key={item.id}
+                    onClick={() => onSelect(item.id)}
+                    className={cn(
+                      "flex items-center gap-3 w-full px-6 py-3 rounded-full text-sm transition-all",
+                      item.active 
+                        ? "text-[var(--accent-foreground)] font-bold bg-[var(--accent)]/50" 
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-[var(--muted)]/50"
+                    )}
+                  >
+                    <span className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-[var(--accent-foreground)]" : "bg-border")} />
+                    {item.label}
+                  </button>
               ))}
             </div>
           </motion.div>
@@ -307,17 +307,17 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
         </nav>
 
         <div className="mt-auto pt-6 border-t border-border">
-          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-[1.5rem] mb-4 mt-4 transition-colors">
-            <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-700 dark:text-indigo-300">
+          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--muted)] rounded-[1.5rem] mb-4 mt-4 transition-colors">
+            <div className="w-10 h-10 bg-[var(--accent)] rounded-full flex items-center justify-center text-[var(--accent-foreground)]">
               <UserIcon size={20} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{currentUser.name}</p>
-              <p className="text-xs text-slate-500 truncate capitalize">{currentUser.role}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate capitalize">{currentUser.role}</p>
             </div>
             <button 
               onClick={toggleTheme}
-              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500"
+              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-slate-400"
             >
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>

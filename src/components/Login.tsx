@@ -55,8 +55,8 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-8 font-sans">
-      <div className="w-full max-w-6xl grid md:grid-cols-2 bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden min-h-[600px]">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8 font-sans">
+      <div className="w-full max-w-6xl grid md:grid-cols-2 bg-card rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden min-h-[600px] border border-border">
         
         {/* Left Side - Form */}
         <div className="p-8 sm:p-14 flex flex-col justify-center relative">
@@ -66,44 +66,44 @@ export const Login = () => {
             className="max-w-md w-full mx-auto"
           >
             <div className="flex items-center gap-3 mb-12">
-              <img src="/logo.jfif" alt="ILG Logo" className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-indigo-200" />
+              <img src="/logo.jfif" alt="ILG Logo" className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-indigo-100 dark:shadow-indigo-900/40" />
 
-              <span className="text-2xl font-black tracking-tight text-slate-900">ILG Logistics & YMS Platform</span>
+              <span className="text-2xl font-black tracking-tight text-foreground">ILG Logistics & YMS Platform</span>
             </div>
 
-            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Project Logistics & YMS</h1>
-            <p className="text-slate-500 mb-10 text-lg">Beheer je volledige supply chain en yard operaties.</p>
+            <h1 className="text-4xl font-bold text-foreground mb-2 tracking-tight">Project Logistics & YMS</h1>
+            <p className="text-[var(--muted-foreground)] mb-10 text-lg">Beheer je volledige supply chain en yard operaties.</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2 relative">
-                <label className="text-sm font-bold text-slate-700 ml-4">E-mailadres</label>
+                <label className="text-sm font-bold text-[var(--muted-foreground)] ml-4">E-mailadres</label>
                 <div className="relative">
-                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]/50" size={20} />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="naam@ilgfood.com"
-                    className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 transition-shadow text-slate-700 font-medium"
+                    className="w-full pl-14 pr-6 py-4 bg-[var(--muted)]/50 border border-border rounded-full focus:ring-2 focus:ring-indigo-500 transition-shadow text-foreground font-medium outline-none dark:bg-slate-800"
                   />
                 </div>
               </div>
 
               <div className="space-y-2 relative">
                 <div className="flex justify-between items-center ml-4 mr-4">
-                  <label className="text-sm font-bold text-slate-700">Wachtwoord</label>
-                  <button type="button" onClick={() => setShowResetModal(true)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors">Wachtwoord vergeten?</button>
+                  <label className="text-sm font-bold text-[var(--muted-foreground)]">Wachtwoord</label>
+                  <button type="button" onClick={() => setShowResetModal(true)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 hover:underline transition-colors">Wachtwoord vergeten?</button>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]/50" size={20} />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 transition-shadow text-slate-700 font-medium font-mono"
+                    className="w-full pl-14 pr-6 py-4 bg-[var(--muted)]/50 border border-border rounded-full focus:ring-2 focus:ring-indigo-500 transition-shadow text-foreground font-medium font-mono outline-none dark:bg-slate-800"
                   />
                 </div>
               </div>
@@ -122,7 +122,7 @@ export const Login = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 group mt-8 disabled:opacity-70 disabled:hover:scale-100"
+                className="w-full py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg shadow-indigo-100 dark:shadow-indigo-900/40 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 group mt-8 disabled:opacity-70 disabled:hover:scale-100"
               >
                 {isLoading ? 'Bezig met inloggen...' : 'Inloggen'}
                 {!isLoading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
@@ -130,7 +130,7 @@ export const Login = () => {
             </form>
           </motion.div>
           
-          <div className="absolute bottom-8 left-14 text-sm font-bold text-slate-400 flex items-center gap-2">
+          <div className="absolute bottom-8 left-14 text-sm font-bold text-[var(--muted-foreground)]/50 flex items-center gap-2">
             <ShieldCheck size={16} className="text-emerald-500" />
             Beveiligde SSL Verbinding
           </div>
@@ -174,14 +174,14 @@ export const Login = () => {
       
       {showResetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowResetModal(false)} />
+          <div className="absolute inset-0 bg-background/40 backdrop-blur-md" onClick={() => setShowResetModal(false)} />
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full"
+            className="relative bg-card border border-border rounded-3xl shadow-2xl p-8 max-w-sm w-full"
           >
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Wachtwoord Resetten</h3>
-            <p className="text-slate-500 text-sm mb-6">Vul je e-mailadres in om een tijdelijk wachtwoord te ontvangen.</p>
+            <h3 className="text-xl font-bold text-foreground mb-2">Wachtwoord Resetten</h3>
+            <p className="text-[var(--muted-foreground)] text-sm mb-6">Vul je e-mailadres in om een tijdelijk wachtwoord te ontvangen.</p>
             
             <form onSubmit={handleResetPassword} className="space-y-4">
               <input
@@ -190,7 +190,7 @@ export const Login = () => {
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
                 placeholder="naam@ilgfood.com"
-                className="w-full px-6 py-3 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                className="w-full px-6 py-3 bg-[var(--muted)]/50 border border-border rounded-full focus:ring-2 focus:ring-indigo-500 text-sm font-medium text-foreground outline-none dark:bg-slate-800"
               />
               
               {resetMessage && (
@@ -200,10 +200,10 @@ export const Login = () => {
               )}
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowResetModal(false)} className="flex-1 py-3 hover:bg-slate-50 text-slate-600 font-bold rounded-full text-sm">
+                <button type="button" onClick={() => setShowResetModal(false)} className="flex-1 py-3 hover:bg-[var(--muted)] text-[var(--muted-foreground)] font-bold rounded-full text-sm transition-colors">
                   Annuleren
                 </button>
-                <button type="submit" disabled={isResetting} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-sm shadow-md disabled:opacity-70">
+                <button type="submit" disabled={isResetting} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-sm shadow-md shadow-indigo-100 dark:shadow-indigo-900/20 disabled:opacity-70 transition-all">
                   {isResetting ? 'Verzenden...' : 'Reset'}
                 </button>
               </div>

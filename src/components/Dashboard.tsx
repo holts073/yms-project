@@ -329,13 +329,13 @@ Tel: ${company.phone} | Email: ${company.email}
           className="bg-card p-6 rounded-[2rem] border border-border shadow-sm hover:border-indigo-200 dark:hover:border-indigo-800 transition-all text-left group"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-100 transition-colors">
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 transition-colors">
               <MapPin size={20} />
             </div>
-            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">YMS Aankomst</span>
+            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">YMS Aankomst</span>
           </div>
           <p className="text-3xl font-bold text-foreground">{arrivalsNoDock.length}</p>
-          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Aangemeld, Geen Dock Toegewezen</p>
+          <p className="text-muted-foreground text-[11px] mt-1">Aangemeld, Geen Dock Toegewezen</p>
         </button>
 
         <button 
@@ -343,13 +343,13 @@ Tel: ${company.phone} | Email: ${company.email}
           className="bg-card p-6 rounded-[2rem] border border-border shadow-sm hover:border-rose-200 dark:hover:border-rose-800 transition-all text-left group"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl group-hover:bg-rose-100 transition-colors">
+            <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl group-hover:bg-rose-100 dark:group-hover:bg-rose-900/30 transition-colors">
               <Clock size={20} />
             </div>
-            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vertragingen</span>
+            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">Vertragingen</span>
           </div>
           <p className="text-3xl font-bold text-foreground">{plannedDockDelays.length}</p>
-          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Gepland met Dock, Niet gearriveerd</p>
+          <p className="text-muted-foreground text-[11px] mt-1">Gepland met Dock, Niet gearriveerd</p>
         </button>
 
         <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm">
@@ -361,9 +361,9 @@ Tel: ${company.phone} | Email: ${company.email}
           </div>
           <div className="flex items-end gap-2">
             <p className="text-3xl font-bold text-foreground">{dockOccupancy}%</p>
-            <p className="text-slate-400 text-sm font-bold mb-1">({occupiedDocks}/{totalDocks})</p>
+            <p className="text-muted-foreground text-sm font-bold mb-1">({occupiedDocks}/{totalDocks})</p>
           </div>
-          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
+          <div className="w-full h-1.5 bg-[var(--muted)] rounded-full mt-3 overflow-hidden">
             <div 
               className={cn(
                 "h-full transition-all duration-1000",
@@ -427,7 +427,7 @@ Tel: ${company.phone} | Email: ${company.email}
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-border">
+                  <tr className="bg-[var(--muted)] border-b border-border">
                     <th 
                       className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                       onClick={() => handleSort('reference')}
@@ -461,9 +461,9 @@ Tel: ${company.phone} | Email: ${company.email}
                   {displayedDeliveries.map((delivery) => {
                     const supplier = state?.addressBook?.suppliers.find(s => s.id === delivery.supplierId);
                     return (
-                    <tr 
-                      key={delivery.id} 
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                      <tr 
+                        key={delivery.id} 
+                        className="hover:bg-[var(--muted)]/50 transition-colors cursor-pointer"
                       onClick={() => onNavigate?.('deliveries', undefined, delivery.id)}
                     >
                       <td className="px-8 py-6">
@@ -483,12 +483,12 @@ Tel: ${company.phone} | Email: ${company.email}
                               )}
                             </div>
                             <div className="flex flex-col gap-0.5 mt-0.5">
-                              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">{delivery.type} • {supplier?.name || 'Onbekend'}</p>
+                              <p className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wider">{delivery.type} • {supplier?.name || 'Onbekend'}</p>
                               {delivery.containerNumber && (
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Cont: <span className="text-slate-900 dark:text-slate-100">{delivery.containerNumber}</span></p>
+                                <p className="text-[11px] text-[var(--muted-foreground)] font-medium">Cont: <span className="text-foreground">{delivery.containerNumber}</span></p>
                               )}
                               {delivery.type === 'container' && delivery.billOfLading && (
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">B/L: <span className="text-slate-900 dark:text-slate-100">{delivery.billOfLading}</span></p>
+                                <p className="text-[11px] text-[var(--muted-foreground)] font-medium">B/L: <span className="text-foreground">{delivery.billOfLading}</span></p>
                               )}
                             </div>
                           </div>
@@ -539,7 +539,7 @@ Tel: ${company.phone} | Email: ${company.email}
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                        <span className="text-sm font-medium text-muted-foreground">
                           {delivery.etaWarehouse ? formatDate(delivery.etaWarehouse) : (delivery.eta ? formatDate(delivery.eta) : '-')}
                         </span>
                       </td>
@@ -597,7 +597,7 @@ Tel: ${company.phone} | Email: ${company.email}
                                  dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 });
                                  toast.success('Vracht is aangemeld bij YMS module.');
                               }}
-                              className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full hover:bg-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"
+                              className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all uppercase tracking-wider flex items-center gap-1.5"
                             >
                               <MapPin size={12} />
                               Aanmelden

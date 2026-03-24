@@ -25,39 +25,39 @@ const AuditLog = ({ onNavigate }: { onNavigate?: (tab: string, reference?: strin
     <div className="space-y-10">
       <header className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Audit Log</h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Een volledig overzicht van alle wijzigingen en acties binnen het systeem.</p>
+          <h2 className="text-3xl font-bold text-foreground tracking-tight">Audit Log</h2>
+          <p className="text-[var(--muted-foreground)] mt-1">Een volledig overzicht van alle wijzigingen en acties binnen het systeem.</p>
         </div>
         <div className="relative w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
           <input 
             type="text" 
             placeholder="Zoek op tijd, gebruiker, actie, ref..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-colors"
+            className="w-full pl-12 pr-4 py-3 bg-[var(--muted)] border border-border rounded-full text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm text-foreground placeholder:text-[var(--muted-foreground)] transition-colors"
           />
         </div>
       </header>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition-colors">
+      <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left font-sans">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                <th className="px-10 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tijdstip</th>
-                <th className="px-10 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gebruiker</th>
-                <th className="px-10 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actie</th>
-                <th className="px-10 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Referentie</th>
-                <th className="px-10 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Details</th>
+              <tr className="bg-[var(--muted)]/50 border-b border-border">
+                <th className="px-10 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Tijdstip</th>
+                <th className="px-10 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Gebruiker</th>
+                <th className="px-10 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Actie</th>
+                <th className="px-10 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Referentie</th>
+                <th className="px-10 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-border">
               {filteredLogs.length > 0 ? filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
+                <tr key={log.id} className="hover:bg-[var(--muted)]/40 transition-colors group">
                   <td className="px-10 py-6">
-                    <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                      <Calendar size={16} className="text-slate-400 dark:text-slate-500" />
+                    <div className="flex items-center gap-3 text-[var(--muted-foreground)]">
+                      <Calendar size={16} className="text-[var(--muted-foreground)]" />
                       <span className="text-sm font-medium">
                         {format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm', { locale: nl })}
                       </span>
@@ -68,7 +68,7 @@ const AuditLog = ({ onNavigate }: { onNavigate?: (tab: string, reference?: strin
                       <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center">
                         <UserIcon size={14} />
                       </div>
-                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{log.user}</span>
+                      <span className="text-sm font-bold text-foreground">{log.user}</span>
                     </div>
                   </td>
                   <td className="px-10 py-6">
@@ -100,13 +100,13 @@ const AuditLog = ({ onNavigate }: { onNavigate?: (tab: string, reference?: strin
                         })()}
                       </div>
                     ) : (
-                      <span className="text-sm text-slate-400 dark:text-slate-500">-</span>
+                      <span className="text-sm text-[var(--muted-foreground)]">-</span>
                     )}
                   </td>
                   <td className="px-10 py-6">
-                    <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center gap-3 text-[var(--muted-foreground)]">
                       <span className="text-sm font-medium">{log.details}</span>
-                      <ArrowRight size={14} className="text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                      <ArrowRight size={14} className="text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
                     </div>
                   </td>
                 </tr>
@@ -114,10 +114,10 @@ const AuditLog = ({ onNavigate }: { onNavigate?: (tab: string, reference?: strin
                 <tr>
                   <td colSpan={5} className="px-10 py-20 text-center">
                     <div className="flex flex-col items-center gap-4">
-                      <div className="p-6 bg-slate-50 text-slate-300 rounded-full">
+                      <div className="p-6 bg-[var(--muted)] text-[var(--muted-foreground)] rounded-full">
                         <History size={48} />
                       </div>
-                      <p className="text-slate-400 font-medium">Geen logs gevonden die voldoen aan de zoekterm.</p>
+                      <p className="text-[var(--muted-foreground)] font-medium">Geen logs gevonden die voldoen aan de zoekterm.</p>
                     </div>
                   </td>
                 </tr>

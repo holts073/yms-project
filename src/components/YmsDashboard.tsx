@@ -251,7 +251,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </select>
                 <div className="flex items-center gap-2 bg-card px-2 py-1 rounded-lg relative">
-                    <button onClick={() => changeDate(-1)} className="p-1 hover:bg-background rounded transition-colors text-slate-400 hover:text-indigo-600"><ChevronLeft size={14}/></button>
+                    <button onClick={() => changeDate(-1)} className="p-1 hover:bg-[var(--muted)] rounded transition-colors text-slate-400 hover:text-indigo-600"><ChevronLeft size={14}/></button>
                     <div className="relative group/datepicker">
                         <button 
                             onClick={() => (document.getElementById('yms-calendar-picker') as any)?.showPicker()}
@@ -260,8 +260,8 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                             <CalendarIcon size={14} className="text-slate-400" />
                             <div className="flex -space-x-1">
                                 {[1, 2, 3].map(i => (
-                                    <div key={i} className="w-5 h-5 rounded-full border-2 border-background bg-secondary flex items-center justify-center">
-                                        <Zap size={10} className="text-slate-400" />
+                                    <div key={i} className="w-5 h-5 rounded-full border-2 border-background bg-[var(--muted)] flex items-center justify-center">
+                                        <Zap size={10} className="text-[var(--muted-foreground)]" />
                                     </div>
                                 ))}
                             </div>
@@ -303,7 +303,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                     onClick={() => setActiveFilters(prev => prev.includes(f.id) ? prev.filter(x => x !== f.id) : [...prev, f.id])}
                     className={cn(
                         "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border",
-                        activeFilters.includes(f.id) ? f.color + " border-transparent scale-105 shadow-sm" : "bg-card text-slate-400 border-border hover:border-slate-300 dark:hover:border-slate-600 shadow-sm"
+                        activeFilters.includes(f.id) ? f.color + " border-transparent scale-105 shadow-sm" : "bg-card text-[var(--muted-foreground)] border-border hover:border-slate-300 dark:hover:border-slate-600 shadow-sm"
                     )}
                 >
                     {f.label}
@@ -326,7 +326,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
 
           <button
             onClick={toggleTheme}
-            className="p-2 bg-secondary text-foreground rounded-xl hover:bg-secondary-hover transition-all border border-transparent dark:border-slate-700"
+            className="p-2 bg-[var(--muted)] text-foreground rounded-xl hover:bg-[var(--muted)]/80 transition-all border border-transparent dark:border-slate-700"
           >
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
@@ -341,7 +341,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
 
           <button
             onClick={() => window.location.href = `#/yms-public?warehouseId=${selectedWarehouseId}`} 
-            className="flex items-center gap-2 px-6 py-2 bg-secondary text-foreground rounded-xl font-semibold hover:bg-secondary-hover transition-all border border-border"
+            className="flex items-center gap-2 px-6 py-2 bg-[var(--muted)] text-foreground rounded-xl font-semibold hover:bg-[var(--muted)]/80 transition-all border border-border"
           >
             <Zap size={20} /> Monitor
           </button>
@@ -349,7 +349,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
           {view === 'planning' && (
             <button
                 onClick={() => setViewMode(viewMode === 'list' ? 'timeline' : 'list')}
-                className="px-4 py-2 bg-secondary text-foreground rounded-xl font-bold hover:bg-secondary-hover transition-all border border-border"
+                className="px-4 py-2 bg-[var(--muted)] text-foreground rounded-xl font-bold hover:bg-[var(--muted)]/80 transition-all border border-border"
             >
                 {viewMode === 'list' ? 'Timeline' : 'Lijst'}
             </button>
@@ -359,7 +359,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
             onClick={() => setShowQuickAssign(!showQuickAssign)}
             className={cn(
                 "flex items-center gap-2 px-6 py-2 rounded-xl font-bold transition-all shadow-md active:scale-95",
-                showQuickAssign ? "bg-indigo-600 text-white" : "bg-secondary text-foreground border border-border"
+                showQuickAssign ? "bg-indigo-600 text-white" : "bg-[var(--muted)] text-foreground border border-border"
             )}
           >
             <Truck size={20} /> Quick-Assign
@@ -414,7 +414,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
               <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               Aangemelde Leveringen (Wacht op toewijzing)
             </h3>
-            <span className="px-3 py-1 bg-secondary text-foreground text-[10px] font-black rounded-full uppercase">
+            <span className="px-3 py-1 bg-[var(--muted)] text-foreground text-[10px] font-black rounded-full uppercase">
               {currentDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId && !d.waitingAreaId).length} Voertuigen
             </span>
           </div>
@@ -425,14 +425,14 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                   return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
               })
               .map(delivery => (
-              <div key={delivery.id} className="bg-secondary border border-border rounded-2xl p-4 flex items-center justify-between group hover:border-indigo-300 dark:hover:border-indigo-800 transition-all shadow-sm">
+              <div key={delivery.id} className="bg-[var(--muted)] border border-border rounded-2xl p-4 flex items-center justify-between group hover:border-indigo-300 dark:hover:border-indigo-800 transition-all shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-card rounded-xl text-amber-600 dark:text-amber-500 shadow-sm border border-border">
                     <Truck size={20} />
                   </div>
                   <div>
                     <p className="font-bold text-foreground text-sm">{delivery.reference}</p>
-                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold uppercase">{delivery.licensePlate || 'NR ONBEKEND'}</p>
+                    <p className="text-[10px] font-mono text-[var(--muted-foreground)] font-bold uppercase">{delivery.licensePlate || 'NR ONBEKEND'}</p>
                     <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mt-0.5 whitespace-nowrap">
                         ETA: {new Date(delivery.scheduledTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                     </p>
@@ -458,9 +458,9 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                                 onClick={() => handleAssignToDock(delivery, dk.id)} 
                                 className={cn(
                                     "p-2 rounded-xl text-xs font-bold transition-all relative border",
-                                    isOccupied ? "bg-secondary text-slate-300 border-border cursor-not-allowed" : 
+                                    isOccupied ? "bg-[var(--muted)] text-slate-300 border-border cursor-not-allowed" : 
                                     isTempMatch ? "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-600 hover:text-white" : 
-                                    "bg-secondary text-slate-400 border-border hover:bg-indigo-600 hover:text-white"
+                                    "bg-[var(--muted)] text-slate-400 border-border hover:bg-indigo-600 hover:text-white"
                                 )}
                             >
                                 {dk.name.replace('Dock ', '')}
@@ -474,7 +474,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                     <p className="text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-widest italic">Wachtplaatsen</p>
                     <div className="grid grid-cols-5 gap-2">
                       {currentWaitingAreas.filter(wa => wa.status === 'Available').map(wa => (
-                        <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-secondary hover:bg-orange-600 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-border">{wa.id}</button>
+                        <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-[var(--muted)] hover:bg-orange-600 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-border">{wa.id}</button>
                       ))}
                     </div>
                   </div>
@@ -494,7 +494,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                 <div key={s} className={cn(
                   "px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap",
                                   s === 'EXPECTED' ? "bg-purple-50 dark:bg-purple-900/10 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-800" :
-                  s === 'PLANNED' ? "bg-secondary text-slate-600 dark:text-slate-400" :
+                  s === 'PLANNED' ? "bg-[var(--muted)] text-[var(--muted-foreground)]" :
                   s === 'GATE_IN' ? "bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400" :
                   s === 'IN_YARD' ? "bg-orange-50 dark:bg-orange-900/10 text-orange-700 dark:text-orange-400" :
                   s === 'DOCKED' ? "bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400" :
@@ -512,7 +512,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                     <div className="flex items-center gap-6">
                       <div className={`p-4 rounded-2xl ${
                         delivery.status === 'EXPECTED' ? 'bg-purple-50 dark:bg-purple-900/10 text-purple-400 dark:text-purple-500 border border-purple-100 dark:border-purple-800' :
-                        delivery.status === 'PLANNED' ? 'bg-secondary text-slate-400 dark:text-slate-500' :
+                        delivery.status === 'PLANNED' ? 'bg-[var(--muted)] text-[var(--muted-foreground)]' :
                         delivery.status === 'GATE_IN' ? 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400' :
                         delivery.status === 'IN_YARD' ? 'bg-orange-50 dark:bg-orange-900/10 text-orange-600 dark:text-orange-400' :
                         delivery.status === 'DOCKED' ? 'bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400' :
@@ -539,11 +539,11 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                           <span className="flex items-center gap-1 font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 rounded-md">
                             {delivery.direction === 'OUTBOUND' ? 'OUTBOUND (Laden)' : 'INBOUND (Lossen)'}
                           </span>
-                          <span className="flex items-center gap-1 bg-secondary px-2 rounded-md font-bold text-foreground">
+                          <span className="flex items-center gap-1 bg-[var(--muted)] px-2 rounded-md font-bold text-foreground">
                             {delivery.palletCount || 0} Pallets
                           </span>
                           <span className="flex items-center gap-1"><UserIcon size={14}/> {delivery.supplier}</span>
-                          <span className="flex items-center gap-1 font-mono bg-secondary px-2 rounded-md font-bold">{delivery.licensePlate || 'NR ONBEKEND'}</span>
+                          <span className="flex items-center gap-1 font-mono bg-[var(--muted)] px-2 rounded-md font-bold">{delivery.licensePlate || 'NR ONBEKEND'}</span>
                           {isFastLaneEligible(delivery) && (
                             <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-200">
                               <Zap size={10} /> Fast Lane Eligible
@@ -589,14 +589,14 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                                   }).map(dk => (
                                     <button key={dk.id} onClick={() => handleAssignToDock(delivery, dk.id)} className={cn(
                                       "p-2 rounded-lg text-xs font-bold transition-all",
-                                      dk.isFastLane ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-600 dark:hover:bg-amber-500 hover:text-white" : "bg-secondary hover:bg-indigo-600 hover:text-white"
+                                      dk.isFastLane ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-600 dark:hover:bg-amber-500 hover:text-white" : "bg-[var(--muted)] hover:bg-indigo-600 hover:text-white"
                                     )}>{dk.id} {dk.isFastLane && "⚡"}</button>
                                   ))}
                                 </div>
                                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 my-3 uppercase tracking-tighter">Wachtplaatsen (Actief)</p>
                                 <div className="grid grid-cols-5 gap-2">
                                   {currentWaitingAreas.filter(wa => wa.status === 'Available' && (wa.adminStatus === 'Active' || !wa.adminStatus)).map(wa => (
-                                    <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-secondary hover:bg-orange-600 hover:text-white rounded-lg text-xs font-bold transition-all">{wa.id}</button>
+                                    <button key={wa.id} onClick={() => handleAssignToWaitingArea(delivery, wa.id)} className="p-2 bg-[var(--muted)] hover:bg-orange-600 hover:text-white rounded-lg text-xs font-bold transition-all">{wa.id}</button>
                                   ))}
                                 </div>
                             </div>
@@ -611,7 +611,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                                 <p className="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-tighter italic">Kies Vrij Dock</p>
                                 <div className="grid grid-cols-4 gap-2">
                                   {currentDocks.filter(dk => dk.status === 'Available' && dk.allowedTemperatures.includes(delivery.temperature)).map(dk => (
-                                    <button key={dk.id} onClick={() => handleAssignToDock(delivery, dk.id)} className="p-2 bg-secondary hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-bold transition-all">{dk.id}</button>
+                                    <button key={dk.id} onClick={() => handleAssignToDock(delivery, dk.id)} className="p-2 bg-[var(--muted)] hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-bold transition-all">{dk.id}</button>
                                   ))}
                                 </div>
                               </div>
@@ -627,7 +627,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                           <button onClick={() => handleUpdateStatus(delivery, 'COMPLETED')} className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all flex items-center gap-2"><CheckCircle2 size={16} /> Gereed</button>
                         )}
                         {delivery.status === 'COMPLETED' && (
-                          <button onClick={() => handleUpdateStatus(delivery, 'GATE_OUT')} className="px-4 py-2 bg-secondary text-foreground rounded-xl font-bold text-sm hover:bg-secondary-hover transition-all flex items-center gap-2">Vertrokken</button>
+                          <button onClick={() => handleUpdateStatus(delivery, 'GATE_OUT')} className="px-4 py-2 bg-[var(--muted)] text-foreground rounded-xl font-bold text-sm hover:bg-[var(--muted)]/80 transition-all flex items-center gap-2">Vertrokken</button>
                         )}
                         <button onClick={() => { setEditingDelivery(delivery); setIsModalOpen(true); }} className="p-2 text-slate-400 hover:text-slate-600"><MoreVertical size={20} /></button>
                       </div>
@@ -643,8 +643,8 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
         ) : (
           <div className="flex-1 bg-card border border-border rounded-[2.5rem] overflow-hidden flex flex-col shadow-sm">
             <div className="flex-1 overflow-auto custom-scrollbar relative">
-              <div className="flex sticky top-0 z-20 bg-secondary border-b border-border">
-                <div className="w-40 flex-shrink-0 border-r border-border p-4 font-bold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-secondary">Docks</div>
+              <div className="flex sticky top-0 z-20 bg-[var(--muted)] border-b border-border">
+                <div className="w-40 flex-shrink-0 border-r border-border p-4 font-bold text-xs text-[var(--muted-foreground)] uppercase tracking-widest bg-[var(--muted)]">Docks</div>
                 {Array.from({ length: 16 }).map((_, i) => (
                   <div key={i} className="w-[200px] flex-shrink-0 p-4 border-r border-border text-sm font-bold text-foreground text-center">{i + 7}:00</div>
                 ))}
@@ -652,8 +652,8 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
 
               <div className="relative">
                 {currentDocks.map(dock => (
-                  <div key={dock.id} className={`flex border-b border-border group ${dock.status === 'Blocked' ? 'bg-secondary/50 grayscale' : ''}`}>
-                    <div className="w-40 flex-shrink-0 border-r border-border p-4 bg-secondary/50 group-hover:bg-secondary-hover transition-colors">
+                  <div key={dock.id} className={`flex border-b border-border group ${dock.status === 'Blocked' ? 'bg-[var(--muted)]/50 grayscale' : ''}`}>
+                    <div className="w-40 flex-shrink-0 border-r border-border p-4 bg-[var(--muted)]/50 group-hover:bg-[var(--muted)] transition-colors">
                       <div className="font-bold text-foreground flex justify-between items-center">
                           {dock.name}
                           {dock.status === 'Blocked' && <AlertCircle size={12} className="text-rose-500" />}
@@ -700,7 +700,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                             }}
                           >
                             <div 
-                                className="absolute right-0 top-0 bottom-0 w-2 hover:bg-indigo-500/10 cursor-ew-resize z-20 group-hover/card:bg-secondary transition-colors"
+                                className="absolute right-0 top-0 bottom-0 w-2 hover:bg-indigo-500/10 cursor-ew-resize z-20 group-hover/card:bg-[var(--muted)] transition-colors"
                                 onMouseDown={(e) => {
                                     e.stopPropagation();
                                     const startX = e.clientX;
@@ -729,7 +729,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                             <div className="flex justify-between items-start">
                               <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase ${
                                 delivery.status === 'DOCKED' ? 'bg-indigo-100 text-indigo-700' : 
-                                delivery.status === 'UNLOADING' || delivery.status === 'LOADING' ? 'bg-blue-100 text-blue-700' : 'bg-secondary text-slate-700'
+                                delivery.status === 'UNLOADING' || delivery.status === 'LOADING' ? 'bg-blue-100 text-blue-700' : 'bg-[var(--muted)] text-[var(--muted-foreground)]'
                               }`}>
                                 {getStatusLabel(delivery.status)}
                               </span>
@@ -771,7 +771,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                 showQuickAssign ? "translate-x-0 opacity-100" : "w-0 translate-x-12 opacity-0 pointer-events-none"
             )}
         >
-            <div className="p-6 border-b border-border bg-secondary flex items-center justify-between">
+            <div className="p-6 border-b border-border bg-[var(--muted)] flex items-center justify-between">
                 <div>
                     <h3 className="font-bold text-foreground">Quick-Assign</h3>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Wacht op Dock</p>
@@ -829,10 +829,10 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                     ))}
                 {currentDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId).length === 0 && (
                     <div className="py-20 text-center">
-                        <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4 border border-border shadow-inner">
+                        <div className="w-12 h-12 bg-[var(--muted)] rounded-full flex items-center justify-center mx-auto mb-4 border border-border shadow-inner">
                             <CheckCircle2 size={24} className="text-emerald-400" />
                         </div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Alles Toegewezen</p>
+                        <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-widest">Alles Toegewezen</p>
                     </div>
                 )}
             </div>
@@ -840,31 +840,31 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-background/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card rounded-[2.5rem] shadow-2xl w-full max-w-lg p-10 overflow-hidden relative border border-border">
             <h3 className="text-2xl font-bold mb-8 text-foreground">{editingDelivery?.id ? 'Bewerken' : 'Nieuwe Levering'}</h3>
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Referentie</label>
-                  <input type="text" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.reference || ''} onChange={(e) => setEditingDelivery({...editingDelivery, reference: e.target.value})} />
+                  <input type="text" className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.reference || ''} onChange={(e) => setEditingDelivery({...editingDelivery, reference: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Kenteken</label>
-                  <input type="text" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold uppercase tracking-wider text-foreground" value={editingDelivery?.licensePlate || ''} onChange={(e) => setEditingDelivery({...editingDelivery, licensePlate: e.target.value})} />
+                  <input type="text" className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold uppercase tracking-wider text-foreground" value={editingDelivery?.licensePlate || ''} onChange={(e) => setEditingDelivery({...editingDelivery, licensePlate: e.target.value})} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Leverancier</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.supplierId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, supplierId: e.target.value})}>
+                  <select className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.supplierId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, supplierId: e.target.value})}>
                     <option value="">Selecteer</option>
                     {state.addressBook.suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Transporteur</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.transporterId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, transporterId: e.target.value})}>
+                  <select className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.transporterId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, transporterId: e.target.value})}>
                     <option value="">Selecteer</option>
                     {state.addressBook.transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
@@ -873,7 +873,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Tijd (HH:mm)</label>
-                  <input type="time" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.scheduledTime ? new Date(editingDelivery.scheduledTime).toTimeString().substr(0, 5) : ''} onChange={(e) => {
+                  <input type="time" className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.scheduledTime ? new Date(editingDelivery.scheduledTime).toTimeString().substr(0, 5) : ''} onChange={(e) => {
                       const [h, m] = e.target.value.split(':');
                       const d = new Date(editingDelivery?.scheduledTime || `${selectedDate}T00:00:00Z`);
                       d.setHours(parseInt(h), parseInt(m), 0, 0);
@@ -882,7 +882,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Temperatuur</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.temperature || 'Droog'} onChange={(e) => setEditingDelivery({...editingDelivery, temperature: e.target.value as YmsTemperature})}>
+                  <select className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.temperature || 'Droog'} onChange={(e) => setEditingDelivery({...editingDelivery, temperature: e.target.value as YmsTemperature})}>
                     <option value="Droog">Droog</option>
                     <option value="Koel">Koel</option>
                     <option value="Vries">Vries</option>
@@ -892,27 +892,27 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Richting</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.direction || 'INBOUND'} onChange={(e) => setEditingDelivery({...editingDelivery, direction: e.target.value as 'INBOUND' | 'OUTBOUND'})}>
+                  <select className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.direction || 'INBOUND'} onChange={(e) => setEditingDelivery({...editingDelivery, direction: e.target.value as 'INBOUND' | 'OUTBOUND'})}>
                     <option value="INBOUND">Inbound (Lossen)</option>
                     <option value="OUTBOUND">Outbound (Laden)</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Pallets</label>
-                  <input type="number" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.palletCount || 0} onChange={(e) => setEditingDelivery({...editingDelivery, palletCount: parseInt(e.target.value) || 0})} />
+                  <input type="number" className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.palletCount || 0} onChange={(e) => setEditingDelivery({...editingDelivery, palletCount: parseInt(e.target.value) || 0})} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Aangedockt bij</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.dockId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, dockId: e.target.value ? parseInt(e.target.value) : undefined})}>
+                  <select className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.dockId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, dockId: e.target.value ? parseInt(e.target.value) : undefined})}>
                     <option value="">Geen</option>
                     {state.yms.docks.map(dk => <option key={dk.id} value={dk.id}>{dk.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Wachtplaats</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.waitingAreaId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, waitingAreaId: e.target.value ? parseInt(e.target.value) : undefined})}>
+                  <select className="w-full px-4 py-3 bg-[var(--muted)] dark:bg-slate-800 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-foreground" value={editingDelivery?.waitingAreaId || ''} onChange={(e) => setEditingDelivery({...editingDelivery, waitingAreaId: e.target.value ? parseInt(e.target.value) : undefined})}>
                     <option value="">Geen</option>
                     {state.yms.waitingAreas.map(wa => <option key={wa.id} value={wa.id}>Wachtplaats {wa.id}</option>)}
                   </select>
@@ -920,7 +920,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
               </div>
             </div>
             <div className="flex gap-4 mt-10">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-secondary text-foreground rounded-2xl font-bold hover:bg-secondary-hover transition-all">Annuleren</button>
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-[var(--muted)] text-foreground rounded-2xl font-bold hover:bg-[var(--muted)]/80 transition-all">Annuleren</button>
               <button onClick={() => handleSaveDelivery(editingDelivery!)} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20 active:scale-95 transition-all">Opslaan</button>
             </div>
           </motion.div>
@@ -936,8 +936,8 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
             </div>
             <div className="bg-card border border-border rounded-3xl overflow-hidden">
               <table className="w-full text-left">
-                <thead className="bg-secondary border-b border-border italic">
-                  <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <thead className="bg-[var(--muted)] border-b border-border italic">
+                  <tr className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-widest">
                     <th className="px-6 py-4">Datum</th>
                     <th className="px-6 py-4">Leverancier</th>
                     <th className="px-6 py-4">Referentie</th>
@@ -945,7 +945,7 @@ export default function YmsDashboard({ view = 'planning', onNavigate }: { view?:
                 </thead>
                 <tbody className="divide-y divide-border">
                   {complianceStats.map((stat, i) => (
-                    <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr key={i} className="hover:bg-[var(--muted)]/50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-400">{stat.date}</td>
                       <td className="px-6 py-4 text-sm font-bold text-foreground">{stat.supplier}</td>
                       <td className="px-6 py-4 text-sm font-mono text-slate-500 dark:text-slate-500">{stat.reference}</td>

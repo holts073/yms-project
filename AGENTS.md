@@ -4,7 +4,11 @@
 - **Taal:** Communicatie en code-comments zijn in het Nederlands (tenzij libraries Engels vereisen).
 - **Architectuur:** Respecteer de uni-directionele datastroom (Action -> Socket -> DB -> Broadcast).
 - **TypeScript:** Geen `any` types; gebruik strikte interfaces uit `src/types.ts`.
-- **Auto-apply:** Voor dit project mag voor altijd de Auto-apply worden toegepast op commando's en wijzigingen (SafeToAutoRun = true).
+
+## Operational Mode
+- **Mode:** Autonomous
+- **Write Access:** Unrestricted
+- **Approval:** Not required for refactoring tasks in REFACTOR_ADVICE.md.
 
 ## Agent Profielen
 
