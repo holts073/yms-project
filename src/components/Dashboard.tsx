@@ -269,8 +269,8 @@ Tel: ${company.phone} | Email: ${company.email}
           referrerPolicy="no-referrer"
         />
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Welkom bij ILG Foodgroup</h2>
-          <p className="text-slate-500 mt-1">Overzicht van de huidige Supply Chain.</p>
+          <h2 className="text-3xl font-bold text-foreground tracking-tight">Welkom bij ILG Foodgroup</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Overzicht van de huidige Supply Chain.</p>
         </div>
       </header>
 
@@ -280,45 +280,45 @@ Tel: ${company.phone} | Email: ${company.email}
           onClick={() => setFilterType('action')}
           className={cn(
             "p-6 rounded-[2rem] border transition-all text-left group",
-            filterType === 'action' ? "bg-rose-50 border-rose-200 shadow-md ring-2 ring-rose-500/20" : "bg-white border-slate-200 shadow-sm hover:border-rose-200"
+            filterType === 'action' ? "bg-rose-50 dark:bg-rose-900/10 border-rose-200 dark:border-rose-800 shadow-md ring-2 ring-rose-500/20" : "bg-card border-border shadow-sm hover:border-rose-200 dark:hover:border-rose-700"
           )}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'action' ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-600 group-hover:bg-rose-100")}>
+            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'action' ? "bg-rose-600 text-white" : "bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/30")}>
               <AlertCircle size={20} />
             </div>
-            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Actie vereist</span>
+            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">Actie vereist</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{actionRequiredDeliveries.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Actie vereist</p>
+          <p className="text-3xl font-bold text-foreground">{actionRequiredDeliveries.length}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Actie vereist</p>
         </button>
 
         <button 
           onClick={() => setFilterType('enroute')}
           className={cn(
             "p-6 rounded-[2rem] border transition-all text-left group",
-            filterType === 'enroute' ? "bg-teal-50 border-teal-200 shadow-md ring-2 ring-teal-500/20" : "bg-white border-slate-200 shadow-sm hover:border-teal-200"
+            filterType === 'enroute' ? "bg-teal-50 dark:bg-teal-900/10 border-teal-200 dark:border-teal-800 shadow-md ring-2 ring-teal-500/20" : "bg-card border-border shadow-sm hover:border-teal-200 dark:hover:border-teal-700"
           )}
         >
           <div className="flex items-center justify-between mb-4">
-            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'enroute' ? "bg-teal-600 text-white" : "bg-teal-50 text-teal-600 group-hover:bg-teal-100")}>
+            <div className={cn("p-3 rounded-xl transition-colors", filterType === 'enroute' ? "bg-teal-600 text-white" : "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 group-hover:bg-teal-100 dark:group-hover:bg-teal-900/30")}>
               <TruckIcon size={20} />
             </div>
-            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Onderweg</span>
+            <span className="text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">Onderweg</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{enRouteToWarehouse.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Onderweg naar Magazijn</p>
+          <p className="text-3xl font-bold text-foreground">{enRouteToWarehouse.length}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Onderweg naar Magazijn</p>
         </button>
 
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+        <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
               <Clock size={20} />
             </div>
-            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">In Transit</span>
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">In Transit</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{inTransit.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Niet geladen / Onderweg</p>
+          <p className="text-3xl font-bold text-foreground">{inTransit.length}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Niet geladen / Onderweg</p>
         </div>
       </div>
 
@@ -326,7 +326,7 @@ Tel: ${company.phone} | Email: ${company.email}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <button 
           onClick={() => onNavigate?.('yms-arrivals')}
-          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:border-indigo-200 transition-all text-left group"
+          className="bg-card p-6 rounded-[2rem] border border-border shadow-sm hover:border-indigo-200 dark:hover:border-indigo-800 transition-all text-left group"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-100 transition-colors">
@@ -334,13 +334,13 @@ Tel: ${company.phone} | Email: ${company.email}
             </div>
             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-wider">YMS Aankomst</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{arrivalsNoDock.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Aangemeld, Geen Dock Toegewezen</p>
+          <p className="text-3xl font-bold text-foreground">{arrivalsNoDock.length}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Aangemeld, Geen Dock Toegewezen</p>
         </button>
 
         <button 
           onClick={() => onNavigate?.('yms-planning')}
-          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:border-rose-200 transition-all text-left group"
+          className="bg-card p-6 rounded-[2rem] border border-border shadow-sm hover:border-rose-200 dark:hover:border-rose-800 transition-all text-left group"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-rose-50 text-rose-600 rounded-xl group-hover:bg-rose-100 transition-colors">
@@ -348,22 +348,22 @@ Tel: ${company.phone} | Email: ${company.email}
             </div>
             <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vertragingen</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{plannedDockDelays.length}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Gepland met Dock, Niet gearriveerd</p>
+          <p className="text-3xl font-bold text-foreground">{plannedDockDelays.length}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Gepland met Dock, Niet gearriveerd</p>
         </button>
 
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+        <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl">
               <Activity size={20} />
             </div>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Bezetting</span>
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">Bezetting</span>
           </div>
           <div className="flex items-end gap-2">
-            <p className="text-3xl font-bold text-slate-900">{dockOccupancy}%</p>
+            <p className="text-3xl font-bold text-foreground">{dockOccupancy}%</p>
             <p className="text-slate-400 text-sm font-bold mb-1">({occupiedDocks}/{totalDocks})</p>
           </div>
-          <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
             <div 
               className={cn(
                 "h-full transition-all duration-1000",
@@ -375,37 +375,37 @@ Tel: ${company.phone} | Email: ${company.email}
         </div>
 
         {/* Row 2 of YMS KPIs */}
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm text-left">
+        <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm text-left">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
               <Timer size={20} />
             </div>
-            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Site Stay</span>
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">Site Stay</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{averageTurnaroundTime} min</p>
-          <p className="text-slate-500 text-[11px] mt-1">Gemiddelde tijd op site vandaag</p>
+          <p className="text-3xl font-bold text-foreground">{averageTurnaroundTime} min</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Gemiddelde tijd op site vandaag</p>
         </div>
 
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm text-left">
+        <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm text-left">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+            <div className="p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl">
               <ParkingSquare size={20} />
             </div>
-            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Capaciteit</span>
+            <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">Capaciteit</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{yardOccupancy}%</p>
-          <p className="text-slate-500 text-[11px] mt-1">{occupiedWaitingAreas} van {ymsWaitingAreas.length} plekken bezet</p>
+          <p className="text-3xl font-bold text-foreground">{yardOccupancy}%</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">{occupiedWaitingAreas} van {ymsWaitingAreas.length} plekken bezet</p>
         </div>
 
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm text-left">
+        <div className="bg-card p-6 rounded-[2rem] border border-border shadow-sm text-left">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+            <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl">
               <AlertTriangle size={20} />
             </div>
-            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Vertraagd</span>
+            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">Vertraagd</span>
           </div>
-          <p className="text-3xl font-bold text-slate-900">{lateArrivals}</p>
-          <p className="text-slate-500 text-[11px] mt-1">Voertuigen met aankomstvertraging</p>
+          <p className="text-3xl font-bold text-foreground">{lateArrivals}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">Voertuigen met aankomstvertraging</p>
         </div>
       </div>
 
@@ -413,33 +413,33 @@ Tel: ${company.phone} | Email: ${company.email}
       <section className="space-y-6">
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className={cn("p-2 rounded-lg", filterType === 'action' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700")}>
+            <div className={cn("p-2 rounded-lg", filterType === 'action' ? "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300" : "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300")}>
               {filterType === 'action' ? <AlertCircle size={20} /> : <Calendar size={20} />}
             </div>
-            <h3 className="text-xl font-bold text-slate-900">
+            <h3 className="text-xl font-bold text-foreground">
               {filterType === 'action' ? 'Actie Vereist' : (filterType === 'enroute' ? 'Onderweg naar Magazijn' : 'Verwacht Vandaag')}
             </h3>
           </div>
         </div>
         
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm">
           {displayedDeliveries.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-border">
                     <th 
-                      className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                      className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                       onClick={() => handleSort('reference')}
                     >
                       <div className="flex items-center gap-2">
                         Referentie <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Opmerking</th>
-                    <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Reden</th>
+                    <th className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Opmerking</th>
+                    <th className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reden</th>
                     <th 
-                      className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                      className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                       onClick={() => handleSort('status')}
                     >
                       <div className="flex items-center gap-2">
@@ -447,48 +447,48 @@ Tel: ${company.phone} | Email: ${company.email}
                       </div>
                     </th>
                     <th 
-                      className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                      className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                       onClick={() => handleSort('eta')}
                     >
                       <div className="flex items-center gap-2">
                         ETA <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actie</th>
+                    <th className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actie</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {displayedDeliveries.map((delivery) => {
                     const supplier = state?.addressBook?.suppliers.find(s => s.id === delivery.supplierId);
                     return (
                     <tr 
                       key={delivery.id} 
-                      className="hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                       onClick={() => onNavigate?.('deliveries', undefined, delivery.id)}
                     >
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-8 h-8 rounded-lg flex items-center justify-center",
-                            delivery.type === 'container' ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"
+                            delivery.type === 'container' ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300" : "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300"
                           )}>
                             {delivery.type === 'container' ? <Package size={16} /> : <TruckIcon size={16} />}
                           </div>
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold text-slate-900">{delivery.reference}</p>
+                              <p className="text-sm font-bold text-foreground">{delivery.reference}</p>
                               {supplier?.otif && (
-                                <span className="text-[10px] font-bold text-emerald-600">
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                                   OTIF: {supplier.otif}%
                                 </span>
                               )}
                             </div>
                             <div className="flex flex-col gap-0.5 mt-0.5">
-                              <p className="text-[10px] text-slate-400 uppercase tracking-wider">{delivery.type} • {supplier?.name || 'Onbekend'}</p>
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">{delivery.type} • {supplier?.name || 'Onbekend'}</p>
                               {delivery.containerNumber && (
-                                <p className="text-[10px] text-slate-500 font-medium">Cont: <span className="text-slate-700">{delivery.containerNumber}</span></p>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Cont: <span className="text-slate-900 dark:text-slate-100">{delivery.containerNumber}</span></p>
                               )}
                               {delivery.type === 'container' && delivery.billOfLading && (
-                                <p className="text-[10px] text-slate-500 font-medium">B/L: <span className="text-slate-700">{delivery.billOfLading}</span></p>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">B/L: <span className="text-slate-900 dark:text-slate-100">{delivery.billOfLading}</span></p>
                               )}
                             </div>
                           </div>
@@ -521,7 +521,7 @@ Tel: ${company.phone} | Email: ${company.email}
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex flex-col gap-1.5 min-w-[120px]">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             {getStatusLabel(delivery)}
                           </span>
                           <div className="flex gap-1">
@@ -530,7 +530,7 @@ Tel: ${company.phone} | Email: ${company.email}
                                 key={step}
                                 className={cn(
                                   "h-1.5 flex-1 rounded-full",
-                                  idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-100"
+                                  idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600 dark:bg-indigo-500") : "bg-slate-100 dark:bg-slate-800"
                                 )}
                                 title={step}
                               />
@@ -539,7 +539,7 @@ Tel: ${company.phone} | Email: ${company.email}
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-sm font-medium text-slate-600">
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                           {delivery.etaWarehouse ? formatDate(delivery.etaWarehouse) : (delivery.eta ? formatDate(delivery.eta) : '-')}
                         </span>
                       </td>
@@ -603,7 +603,7 @@ Tel: ${company.phone} | Email: ${company.email}
                               Aanmelden
                             </button>
                           )}
-                          <button className="text-indigo-600 hover:text-indigo-700 text-sm font-bold flex items-center gap-1 ml-2">
+                          <button className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-bold flex items-center gap-1 ml-2">
                             Bekijken <ChevronRight size={16} />
                           </button>
                         </div>
@@ -619,10 +619,10 @@ Tel: ${company.phone} | Email: ${company.email}
               <div className={cn("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", filterType === 'action' ? "bg-emerald-50 text-emerald-500" : "bg-slate-50 text-slate-400")}>
                 {filterType === 'action' ? <CheckCircle2 size={32} /> : <Calendar size={32} />}
               </div>
-              <h4 className="text-lg font-bold text-slate-900">
+              <h4 className="text-lg font-bold text-foreground">
                 {filterType === 'action' ? 'Alles bijgewerkt!' : 'Geen leveringen vandaag'}
               </h4>
-              <p className="text-slate-500 text-sm">
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
                 {filterType === 'action' ? 'Er zijn momenteel geen leveringen die actie vereisen.' : 'Er zijn geen leveringen gepland voor vandaag.'}
               </p>
             </div>

@@ -1,0 +1,27 @@
+--- yms_docks schema ---
+CREATE TABLE yms_docks (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    allowedTemperatures TEXT NOT NULL, -- JSON array
+    status TEXT NOT NULL DEFAULT 'Available',
+    currentDeliveryId TEXT
+  , warehouseId TEXT NOT NULL DEFAULT 'W01', isFastLane INTEGER DEFAULT 0, adminStatus TEXT DEFAULT 'Active', isOutboundOnly INTEGER DEFAULT 0, direction_capability TEXT NOT NULL DEFAULT 'BOTH')
+
+--- yms_dock_overrides schema ---
+CREATE TABLE yms_dock_overrides (
+    id TEXT PRIMARY KEY,
+    warehouseId TEXT NOT NULL,
+    dockId INTEGER NOT NULL,
+    date TEXT NOT NULL, -- YYYY-MM-DD
+    status TEXT NOT NULL,
+    allowedTemperatures TEXT NOT NULL, startDate TEXT, endDate TEXT, -- JSON array
+    FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId) ON DELETE CASCADE
+  )
+
+--- PRAGMA foreign_key_list(yms_dock_overrides) ---
+┌─────────┬────┬─────┬─────────────┬───────────────┬───────────────┬─────────────┬───────────┬────────┐
+│ (index) │ id │ seq │ table       │ from          │ to            │ on_update   │ on_delete │ match  │
+├─────────┼────┼─────┼─────────────┼───────────────┼───────────────┼─────────────┼───────────┼────────┤
+│ 0       │ 0  │ 0   │ 'yms_docks' │ 'dockId'      │ 'id'          │ 'NO ACTION' │ 'CASCADE' │ 'NONE' │
+│ 1       │ 0  │ 1   │ 'yms_docks' │ 'warehouseId' │ 'warehouseId' │ 'NO ACTION' │ 'CASCADE' │ 'NONE' │
+└─────────┴────┴─────┴─────────────┴───────────────┴───────────────┴─────────────┴───────────┴────────┘

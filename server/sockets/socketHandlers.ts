@@ -30,6 +30,12 @@ export const setupSocketHandlers = (io: Server) => {
   });
 
   io.on("connection", (socket: Socket) => {
+    console.log(`[YMS SOCKET] Nieuwe verbinding: ${socket.id} van ${socket.handshake.address} (Transport: ${socket.conn.transport.name})`);
+    
+    socket.conn.on("upgrade", () => {
+      console.log(`[YMS SOCKET] Transport upgrade naar ${socket.conn.transport.name} voor ${socket.id}`);
+    });
+
     socket.emit("init", buildStaticState());
 
     socket.on("action", (data) => {

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SocketProvider, useSocket } from './SocketContext';
+import { ThemeProvider, useTheme } from './ThemeContext';
 import { 
   LayoutDashboard, 
   Truck, 
@@ -22,6 +23,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Sun, Moon } from 'lucide-react';
 
 // UI Components
 import Dashboard from './components/Dashboard';
@@ -50,11 +52,11 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
     className={cn(
       "flex items-center gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
       active 
-        ? "bg-indigo-100 text-indigo-900 font-semibold shadow-sm" 
-        : "text-slate-600 hover:bg-slate-100"
+        ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-100 font-semibold shadow-sm" 
+        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
     )}
   >
-    <Icon size={22} className={active ? "text-indigo-600" : "text-slate-500"} />
+    <Icon size={22} className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-500"} />
     <span className="text-sm tracking-wide">{label}</span>
   </button>
 );
@@ -67,12 +69,12 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
         className={cn(
           "flex items-center justify-between gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
           active 
-            ? "bg-indigo-100 text-indigo-900 font-semibold shadow-sm" 
-            : "text-slate-600 hover:bg-slate-100"
+            ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-100 font-semibold shadow-sm" 
+            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
         )}
       >
         <div className="flex items-center gap-4">
-          <Icon size={22} className={active ? "text-indigo-600" : "text-slate-500"} />
+          <Icon size={22} className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-500"} />
           <span className="text-sm tracking-wide">{label}</span>
         </div>
         <ChevronRight size={16} className={cn("transition-transform duration-300", isOpen && "rotate-90")} />
@@ -93,11 +95,11 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
                   className={cn(
                     "flex items-center gap-3 w-full px-6 py-3 rounded-full text-sm transition-all",
                     item.active 
-                      ? "text-indigo-700 font-bold bg-indigo-50" 
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                      ? "text-indigo-700 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-900/20" 
+                      : "text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40"
                   )}
                 >
-                  <span className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-indigo-600" : "bg-slate-400")} />
+                  <span className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-indigo-600 dark:bg-indigo-400" : "bg-slate-400 dark:bg-slate-600")} />
                   {item.label}
                 </button>
               ))}
@@ -115,17 +117,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const { state, currentUser, isAuthenticated, logout } = useSocket();
-    const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
-
-    useEffect(() => {
-      if (darkMode) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      }
-    }, [darkMode]);
+    const { theme, toggleTheme } = useTheme();
 
     // Sync openDropdown with activeTab on initial load or navigation
     React.useEffect(() => {
@@ -184,11 +176,11 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
 
   if (!state || !currentUser) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full"
+          className="w-12 h-12 border-4 border-indigo-600 dark:border-indigo-400 border-t-transparent rounded-full"
         />
       </div>
     );
@@ -229,9 +221,9 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col p-6">
+      <aside className="w-72 bg-card border-r border-border flex flex-col p-6 transition-colors duration-300">
         <div className="flex items-center gap-3 mb-10 px-4">
           <img 
             src="/logo.jfif" 
@@ -239,7 +231,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.3.0</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.3.0</span></h1>
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
@@ -314,19 +306,25 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           )}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-slate-100">
-          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-[1.5rem] mb-4 mt-4">
-            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700">
+        <div className="mt-auto pt-6 border-t border-border">
+          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-[1.5rem] mb-4 mt-4 transition-colors">
+            <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-700 dark:text-indigo-300">
               <UserIcon size={20} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-900 truncate">{currentUser.name}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{currentUser.name}</p>
               <p className="text-xs text-slate-500 truncate capitalize">{currentUser.role}</p>
             </div>
+            <button 
+              onClick={toggleTheme}
+              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500"
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
           <button 
             onClick={logout}
-            className="flex items-center gap-4 px-6 py-3 w-full text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+            className="flex items-center gap-4 px-6 py-3 w-full text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
           >
             <LogOut size={20} />
             <span className="text-sm font-medium">Uitloggen</span>
@@ -358,9 +356,16 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
 
 export default function App() {
   return (
-    <SocketProvider>
-      <Toaster position="top-right" richColors />
-      <AppContent />
-    </SocketProvider>
+    <ThemeProvider>
+      <SocketProvider>
+        <ThemeAwareToaster />
+        <AppContent />
+      </SocketProvider>
+    </ThemeProvider>
   );
 }
+
+const ThemeAwareToaster = () => {
+  const { theme } = useTheme();
+  return <Toaster position="top-right" richColors theme={theme} />;
+};

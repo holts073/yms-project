@@ -189,7 +189,7 @@ const Statistics = () => {
           {typeData.reduce((a, b) => a + b.value, 0) > 0 ? (
             <>
               <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <PieChart>
                     <Pie data={typeData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value">
                       {typeData.map((entry, index) => (
@@ -221,7 +221,7 @@ const Statistics = () => {
             {totalCost > 0 ? (
               <>
                 <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <PieChart>
                       <Pie data={costData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value">
                         {costData.map((entry, index) => (
@@ -262,7 +262,7 @@ const Statistics = () => {
           
           <div className="h-[300px] w-full">
             {supplierStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={supplierStats} layout="vertical" margin={{ left: 40, right: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                   <XAxis type="number" domain={[0, 100]} hide />
@@ -303,7 +303,7 @@ const Statistics = () => {
             
             <div className="h-[300px] w-full">
               {supplierCostStats.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={supplierCostStats} layout="vertical" margin={{ left: 40, right: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                     <XAxis type="number" hide />
@@ -344,7 +344,7 @@ const Statistics = () => {
           
           <div className="h-[300px] w-full">
             {transporterOtifStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={transporterOtifStats} layout="vertical" margin={{ left: 40, right: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                   <XAxis type="number" domain={[0, 100]} hide />

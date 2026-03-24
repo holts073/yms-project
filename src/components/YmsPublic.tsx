@@ -39,11 +39,11 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
     <div className="h-screen w-screen bg-slate-950 text-white overflow-hidden flex flex-col p-12 font-sans relative">
       {onBack && (
         <motion.button
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -20, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
           animate={{ opacity: 1, x: 0 }}
-          whileHover={{ x: -5, backgroundColor: 'rgba(255,255,255,0.1)' }}
+          whileHover={{ x: -5, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
           onClick={onBack}
-          className="absolute top-12 left-12 z-50 flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-12 left-12 z-50 flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft size={20} />
           <span className="text-sm font-bold uppercase tracking-widest">Terug</span>

@@ -182,7 +182,7 @@ db.exec(`
     warehouseId TEXT NOT NULL,
     dockId INTEGER NOT NULL,
     startDate TEXT NOT NULL, -- YYYY-MM-DD
-    endDate TEXT NOT NULL,   // YYYY-MM-DD
+    endDate TEXT NOT NULL,   -- YYYY-MM-DD
     status TEXT NOT NULL,
     allowedTemperatures TEXT NOT NULL, -- JSON array
     FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId) ON DELETE CASCADE
@@ -270,6 +270,12 @@ migrations.forEach(m => {
     db.prepare(`ALTER TABLE ${m.table} ADD COLUMN ${m.column} ${m.type}`).run();
   } catch (e) {}
 });
+
+// Composite Unique Indices for Foreign Key support
+try {
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_yms_docks_composite ON yms_docks(id, warehouseId)');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_yms_waiting_areas_composite ON yms_waiting_areas(id, warehouseId)');
+} catch (e) {}
 
 // Structural migration for yms_dock_overrides
 try {

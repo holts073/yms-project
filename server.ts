@@ -14,8 +14,18 @@ import { authMiddleware } from './server/middleware/auth';
 async function startServer() {
   const app = express();
   const httpServer = createServer(app);
+
+  httpServer.on('upgrade', (req, socket, head) => {
+    console.log(`[YMS UPGRADE] Verzoek voor: ${req.url}`);
+  });
+
   const io = new Server(httpServer, {
-    cors: { origin: "*" },
+    cors: { 
+      origin: "*",
+      methods: ["GET", "POST"]
+    },
+    transports: ['polling', 'websocket'],
+    allowEIO3: true // Voor backward compatibility indien nodig
   });
 
   const PORT = 3000;

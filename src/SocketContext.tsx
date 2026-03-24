@@ -46,8 +46,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const token = localStorage.getItem('token');
-    const newSocket = io({
-      auth: { token }
+    const newSocket = io(window.location.origin, {
+      auth: { token },
+      transports: ['polling']
     });
     setSocket(newSocket);
 

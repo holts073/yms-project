@@ -32,7 +32,7 @@ const stmts = {
   insertLog: db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)'),
   getYmsDocks: db.prepare('SELECT * FROM yms_docks'),
   getYmsDocksByWarehouse: db.prepare('SELECT * FROM yms_docks WHERE warehouseId = ?'),
-  updateYmsDock: db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, adminStatus = ?, currentDeliveryId = ?, isFastLane = ?, isOutboundOnly = ? WHERE id = ? AND warehouseId = ?'),
+  updateYmsDock: db.prepare('UPDATE yms_docks SET name = ?, allowedTemperatures = ?, status = ?, adminStatus = ?, currentDeliveryId = ?, isFastLane = ?, direction_capability = ? WHERE id = ? AND warehouseId = ?'),
   getYmsWaitingAreas: db.prepare('SELECT * FROM yms_waiting_areas'),
   getYmsWaitingAreasByWarehouse: db.prepare('SELECT * FROM yms_waiting_areas WHERE warehouseId = ?'),
   updateYmsWaitingArea: db.prepare('UPDATE yms_waiting_areas SET name = ?, status = ?, adminStatus = ?, currentDeliveryId = ? WHERE id = ? AND warehouseId = ?'),
@@ -253,7 +253,7 @@ export function getYmsDocks(warehouseId?: string): any[] {
 }
 
 export function saveYmsDock(dock: any) {
-  stmts.updateYmsDock.run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.isOutboundOnly ? 1 : 0, dock.id, dock.warehouseId);
+  stmts.updateYmsDock.run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.direction_capability || 'BOTH', dock.id, dock.warehouseId);
 }
 
 export function getYmsWaitingAreas(warehouseId?: string): any[] {

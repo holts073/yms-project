@@ -431,13 +431,13 @@ Tel: ${company.phone} | Email: ${company.email}
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Leveringen</h2>
-          <p className="text-slate-500 mt-1">Beheer en volg al je actieve container en ex-works zendingen.</p>
+          <h2 className="text-3xl font-bold text-foreground tracking-tight">Leveringen</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Beheer en volg al je actieve container en ex-works zendingen.</p>
         </div>
         <div className="flex items-center gap-4">
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-full hover:bg-slate-50 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-6 py-3 bg-card border border-border text-foreground font-bold rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
           >
             <Download size={18} />
             CSV Export
@@ -455,77 +455,77 @@ Tel: ${company.phone} | Email: ${company.email}
       </header>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm">
+      <div className="flex items-center gap-4 bg-card p-4 rounded-[2rem] border border-border shadow-sm">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
           <input 
             type="text" 
             placeholder="Filter op referentie..." 
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full pl-12 pr-4 py-2 bg-slate-50 border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-12 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-full text-sm focus:ring-2 focus:ring-indigo-500 text-foreground"
           />
         </div>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as any)}
-          className="px-6 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-full focus:ring-2 focus:ring-indigo-500 outline-none appearance-none pr-10 relative cursor-pointer"
+          className="px-6 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-card border border-border rounded-full focus:ring-2 focus:ring-indigo-500 outline-none appearance-none pr-10 relative cursor-pointer"
           style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em` }}
         >
           <option value="all">Alle Types</option>
           <option value="container">Container</option>
           <option value="exworks">Ex-Works</option>
         </select>
-        <button className="flex items-center gap-2 px-6 py-2 text-slate-600 hover:bg-slate-50 rounded-full border border-slate-200 transition-all">
+        <button className="flex items-center gap-2 px-6 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full border border-border transition-all">
           <Filter size={18} />
           <span>Filters</span>
         </button>
       </div>
 
       {/* Deliveries List */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
+              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-border">
                 <th className="px-8 py-5 w-10">
                   <input 
                     type="checkbox" 
                     checked={selectedIds.length > 0 && selectedIds.length === paginatedDeliveries.length}
                     onChange={toggleSelectAll}
-                    className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                    className="w-5 h-5 text-indigo-600 dark:text-indigo-500 dark:bg-slate-800 border-border rounded focus:ring-indigo-500"
                   />
                 </th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
                 <th 
-                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                   onClick={() => handleSort('reference')}
                 >
                   Referentie
                 </th>
                 <th 
-                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                   onClick={() => handleSort('billOfLading')}
                 >
                   B/L Nummer
                 </th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Leverancier</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Leverancier</th>
                 <th 
-                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                   onClick={() => handleSort('status')}
                 >
                   Status
                 </th>
                 <th 
-                  className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
+                  className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                   onClick={() => handleSort('eta')}
                 >
                   ETA
                 </th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acties</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Acties</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {paginatedDeliveries.map((delivery) => {
                   const supplier = addressBook?.suppliers.find(s => s.id === delivery.supplierId);
                   
@@ -533,8 +533,8 @@ Tel: ${company.phone} | Email: ${company.email}
                 <tr 
                   key={delivery.id} 
                   className={cn(
-                    "hover:bg-slate-50 transition-colors cursor-pointer group",
-                    selectedIds.includes(delivery.id) ? "bg-indigo-50/50" : ""
+                    "hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group",
+                    selectedIds.includes(delivery.id) ? "bg-indigo-50/50 dark:bg-indigo-900/10" : ""
                   )}
                   onClick={() => handleOpenModal(delivery)}
                 >
@@ -556,33 +556,33 @@ Tel: ${company.phone} | Email: ${company.email}
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-900">{delivery.reference}</span>
-                      <span className="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">#{delivery.id.substring(0, 6).toUpperCase()}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{delivery.reference}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">#{delivery.id.substring(0, 6).toUpperCase()}</span>
                     </div>
                     <div className="flex flex-col gap-0.5 mt-1">
                       {delivery.containerNumber && (
-                        <p className="text-[11px] text-slate-500 font-medium">Cont: <span className="text-slate-700">{delivery.containerNumber}</span></p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Cont: <span className="text-slate-700 dark:text-slate-200">{delivery.containerNumber}</span></p>
                       )}
                       {delivery.type === 'exworks' && delivery.cargoType && (
-                        <p className="text-[11px] text-slate-500 font-medium">{delivery.cargoType}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{delivery.cargoType}</p>
                       )}
                       {(!delivery.containerNumber && !delivery.billOfLading && delivery.type === 'container') && (
-                        <p className="text-[11px] text-slate-400">-</p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500">-</p>
                       )}
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <span className="text-sm font-bold text-slate-700">
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
                       {delivery.type === 'container' ? (delivery.billOfLading || '-') : '-'}
                     </span>
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-900">
+                      <span className="text-sm font-bold text-foreground">
                         {supplier?.name || 'Onbekend'}
                       </span>
                       {supplier?.otif && (
-                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                           OTIF: {supplier.otif}%
                         </span>
                       )}
@@ -591,7 +591,7 @@ Tel: ${company.phone} | Email: ${company.email}
                   <td className="px-8 py-6">
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                           {getStatusLabel(delivery)}
                         </span>
                       </div>
@@ -601,7 +601,7 @@ Tel: ${company.phone} | Email: ${company.email}
                             key={step}
                             className={cn(
                               "h-1.5 flex-1 rounded-full",
-                              idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600") : "bg-slate-100"
+                              idx <= getStatusIndex(delivery) ? (delivery.status === 100 ? "bg-emerald-500" : "bg-indigo-600 dark:bg-indigo-500") : "bg-slate-100 dark:bg-slate-800"
                             )}
                           />
                         ))}
@@ -609,7 +609,7 @@ Tel: ${company.phone} | Email: ${company.email}
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <span className="text-sm font-medium text-slate-600">
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                       {formatDate(delivery.etaWarehouse || delivery.eta)}
                     </span>
                   </td>
@@ -710,7 +710,7 @@ Tel: ${company.phone} | Email: ${company.email}
         
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="px-8 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <div className="px-8 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-border flex items-center justify-between">
             <span className="text-sm font-medium text-slate-500">
               Pagina {currentPage} van {totalPages}
             </span>
@@ -718,14 +718,14 @@ Tel: ${company.phone} | Email: ${company.email}
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-card border border-border rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Vorige
               </button>
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-card border border-border rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Volgende
               </button>
@@ -784,11 +784,11 @@ Tel: ${company.phone} | Email: ${company.email}
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-white w-full max-w-2xl rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-full"
+              className="relative bg-card w-full max-w-2xl rounded-[2rem] sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-full border border-border"
             >
               <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-6 sm:space-y-8 overflow-y-auto flex-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-slate-900">
+                  <h3 className="text-2xl font-bold text-foreground">
                     {editingDelivery ? 'Levering Aanpassen' : 'Nieuwe Levering'}
                   </h3>
                   <button 
@@ -801,13 +801,13 @@ Tel: ${company.phone} | Email: ${company.email}
                 </div>
 
                 {editingDelivery && (
-                  <div className="flex gap-4 p-1.5 bg-slate-100 rounded-full w-fit mb-6 shrink-0">
+                  <div className="flex gap-4 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full w-fit mb-6 shrink-0">
                     <button
                       type="button"
                       onClick={() => setActiveModalTab('details')}
                       className={cn(
                         "px-6 py-2 rounded-full font-bold text-sm transition-all",
-                        activeModalTab === 'details' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        activeModalTab === 'details' ? "bg-card text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                       )}
                     >
                       Gegevens
@@ -817,7 +817,7 @@ Tel: ${company.phone} | Email: ${company.email}
                       onClick={() => setActiveModalTab('history')}
                       className={cn(
                         "px-6 py-2 rounded-full font-bold text-sm transition-all",
-                        activeModalTab === 'history' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        activeModalTab === 'history' ? "bg-card text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                       )}
                     >
                       Historie
@@ -828,14 +828,14 @@ Tel: ${company.phone} | Email: ${company.email}
                 {activeModalTab === 'details' || !editingDelivery ? (
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2 col-span-2">
-                    <label className="text-sm font-bold text-slate-700 ml-4">Type Levering</label>
-                    <div className="flex gap-4 p-2 bg-slate-100 rounded-full">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-4">Type Levering</label>
+                    <div className="flex gap-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, type: 'container' })}
                         className={cn(
                           "flex-1 py-3 rounded-full font-bold transition-all",
-                          formData.type === 'container' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"
+                          formData.type === 'container' ? "bg-card text-indigo-600 shadow-sm" : "text-slate-500 dark:text-slate-400"
                         )}
                       >
                         Container
@@ -845,7 +845,7 @@ Tel: ${company.phone} | Email: ${company.email}
                         onClick={() => setFormData({ ...formData, type: 'exworks' })}
                         className={cn(
                           "flex-1 py-3 rounded-full font-bold transition-all",
-                          formData.type === 'exworks' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"
+                          formData.type === 'exworks' ? "bg-card text-indigo-600 shadow-sm" : "text-slate-500 dark:text-slate-400"
                         )}
                       >
                         Ex-Works
@@ -861,7 +861,7 @@ Tel: ${company.phone} | Email: ${company.email}
                       value={formData.reference}
                       onChange={e => setFormData({ ...formData, reference: e.target.value })}
                       placeholder="Bijv. CONT-2024-001"
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-full focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground"
                     />
                   </div>
 
@@ -1015,15 +1015,15 @@ Tel: ${company.phone} | Email: ${company.email}
                     <textarea 
                       value={formData.notes}
                       onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 min-h-[100px] text-foreground"
                     />
                   </div>
 
                   {currentModalDelivery && (
-                    <div className="space-y-4 col-span-2 bg-slate-50 p-8 rounded-[2rem]">
+                    <div className="space-y-4 col-span-2 bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[2rem]">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-bold text-slate-900">Documenten Beheer</h4>
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Klik om status te wijzigen</span>
+                        <h4 className="text-lg font-bold text-foreground">Documenten Beheer</h4>
+                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Klik om status te wijzigen</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {currentModalDelivery.documents.map(doc => (
@@ -1034,8 +1034,8 @@ Tel: ${company.phone} | Email: ${company.email}
                             className={cn(
                               "flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
                               doc.status === 'received' 
-                                ? "bg-emerald-50 border-emerald-100 text-emerald-700" 
-                                : "bg-white border-slate-200 text-slate-600 hover:border-indigo-200"
+                                ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300" 
+                                : "bg-card border-border text-slate-600 dark:text-slate-400 hover:border-indigo-200"
                             )}
                           >
                             <div className="flex items-center gap-3">
@@ -1058,17 +1058,17 @@ Tel: ${company.phone} | Email: ${company.email}
                   <div className="space-y-3">
                     {currentModalDelivery?.auditTrail?.length ? (
                       currentModalDelivery.auditTrail.map((entry, idx) => (
-                        <div key={idx} className="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 border border-slate-200">
+                        <div key={idx} className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-border">
+                          <div className="w-10 h-10 bg-card rounded-full flex items-center justify-center shrink-0 border border-border">
                             <History size={16} className="text-slate-400" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-slate-900">{entry.action}</span>
+                              <span className="font-bold text-foreground">{entry.action}</span>
                               <span className="text-xs text-slate-400">•</span>
                               <span className="text-xs text-slate-500">{new Date(entry.timestamp).toLocaleString('nl-NL')}</span>
                             </div>
-                            <p className="text-sm text-slate-600 font-medium">{entry.details}</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{entry.details}</p>
                             <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Door: {entry.user}</p>
                           </div>
                         </div>
@@ -1086,7 +1086,7 @@ Tel: ${company.phone} | Email: ${company.email}
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 py-4 rounded-full font-bold text-slate-600 hover:bg-slate-100 transition-all"
+                    className="flex-1 py-4 rounded-full font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
                   >
                     Annuleren
                   </button>

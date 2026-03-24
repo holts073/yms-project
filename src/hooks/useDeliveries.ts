@@ -39,7 +39,12 @@ export function useDeliveries(
         activeOnly: Boolean(activeOnly).toString()
       });
       
-      const res = await fetch(`/api/deliveries?${queryParams.toString()}`);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/deliveries?${queryParams.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error('Failed to fetch deliveries');
       
       const data = await res.json();

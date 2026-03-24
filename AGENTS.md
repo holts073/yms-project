@@ -4,6 +4,7 @@
 - **Taal:** Communicatie en code-comments zijn in het Nederlands (tenzij libraries Engels vereisen).
 - **Architectuur:** Respecteer de uni-directionele datastroom (Action -> Socket -> DB -> Broadcast).
 - **TypeScript:** Geen `any` types; gebruik strikte interfaces uit `src/types.ts`.
+- **Auto-apply:** Voor dit project mag voor altijd de Auto-apply worden toegepast op commando's en wijzigingen (SafeToAutoRun = true).
 
 ## Agent Profielen
 
@@ -14,10 +15,11 @@
 - **Instructie:** Zorg voor vloeiende overgangen in het YMS Dashboard.
 
 ### 2. [System-Architect] (Agent B)
-- **Focus:** De "Brug" (Sockets & Integratie).
+- **Focus:** De "Brug" (Sockets & Integratie) & **Router**.
 - **Scope:** `server/sockets/**`, `src/SocketContext.tsx`, `server.ts`, `src/types.ts`, `server/workers/**`.
-- **Expertise:** Socket.io, State Management, Event-handling.
+- **Expertise:** Socket.io, State Management, Event-handling, Orchestratie.
 - **Taak:** Bewaak de consistentie tussen frontend dispatchers en backend listeners. Jij bent de eigenaar van de `ARCHITECTUUR.md` en het Mermaid-diagram. Nu ook verantwoordelijk voor de Background Workers (zonder AI).
+- **Router-rol:** Bij algemene prompts analyseer jij welke agent(s) (A of C) de taak moeten uitvoeren op basis van hun scope en delegeer je dit direct.
 
 ### 3. [Data-Specialist] (Agent C)
 - **Focus:** Persistentie & API.
