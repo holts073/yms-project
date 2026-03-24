@@ -109,14 +109,14 @@ db.exec(`
     description TEXT,
     address TEXT
   );
+`);
 
-  // Migration for existing yms_warehouses
-  try {
-    db.prepare('ALTER TABLE yms_warehouses ADD COLUMN address TEXT').run();
-  } catch (e) {
-    // Column already exists
-  }
+// Migration for existing yms_warehouses
+try {
+  db.prepare('ALTER TABLE yms_warehouses ADD COLUMN address TEXT').run();
+} catch (e) {}
 
+db.exec(`
   CREATE TABLE IF NOT EXISTS yms_docks (
     id INTEGER,
     warehouseId TEXT NOT NULL,
@@ -130,14 +130,14 @@ db.exec(`
     PRIMARY KEY(id, warehouseId),
     FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id) ON DELETE CASCADE
   );
+`);
 
-  // Migration for yms_docks
-  try {
-    db.prepare('ALTER TABLE yms_docks ADD COLUMN isOutboundOnly INTEGER DEFAULT 0').run();
-  } catch (e) {
-    // Column already exists
-  }
+// Migration for yms_docks
+try {
+  db.prepare('ALTER TABLE yms_docks ADD COLUMN isOutboundOnly INTEGER DEFAULT 0').run();
+} catch (e) {}
 
+db.exec(`
   CREATE TABLE IF NOT EXISTS yms_waiting_areas (
     id INTEGER,
     warehouseId TEXT NOT NULL,
@@ -217,9 +217,7 @@ ymsTables.forEach(table => {
   } catch (e) {}
 });
 
-// Update shipment_settings if needed, but warehouses are the priority now.
-
-// Initial Seed for docks (Refined for Warehouse 01)
+// Initial Seed for docks
 const dockCount = db.prepare("SELECT COUNT(*) as count FROM yms_docks WHERE warehouseId = 'W01'").get() as { count: number };
 if (dockCount.count === 0) {
   const insertDock = db.prepare("INSERT INTO yms_docks (id, warehouseId, name, allowedTemperatures) VALUES (?, 'W01', ?, ?)");
@@ -228,7 +226,7 @@ if (dockCount.count === 0) {
   }
 }
 
-// Initial Seed for waiting areas (Refined for Warehouse 01)
+// Initial Seed for waiting areas
 const waitingAreaCount = db.prepare("SELECT COUNT(*) as count FROM yms_waiting_areas WHERE warehouseId = 'W01'").get() as { count: number };
 if (waitingAreaCount.count === 0) {
   const insertWaitingArea = db.prepare("INSERT INTO yms_waiting_areas (id, warehouseId, name) VALUES (?, 'W01', ?)");
@@ -237,59 +235,35 @@ if (waitingAreaCount.count === 0) {
   }
 }
 
-// Migration for logs table
-try {
-  db.prepare("ALTER TABLE logs ADD COLUMN reference TEXT").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE deliveries ADD COLUMN loadingTime TEXT").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE deliveries ADD COLUMN dockId INTEGER").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN transporterId TEXT").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN supplierId TEXT").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN registrationTime TEXT").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN isLate BOOLEAN").run();
-} catch (e) {}
-
-// AI & Reefer Migrations
-const reeferColumns = [
-    { name: 'predictedEta', type: 'TEXT' },
-    { name: 'priorityScore', type: 'INTEGER DEFAULT 0' },
-    { name: 'estimatedDuration', type: 'INTEGER DEFAULT 60' },
-    { name: 'isReefer', type: 'INTEGER DEFAULT 0' },
-    { name: 'tempAlertThreshold', type: 'INTEGER DEFAULT 30' },
-    { name: 'lastEtaUpdate', type: 'TEXT' }
+// Additional Migrations
+const migrations = [
+  { table: 'logs', column: 'reference', type: 'TEXT' },
+  { table: 'deliveries', column: 'loadingTime', type: 'TEXT' },
+  { table: 'deliveries', column: 'dockId', type: 'INTEGER' },
+  { table: 'yms_deliveries', column: 'transporterId', type: 'TEXT' },
+  { table: 'yms_deliveries', column: 'supplierId', type: 'TEXT' },
+  { table: 'yms_deliveries', column: 'registrationTime', type: 'TEXT' },
+  { table: 'yms_deliveries', column: 'isLate', type: 'BOOLEAN' },
+  { table: 'yms_deliveries', column: 'statusTimestamps', type: 'TEXT' },
+  { table: 'yms_deliveries', column: 'mainDeliveryId', type: 'TEXT' },
+  { table: 'yms_deliveries', column: 'predictedEta', type: 'TEXT' },
+  { table: 'yms_deliveries', column: 'priorityScore', type: 'INTEGER DEFAULT 0' },
+  { table: 'yms_deliveries', column: 'estimatedDuration', type: 'INTEGER DEFAULT 60' },
+  { table: 'yms_deliveries', column: 'isReefer', type: 'INTEGER DEFAULT 0' },
+  { table: 'yms_deliveries', column: 'tempAlertThreshold', type: 'INTEGER DEFAULT 30' },
+  { table: 'yms_deliveries', column: 'lastEtaUpdate', type: 'TEXT' },
+  { table: 'yms_deliveries', column: 'direction', type: 'TEXT DEFAULT "INBOUND"' },
+  { table: 'yms_deliveries', column: 'palletCount', type: 'INTEGER DEFAULT 0' },
+  { table: 'yms_docks', column: 'isFastLane', type: 'INTEGER DEFAULT 0' },
+  { table: 'yms_docks', column: 'adminStatus', type: 'TEXT DEFAULT "Active"' },
+  { table: 'yms_waiting_areas', column: 'adminStatus', type: 'TEXT DEFAULT "Active"' }
 ];
 
-reeferColumns.forEach(col => {
-    try {
-        db.prepare(`ALTER TABLE yms_deliveries ADD COLUMN ${col.name} ${col.type}`).run();
-    } catch (e) {}
+migrations.forEach(m => {
+  try {
+    db.prepare(`ALTER TABLE ${m.table} ADD COLUMN ${m.column} ${m.type}`).run();
+  } catch (e) {}
 });
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN statusTimestamps TEXT").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN mainDeliveryId TEXT").run();
-} catch (e) {}
-
 
 // Helper for settings
 export function getSetting(key: string, defaultValue: any = null) {
@@ -300,23 +274,3 @@ export function getSetting(key: string, defaultValue: any = null) {
 export function saveSetting(key: string, value: any) {
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, JSON.stringify(value));
 }
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN direction TEXT DEFAULT 'INBOUND'").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_deliveries ADD COLUMN palletCount INTEGER DEFAULT 0").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_docks ADD COLUMN isFastLane INTEGER DEFAULT 0").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_docks ADD COLUMN adminStatus TEXT DEFAULT 'Active'").run();
-} catch (e) {}
-
-try {
-  db.prepare("ALTER TABLE yms_waiting_areas ADD COLUMN adminStatus TEXT DEFAULT 'Active'").run();
-} catch (e) {}
