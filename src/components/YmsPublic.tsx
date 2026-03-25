@@ -48,8 +48,8 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
       )}
       <header className="flex items-center justify-between mb-16 px-4 mt-8">
         <div className="flex items-center gap-6">
-          <div className="bg-indigo-600 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(79,70,229,0.3)]">
-            <Truck size={64} strokeWidth={2.5} />
+          <div className="bg-white/5 p-4 rounded-[2rem] shadow-[0_0_50px_rgba(255,255,255,0.05)] border border-white/10">
+            <img src="/logo.jfif" alt="Meledi Logo" className="w-24 h-auto brightness-125 contrast-125" />
           </div>
           <div>
             <h1 className="text-6xl font-black tracking-tighter uppercase italic">Yard Monitor</h1>

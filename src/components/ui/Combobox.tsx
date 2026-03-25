@@ -54,7 +54,7 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, value, onChange, pl
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 w-full mt-2 bg-card border border-border rounded-[2rem] shadow-xl overflow-hidden dark:shadow-indigo-500/10"
+            className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-900 border border-border rounded-[2rem] shadow-xl overflow-hidden dark:shadow-indigo-500/10"
           >
             <div className="p-2 border-b border-border flex items-center bg-[var(--muted)]/50">
               <Search size={16} className="text-[var(--muted-foreground)] ml-3" />

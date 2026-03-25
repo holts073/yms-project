@@ -1,55 +1,48 @@
-# ILG Foodgroup - Supply Chain & Yard Management System (YMS)
+# ILG Foodgroup - Supply Chain Control Tower (YMS)
 
-Een samenhangend, full-stack logistiek platform ontworpen om de operaties van warehouses, dock planningen, externe deliveries en de fysieke "yard" flow te orkestreren met maximale efficiëntie. Voorzien van een op maat gemaakte frontend design library.
+Het ILG Yard Management Systeem (YMS) is getransformeerd van een simpele planningstool naar een allesomvattende **Control Tower**. Het orkestreert de volledige supply chain flow, van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat (Gate-out).
+
+## 🚀 De Drie Kernmodules
+Ons systeem is modulair opgebouwd om elke fase van de logistieke keten te beheersen:
+
+1. **Global Pipeline (Inbound):** Volledig inzicht in `Containers` (haven-data, douanevrijgave) en `Ex-works` orders. Hier bewaken we de 'Estimated Time of Arrival' (ETA) en de documentstroom voordat goederen de yard bereiken.
+2. **Active Yard (Operationeel):** Het kloppend hart van de operatie. Real-time beheer van actieve docks, wachtruimtes (Waiting Areas) en de visuele Dock-Timeline voor een vlekkeloze afhandeling van trucks.
+3. **Outbound Planning:** Strategische toewijzing van docks voor klantzendingen, waarbij we de doorloop van lege naar beladen trailers optimaliseren.
+
+## 🤖 AI-Driven Development: Het Team
+Dit project wordt ontwikkeld en bewaakt door een gespecialiseerd team van 8 AI-agenten/rollen, elk met hun eigen expertise:
+
+- **[Frontend-Specialist]**: De architect van de UI/UX, verantwoordelijk voor de React 19 interface en vloeiende interacties.
+- **[System-Architect]**: De bewaker van de "Brug" (Sockets & Integratie) en de routering van data tussen frontend en backend.
+- **[Data-Specialist]**: Beheerder van de persistentielaag en API-integriteit via Node.js en SQLite.
+- **@Yard-Strategist**: Bewaker van de end-to-end logistieke flow en de statusovergangen van vrachten.
+- **@QA-Automator**: De laatste verdedigingslinie; scant op bugs, console-errors en waarborgt de build-stabiliteit.
+- **@UX-Visual-Director**: Onze esthetische gids; fine-tunt de Dark Mode, visuele hiërarchie en witte ruimte.
+- **@Integration-Specialist**: Bouwer van externe bruggen (API's, Webhooks) naar transporteurs en leveranciers.
+- **System Orchestrator**: De coördinerende kracht die de samenhang tussen alle specialisten en de broncode beheert.
 
 ## 🛠️ Stack & Technologie
-Onze volledig gemoderniseerde stack focust op snelheid, voorspelbaarheid en stijl:
-- **React 19 & Vite**: Voor bloedsnelle component rendering en HMR development cycli.
-- **Tailwind CSS v4**: Gestileerd met een fundering aan Vanilla CSS (op maat gemaakte `index.css`).
-- **UI Elementen**: *Lucide Icons* voor strakke vector iconografie, *Sonner Toasts* voor soepele en non-intrusieve systeemalerts, en *Framer Motion* voor vloeiende micro-animaties (waaronder in modals en sidebars).
-- **Socket.io & Node.js**: Naadloze pushbased integratie en actieregeling over het netwerk.
-- **SQLite (better-sqlite3)**: ACID-compliant opslag, perfect geoptimaliseerd voor lokale netwerkomgevingen via de WAL modus.
+- **React 19 & Vite**: Voor een moderne, responsieve gebruikerservaring.
+- **Tailwind CSS v4 & Framer Motion**: Voor een premium look-and-feel met vloeiende animaties.
+- **Socket.io**: Voor real-time status-updates over de gehele Control Tower.
+- **Better-SQLite3 (WAL Mode)**: Robuuste, lokale data-opslag geoptimaliseerd voor hoge performance.
 
-## 📂 Project Structuur (Atomic UI)
-Het systeem volgt een strakke domeinscheiding om schaalbaarheid te garanderen:
-- `/src/components/shared/` - *De Design System Primitives:* Buttons, Cards, Inputs, Modals en Badges. Deze elementen zijn blind in te zetten en gegarandeerd Dark Mode-proof.
-- `/src/components/features/` - *De Bedrijfslogica:* Samengestelde componenten zoals `DeliveryTable` (Pipeline Kaarten), `YmsDeliveryList` (Yard Kaarten) en de `YmsTimeline`.
-- `/src/components/pages/` - *Hoofdviews:* (De algemene containers, in dit geval gebundeld via `App.tsx` en `YmsDashboard.tsx`).
+## ⚙️ Quick Start (v3.4.1)
+*Nieuw in v3.2.2+: Geavanceerde Dark Mode, Verbeterde Session Management en Dock Directionality.*
 
-## 🚀 Logistiek Proces Overzicht
-Onze supply chain is opgesplitst in drie naadloze hoofdmodules:
-1. **Fase 1: Global Pipeline (Inkomend)**
-   Vrachtbeheer voor `Containers` op zee en `Ex-works` leveringen bij leveranciers (FCA/FOB). Focus op verwachte tijden, douanevrijgaves en orderverantwoordelijkheid.
-2. **Fase 2: Active Yard (Operationeel)**
-   Het hart van de terminal: Trucks checken in via de Gate, ontvangen automatische wachtruimtes via de `YmsAssignmentModal`, en worden visueel op de Dock-Timeline gepland.
-3. **Fase 3: History & Archive**
-   Afgehandelde leveringen (`GATE_OUT`) worden voor altijd weggeschreven voor On-Time-In-Full (OTIF) analyses.
-
-## 🎨 Visual Identity & Theme
-- **Design System:** We bouwen louter op de eigen componenten in `shared/` om third-party chaos te vermijden. Elke knop en form gebruikt Tailwind CSS in symbiose met een strak CSS-variabelen fundament (`index.css`).
-- **Dark Mode:** De React `ThemeProvider` verzorgt een realtime toggle. De kleuren (zachte indigo-tinten, transparante borders `border-border/50` en diepe slate-achtergronden) garanderen optimale leesbaarheid voor medewerkers tijdens nachtdiensten of in donkere loodskantoren.
-
-## ⚙️ Installation & Setup
-
-1. **Install Dependencies**
+1. **Installatie**
    ```bash
    npm install
    ```
-
-2. **Database Initialization**
-   Het systeem detecteert en migreert automatisch schema's naar `database.sqlite` bij het ontbreken ervan (via `src/db/sqlite.ts` schema's). Ook kun je basisdata forceren via `ts-node seed.ts`.
-
-3. **Development Mode**
-   Start express en vite concurrent:
+2. **Database Reset (Schoon begin)**
+   ```bash
+   npx tsx scripts/reset_db.ts
+   ```
+3. **Start Development**
    ```bash
    npm run dev
    ```
 
-4. **Production Build**
-   Controleer en bouw via tsc en vite build:
-   ```bash
-   npm run build
-   ```
+## 🔐 Beveiliging & Toegang
+Het systeem maakt gebruik van robuuste password throttling en JWT-beveiligde socket-communicatie. Elke actie wordt gelogd in de `audit_logs` voor volledige traceerbaarheid.
 
-## 🔐 Security & Access
-Bevat robuuste password throttling (`bcryptjs`) en sessie verificatie. Elke socket connectie handshaket via op JWT-berijkte payloads, wat niet-geauthoriseerde toegang per data-laag stolt.

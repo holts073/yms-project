@@ -35,7 +35,7 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={delivery?.id ? 'Levering Bewerken' : 'Nieuwe Levering'}
-      maxWidth="lg"
+      maxWidth="3xl"
     >
       <div className="space-y-6 pb-4">
         <div className="grid grid-cols-2 gap-6">

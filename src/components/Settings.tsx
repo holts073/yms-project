@@ -18,7 +18,49 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
     phone: '+31 (0)88 000 0000',
     address: 'Voorbeeldstraat 1, 1234 AB, Nederland',
     logoUrl: '/logo.jfif',
-    transportTemplate: ''
+    transportTemplate: `<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
+  <h2 style="color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Transport Opdracht: {reference}</h2>
+  <p>Geachte transportpartner,</p>
+  <p>Hierbij verstrekken wij u de opdracht voor het afhalen en leveren van de volgende zending:</p>
+  
+  <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+    <tr style="background-color: #f3f4f6;">
+      <th style="padding: 12px; border: 1px solid #ddd; text-align: left; width: 35%;">Onderdeel</th>
+      <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Gegevens</th>
+    </tr>
+    <tr>
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Referentie / PO</td>
+      <td style="padding: 10px; border: 1px solid #ddd;">{reference}</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Leverancier / Klant</td>
+      <td style="padding: 10px; border: 1px solid #ddd;">{supplierName}</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Laadlocatie</td>
+      <td style="padding: 10px; border: 1px solid #ddd;">{loadingCity}, {loadingCountry}</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Aantal Pallets</td>
+      <td style="padding: 10px; border: 1px solid #ddd;">{palletCount}</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Totaal Gewicht</td>
+      <td style="padding: 10px; border: 1px solid #ddd;">{weight} kg</td>
+    </tr>
+    <tr>
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Incoterm</td>
+      <td style="padding: 10px; border: 1px solid #ddd;">{incoterm}</td>
+    </tr>
+    <tr style="background-color: #f3f4f6;">
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Transportkosten</td>
+      <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #ea580c;">€ {transportCost}</td>
+    </tr>
+  </table>
+
+  <p style="margin-top: 24px;">Graag ontvangen wij een spoedige bevestiging van deze opdracht inclusief de verwachte laadtijd.</p>
+  <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">Met vriendelijke groet,<br/><strong style="color:#333;">YMS Logistics Planning</strong></p>
+</div>`
   });
 
   const [docSettings, setDocSettings] = useState(state?.settings?.shipment_settings || { container: [], exworks: [] });

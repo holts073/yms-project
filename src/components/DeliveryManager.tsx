@@ -140,7 +140,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         )}
       </section>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingDelivery ? 'Vracht Bewerken' : 'Nieuwe Vracht'} size="xl">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingDelivery ? 'Vracht Bewerken' : 'Nieuwe Vracht'} maxWidth="4xl">
          <form 
            onSubmit={(e) => {
              e.preventDefault();

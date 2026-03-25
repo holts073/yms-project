@@ -1,18 +1,16 @@
-# REFACTOR_ADVICE: De "Strafexpeditie-lijst"
+# REFACTOR_ADVICE: Kwaliteit & Stabiliteit
 
-Opgesteld door de @QA-Automator en de @System-Architect ten behoeve van de shift van morgenochtend. Voordat nieuwe features (zoals de AI Fast-Lane) worden gebouwd, moet onderstaande lijst 100% leeg zijn. Dit garandeert een onbreekbare fundering.
+Dit document dient als de "strafexpeditie-lijst" voor het ontwikkelteam. Voordat nieuwe functionele epics worden gestart, moeten onderstaande punten zijn geadresseerd om de technische integriteit van de Control Tower te waarborgen.
 
-## 1. Visuele "Drama" Punten (Nog niet 100% Pixel-Perfect)
--   [ ] **Modals op Mobiel:** Controleer of de `YmsAssignmentModal` op smalle schermen breed genoeg uitschaalt zonder de achterliggende content te clippen (test grid layouts in Tailwind).
--   [ ] **Badges Overflow:** Bij extreem lange referentienummers of leveranciersnamen in de Pipeline Cards breekt de text soms uit het kader. Voeg `truncate` of `line-clamp-1` overal consequent toe.
--   [ ] **Whitespace Balans:** De YMS Timeline (DockGrid) heeft in verhouding met de luchtige Pipeline cards nog een vrij "dense" tabelstructuur. Dit vloekt lichtelijk met de vernieuwde UI.
+## 1. Technical Debt (Code & Architectuur)
+- **Prop-drilling in YmsDashboard**: De `YmsDashboard.tsx` geeft momenteel teveel props door naar sub-componenten zoals `YmsDeliveryList`. Advies: Gebruik de bestaande `useYmsData` hook dieper in de boom of introduceer een specifiek `DeliveryContext`.
+- **Z-Index Management**: Hoewel we Sonner en Modals gebruiken, zijn er incidentele conflicten tussen de Sidebar en de Timeline tooltips. Centraliseer Z-index variabelen in `index.css`.
+- **Error Boundaries**: Implementeer React Error Boundaries rondom de `YmsTimeline` om te voorkomen dat een enkele render-error de hele Control Tower platlegt.
 
-## 2. Console-Errors & Code Smells (Backend & Frontend)
--   [ ] **Undefined Keys in Lijsten:** Sommige sublijsten wachten nog op unieke `key={item.id}` waarden waardoor React in de console blijft waarschuwen.
--   [ ] **Node/SQLite Memory:** De `getLogs()` en `getDeliveries()` in `queries.ts` laden momenteel *alle* rows in de memory. Oplossing vereist: Offset/Limit of infinite scroll.
--   [ ] **Socket Disconnects:** Bij HMR (Hot Module Reloading) raakt de UI de context kwijt en laat deze verouderde statussen zien totdat men refresht. Fix de Socket reconnect logic in `SocketContext.tsx`.
+## 2. Visual Consistency (@UX-Visual-Director)
+- **Dark Mode Contrast**: Controleer het contrast van grijze teksten (`text-slate-500`) op de donkere kaart-achtergronden. Sommige elementen vallen weg bij lage schermhelderheid.
+- **Padding & Margins**: De transitie tussen de `Global Pipeline` cards en de `Active Yard` grid vertoont inconsistente tussenruimtes (margins). Trek dit recht naar een standaard `gap-8` of `gap-10`.
+- **Loading States**: Vervang de generieke spinners door 'skeletons' die passen bij de vorm van de kaarten/tabelregels voor een rustiger laadbeeld.
 
-## 3. Prioriteitenlijst voor Morgenochtend
-1.  **Fix de Console!** Alle React warnings oplossen is **Prioriteit #1**.
-2.  **Visueel Herstel.** Trek de laatste kaders recht.
-3.  Pas daarna krijgt de @QA-Automator toestemming om de Fast-Lane feature ticket of andere Logistieke epics in ontvangst te nemen.
+## 3. Performance & Schaalbaarheid
+- **Asset Optimalisatie**: De `logo.jfif` en andere beelden moeten omgezet worden naar `.webp` voor snellere initiële laadtijden.

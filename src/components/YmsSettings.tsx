@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSocket } from '../SocketContext';
-import { Plus, Save, RotateCcw } from 'lucide-react';
+import { Plus, Save, RotateCcw, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WarehouseManager } from './features/WarehouseManager';
 import { DockManager } from './features/DockManager';
@@ -8,6 +8,7 @@ import { WaitingAreaManager } from './features/WaitingAreaManager';
 import { Modal } from './shared/Modal';
 import { Input } from './shared/Input';
 import { Button } from './shared/Button';
+import { Badge } from './shared/Badge';
 import { YmsWarehouse } from '../types';
 
 export default function YmsSettings() {
@@ -99,8 +100,52 @@ export default function YmsSettings() {
           )}
 
           {activeTab === 'overrides' && (
-            <div className="py-20 text-center bg-card rounded-[2.5rem] border border-dashed border-border italic text-[var(--muted-foreground)] font-medium">
-               Geavanceerde dagelijkse overrides (beschikbaarheid, capaciteit) zijn momenteel in ontwikkeling.
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-black text-foreground">Dock Overrides</h3>
+                <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={() => dispatch('YMS_ADD_DOCK_OVERRIDE', {
+                  id: Math.random().toString(36).substr(2, 9),
+                  dockId: docks[0]?.id || 1,
+                  warehouseId: selectedWarehouseId,
+                  startDate: new Date().toISOString().split('T')[0],
+                  endDate: new Date().toISOString().split('T')[0],
+                  status: 'Blocked',
+                  allowedTemperatures: ['Droog']
+                })}>
+                  Override Toevoegen
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {(state.yms.dockOverrides || [])
+                  .filter(o => o.warehouseId === selectedWarehouseId)
+                  .map(override => (
+                  <div key={override.id} className="bg-card border border-border p-6 rounded-3xl flex items-center justify-between shadow-sm hover:shadow-md transition-all">
+                    <div className="flex gap-8 items-center">
+                      <div>
+                        <p className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest">Dock</p>
+                        <p className="font-bold text-foreground">#{override.dockId} - {docks.find(d => d.id === override.dockId)?.name || 'Onbekend'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest">Periode</p>
+                        <p className="font-bold text-foreground">{override.startDate} t/m {override.endDate}</p>
+                      </div>
+                      <Badge variant={override.status === 'Blocked' ? 'danger' : 'success'}>
+                        {override.status === 'Blocked' ? 'GEBLOKKEERD' : 'BESCHIKBAAR'}
+                      </Badge>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => dispatch('Y_DELETE_DOCK_OVERRIDE', override.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                      Verwijderen
+                    </Button>
+                  </div>
+                ))}
+                
+                {(state.yms.dockOverrides || []).filter(o => o.warehouseId === selectedWarehouseId).length === 0 && (
+                  <div className="py-20 text-center bg-[var(--muted)]/30 rounded-3xl border border-dashed border-border italic text-[var(--muted-foreground)]">
+                    Geen actieve overrides gevonden voor dit magazijn.
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </motion.div>

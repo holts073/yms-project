@@ -11,14 +11,15 @@ export const useYmsData = () => {
     deliveries = [],
     dockOverrides: overrides = [] 
   } = state?.yms || {};
-
-  const currentWarehouse = warehouses.find(w => w.id === selectedWarehouseId);
   
-  const filteredDocks = docks.filter(d => d.warehouseId === selectedWarehouseId);
-  const filteredWaitingAreas = waitingAreas.filter(wa => wa.warehouseId === selectedWarehouseId);
+  const activeWarehouseId = selectedWarehouseId || warehouses[0]?.id || 'W01';
+  const currentWarehouse = warehouses.find(w => w.id === activeWarehouseId);
+  
+  const filteredDocks = docks.filter(d => d.warehouseId === activeWarehouseId);
+  const filteredWaitingAreas = waitingAreas.filter(wa => wa.warehouseId === activeWarehouseId);
   const filteredOverrides = overrides.filter(o => {
     const dock = docks.find(d => d.id === o.dockId);
-    return dock?.warehouseId === selectedWarehouseId;
+    return dock?.warehouseId === activeWarehouseId;
   });
 
   // Actions
@@ -43,7 +44,7 @@ export const useYmsData = () => {
     allWaitingAreas: waitingAreas,
     overrides: filteredOverrides,
     deliveries,
-    selectedWarehouseId,
+    selectedWarehouseId: activeWarehouseId,
     currentWarehouse,
     actions: {
       setSelectedWarehouse,

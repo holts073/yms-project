@@ -5,19 +5,58 @@ function generateRandomString(length: number) {
   return Math.random().toString(36).substr(2, length).toUpperCase();
 }
 
-function getRandomDate(start: Date, end: Date) {
-  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+// Define nowMs globally or pass it to getRandomDate if it's meant to be dynamic per seed run.
+// For the purpose of this change, let's define it here, assuming it's a constant for the seeding process.
+const nowMs = Date.now();
+
+function getRandomDate() {
+  // Verdelen van Data: 40% Vandaag, 30% Historie, 30% Toekomst
+  const rand = Math.random();
+  let msOffset;
+  if (rand < 0.4) {
+    // Vandaag (tussen 07:00 en 22:00)
+    const today = new Date(nowMs); // Use nowMs for consistency
+    today.setHours(7 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 60), 0, 0);
+    return today;
+  } else if (rand < 0.7) {
+    // Afgelopen 30 dagen
+    msOffset = -(Math.random() * 30 * 24 * 60 * 60 * 1000);
+  } else {
+    // Komende 14 dagen
+    msOffset = Math.random() * 14 * 24 * 60 * 60 * 1000;
+  }
+  return new Date(nowMs + msOffset);
 }
 
 function generateContainerDelivery(i: number, offsetDays: number): Delivery {
-  const eta = getRandomDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)); 
+  const eta = getRandomDate();
+  const etaTime = eta.getTime();
+  const ymsStatusOptions = ['EXPECTED', 'PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'COMPLETED', 'GATE_OUT'];
+  
+  let mainStatus = 0;
+  let ymsStatus = 'PLANNED';
+  
+  if (etaTime < nowMs - 24 * 60 * 60 * 1000) {
+    // Past (>1 day ago) => Completed
+    mainStatus = 100;
+    ymsStatus = 'GATE_OUT';
+  } else if (etaTime > nowMs + 24 * 60 * 60 * 1000) {
+    // Future (>1 day) => Planned
+    mainStatus = 10;
+    ymsStatus = 'PLANNED';
+  } else {
+    // Today / Active
+    mainStatus = [25, 50, 75, 80][Math.floor(Math.random() * 4)];
+    ymsStatus = ymsStatusOptions[Math.floor(Math.random() * 6) + 2]; // GATE_IN to UNLOADING
+  }
+
   return {
     id: `DEMO-CONT-${i}`,
     type: 'container',
     reference: `PO-${generateRandomString(6)}`,
     supplierId: 'S01',
     transporterId: 'T01',
-    status: 10,
+    status: mainStatus,
     eta: eta.toISOString(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -29,19 +68,37 @@ function generateContainerDelivery(i: number, offsetDays: number): Delivery {
     containerNumber: `${generateRandomString(4)}${Math.floor(Math.random() * 900000) + 100000}`,
     portOfArrival: 'Rotterdam',
     etaPort: (new Date(eta.getTime() - 2 * 24 * 60 * 60 * 1000)).toISOString(),
-    documents: []
-  };
+    documents: [],
+    _ymsStatus: ymsStatus // Temporary field to pass YMS status
+  } as any;
 }
 
 function generateExWorksDelivery(i: number, offsetDays: number): Delivery {
-  const eta = getRandomDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  const eta = getRandomDate();
+  const etaTime = eta.getTime();
+  const ymsStatusOptions = ['EXPECTED', 'PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'LOADING', 'COMPLETED', 'GATE_OUT'];
+
+  let mainStatus = 0;
+  let ymsStatus = 'PLANNED';
+
+  if (etaTime < nowMs - 24 * 60 * 60 * 1000) {
+    mainStatus = 100;
+    ymsStatus = 'GATE_OUT';
+  } else if (etaTime > nowMs + 24 * 60 * 60 * 1000) {
+    mainStatus = 10;
+    ymsStatus = 'PLANNED';
+  } else {
+    mainStatus = [25, 50, 75, 80][Math.floor(Math.random() * 4)];
+    ymsStatus = ymsStatusOptions[Math.floor(Math.random() * 6) + 2]; // GATE_IN to LOADING
+  }
+
   return {
     id: `DEMO-EXW-${i}`,
     type: 'exworks',
     reference: `PO-${generateRandomString(6)}`,
     supplierId: 'S02',
     transporterId: 'T02',
-    status: 10,
+    status: mainStatus,
     eta: eta.toISOString(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -55,8 +112,9 @@ function generateExWorksDelivery(i: number, offsetDays: number): Delivery {
     cargoType: 'Dry',
     containerNumber: `${generateRandomString(2).toUpperCase()}-${Math.floor(Math.random() * 90) + 10}-${generateRandomString(2).toUpperCase()}`,
     palletExchange: Math.random() > 0.5,
-    documents: []
-  };
+    documents: [],
+    _ymsStatus: ymsStatus // Temporary field to pass YMS status
+  } as any;
 }
 
 const seedDemo = () => {
@@ -82,14 +140,11 @@ const seedDemo = () => {
 
   console.log('Seeding 150+ demo shipments (Pipeline & YMS & Pallets)...');
   
-  const nowMs = Date.now();
   
   for (let i = 1; i <= 100; i++) {
     const delivery = generateContainerDelivery(i, 0);
-    const isPast = new Date(delivery.eta!).getTime() < nowMs - 24 * 60 * 60 * 1000;
     
-    if (isPast) {
-      delivery.status = 100;
+    if (delivery.status === 100) { // If completed
       if (delivery.palletExchange && delivery.palletCount) {
         savePalletTransaction({
           entityId: delivery.supplierId,
@@ -105,7 +160,7 @@ const seedDemo = () => {
     // YMS Data (only for nearby deliveries to avoid huge yard clogs)
     const etaMs = new Date(delivery.eta || nowMs).getTime();
     if (Math.abs(etaMs - nowMs) < 7 * 24 * 60 * 60 * 1000) {
-      const ymsStatus = isPast ? 'COMPLETED' : ['PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'COMPLETED'][Math.floor(Math.random() * 6)];
+      const ymsStatus = (delivery as any).ymsStatus; // Retrieve YMS status from temporary field
       saveYmsDelivery({
         id: `YMS-${delivery.id}`,
         warehouseId: 'W01',

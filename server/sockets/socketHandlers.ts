@@ -187,6 +187,12 @@ export const setupSocketHandlers = (io: Server) => {
 
           case "DELETE_ADDRESS":
             if (!isAdmin) throw new Error("Alleen admins kunnen adressen verwijderen");
+            // Check for dependent deliveries
+            const allDelsForAddr = getAllDeliveries();
+            const hasDependents = allDelsForAddr.some(d => d.supplierId === payload.id || d.transporterId === payload.id);
+            if (hasDependents) {
+              throw new Error("Kan adres niet verwijderen: er zijn nog actieve of gearchiveerde leveringen gekoppeld aan dit adres. Wis eerst de leveringen.");
+            }
             deleteAddressEntry(payload.id);
             logEntry.action = "Verwijderd Adres";
             logEntry.details = `Adres verwijderd uit ${payload.category}.`;

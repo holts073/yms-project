@@ -43,14 +43,15 @@ const Statistics = () => {
     return { activeCount: active.length, otif, avgLeadTime, costPerPallet, completedCount: completed.length, onTimeCount: onTime.length };
   }, [deliveries]);
 
+  const completedYms = useMemo(() => yms.deliveries.filter(d => d.status === 'COMPLETED' || d.status === 'GATE_OUT'), [yms.deliveries]);
+
   const ymsStats = useMemo(() => {
     const totalDocks = yms.docks.length;
     const occupiedDocks = yms.docks.filter(d => d.status === 'Occupied').length;
     const dockOccupancy = totalDocks > 0 ? Math.round((occupiedDocks / totalDocks) * 100) : 0;
 
-    const completedYms = yms.deliveries.filter(d => d.status === 'COMPLETED' || d.status === 'GATE_OUT');
     const totalDwell = completedYms.reduce((sum, d) => sum + (d.estimatedDuration || 60), 0); // Mock dwell computation
-    const avgDwellHours = completedYms.length > 0 ? (totalDwell / completedYms.length / 60) : 1.2;
+    const avgDwellHours = completedYms.length > 0 ? (totalDwell / completedYms.length / 60) : 0;
 
     const exWorks = yms.deliveries.filter(d => d.direction === 'OUTBOUND');
     const delayedExWorks = exWorks.filter(d => d.isLate);
@@ -68,8 +69,8 @@ const Statistics = () => {
 
   // Mock data for Recharts
   const dockData = yms.docks.map(d => ({ name: d.name, active: d.status === 'Occupied' ? 100 : 0, available: d.status === 'Available' ? 100 : 0 }));
-  const dwellData = [{ day: 'Ma', uren: 1.1 }, { day: 'Di', uren: 1.4 }, { day: 'Wo', uren: 1.2 }, { day: 'Do', uren: 1.8 }, { day: 'Vr', uren: 1.3 }];
-  const delayData = [{ name: 'Op tijd', value: 100 - ymsStats.exWorksDelayRate }, { name: 'Vertraagd', value: ymsStats.exWorksDelayRate }];
+  const dwellData = completedYms.length > 0 ? [{ day: 'Ma', uren: 1.1 }, { day: 'Di', uren: 1.4 }, { day: 'Wo', uren: 1.2 }, { day: 'Do', uren: 1.8 }, { day: 'Vr', uren: 1.3 }] : [];
+  const delayData = yms.deliveries.length > 0 ? [{ name: 'Op tijd', value: 100 - ymsStats.exWorksDelayRate }, { name: 'Vertraagd', value: ymsStats.exWorksDelayRate }] : [];
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 

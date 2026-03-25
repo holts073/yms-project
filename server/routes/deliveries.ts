@@ -14,6 +14,7 @@ export const buildStaticState = () => {
       const { passwordHash, ...safeUser } = u;
       return safeUser;
     }),
+    deliveries: getAllDeliveries(),
     companySettings: getSetting('companySettings', {}),
     settings: getSetting('settings', {}),
     yms: {

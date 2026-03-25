@@ -59,6 +59,22 @@ export const DockManager: React.FC<DockManagerProps> = ({ docks, warehouseId, on
              </div>
           </div>
           <div className="mt-6 flex flex-col gap-2">
+             <div className="flex gap-1 p-1 bg-[var(--muted)] rounded-xl border border-border">
+                {(['INBOUND', 'OUTBOUND', 'BOTH'] as const).map(dir => (
+                  <button
+                    key={dir}
+                    onClick={() => onUpdate({ ...dock, direction_capability: dir })}
+                    className={cn(
+                      "flex-1 py-1.5 rounded-lg text-[8px] font-black transition-all",
+                      dock.direction_capability === dir 
+                        ? "bg-white dark:bg-slate-800 text-indigo-600 shadow-sm" 
+                        : "text-[var(--muted-foreground)] hover:text-foreground"
+                    )}
+                  >
+                    {dir}
+                  </button>
+                ))}
+             </div>
              <button
                onClick={() => onUpdate({ ...dock, isFastLane: !dock.isFastLane })}
                className={cn(
