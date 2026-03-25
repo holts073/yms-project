@@ -14,6 +14,7 @@ interface YmsHeaderProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   onNewDelivery: () => void;
+  onBack?: () => void;
 }
 
 export const YmsHeader: React.FC<YmsHeaderProps> = ({
@@ -26,14 +27,21 @@ export const YmsHeader: React.FC<YmsHeaderProps> = ({
   onSelectDate,
   searchTerm,
   onSearchChange,
-  onNewDelivery
+  onNewDelivery,
+  onBack
 }) => {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/20">
-            <MapPin className="text-white" size={32} strokeWidth={2.5} />
+          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/20 flex items-center justify-center">
+            {onBack ? (
+              <button onClick={onBack} className="hover:scale-110 transition-transform">
+                <MapPin className="text-white" size={32} strokeWidth={2.5} />
+              </button>
+            ) : (
+              <MapPin className="text-white" size={32} strokeWidth={2.5} />
+            )}
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight">{title}</h1>
@@ -42,6 +50,9 @@ export const YmsHeader: React.FC<YmsHeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-4">
+          {onBack && (
+            <Button variant="secondary" onClick={onBack}>Terug naar Dashboard</Button>
+          )}
           <Button onClick={onNewDelivery} leftIcon={<Plus size={20} />}>Plan Levering</Button>
         </div>
       </div>

@@ -8,20 +8,20 @@ import { AddressEntry } from '../types';
 import { cn } from '../lib/utils';
 
 const AddressBook = () => {
-  const { suppliers, transporters, actions } = useAddressBook();
-  const [activeTab, setActiveTab] = useState<'suppliers' | 'transporters'>('suppliers');
+  const { suppliers, transporters, customers, actions } = useAddressBook();
+  const [activeTab, setActiveTab] = useState<'suppliers' | 'transporters' | 'customers'>('suppliers');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Partial<AddressEntry> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const currentEntries = useMemo(() => {
-    const list = activeTab === 'suppliers' ? suppliers : transporters;
+    const list = activeTab === 'suppliers' ? suppliers : activeTab === 'transporters' ? transporters : customers;
     return list
       .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                   e.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   e.contact.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [activeTab, suppliers, transporters, searchTerm]);
+  }, [activeTab, suppliers, transporters, customers, searchTerm]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,13 +71,22 @@ const AddressBook = () => {
           >
             Transporteurs
           </button>
+          <button
+            onClick={() => setActiveTab('customers')}
+            className={cn(
+              "px-8 py-3 rounded-2xl font-bold transition-all",
+              activeTab === 'customers' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]/50"
+            )}
+          >
+            Klanten
+          </button>
         </div>
 
         <div className="relative w-full md:max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" size={18} />
           <input 
             type="text" 
-            placeholder={`Zoek in ${activeTab === 'suppliers' ? 'leveranciers' : 'transporteurs'}...`} 
+            placeholder={`Zoek in ${activeTab === 'suppliers' ? 'leveranciers' : activeTab === 'transporters' ? 'transporteurs' : 'klanten'}...`} 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-4 bg-card border border-border rounded-3xl text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm text-foreground outline-none"

@@ -17,6 +17,13 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<any>(null);
+  const [formType, setFormType] = useState<'container' | 'exworks'>('container');
+
+  const openModal = (d?: any) => {
+    setEditingDelivery(d || null);
+    setFormType(d?.type || 'container');
+    setIsModalOpen(true);
+  };
 
   const ITEMS_PER_PAGE = 20;
   const { deliveries, totalPages } = useDeliveries(currentPage, ITEMS_PER_PAGE, filter, typeFilter, 'eta', true);
@@ -62,7 +69,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         </div>
         <div className="flex items-center gap-4">
            <Button variant="secondary" leftIcon={<Download size={18} />} onClick={handleExportCSV}>Export</Button>
-           {canEdit && <Button leftIcon={<Plus size={18} />} onClick={() => { setEditingDelivery(null); setIsModalOpen(true); }}>Nieuwe Vracht</Button>}
+           {canEdit && <Button leftIcon={<Plus size={18} />} onClick={() => openModal()}>Nieuwe Vracht</Button>}
         </div>
       </header>
 
@@ -97,7 +104,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
             selectedIds={selectedIds}
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === deliveries.length ? [] : deliveries.map(d => d.id))}
-            onOpenModal={(d) => { setEditingDelivery(d); setIsModalOpen(true); }}
+            onOpenModal={(d) => openModal(d)}
             onDelete={(id) => dispatch('DELETE_DELIVERY', id)}
             onMailTransport={(d) => toast.info('Transport mail interface geopend')}
             onYmsRegister={handleYmsRegister}
@@ -143,11 +150,11 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
            }}
            className="space-y-6"
          >
-            <div className="grid grid-cols-2 gap-6">
+             <div className="grid grid-cols-2 gap-6">
                <Input label="Referentie" name="reference" defaultValue={editingDelivery?.reference} required />
                <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Type</label>
-                  <select name="type" defaultValue={editingDelivery?.type || 'container'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
+                  <select name="type" value={formType} onChange={(e) => setFormType(e.target.value as any)} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold focus:ring-2 outline-none">
                      <option value="container">Container</option>
                      <option value="exworks">Ex-Works</option>
                   </select>
@@ -165,7 +172,32 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                   </select>
                </div>
                <Input label="ETA Magazijn" name="etaWarehouse" type="date" defaultValue={editingDelivery?.etaWarehouse?.split('T')[0]} />
-               <Input label="Container nummer / Kenteken" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
+               
+               {formType === 'container' && (
+                 <>
+                   <Input label="Container nummer" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
+                   <Input label="Haven van Aankomst" name="portOfArrival" defaultValue={editingDelivery?.portOfArrival} />
+                   <Input label="ETA Haven" name="etaPort" type="date" defaultValue={editingDelivery?.etaPort?.split('T')[0]} />
+                 </>
+               )}
+
+               {formType === 'exworks' && (
+                 <>
+                   <Input label="Kenteken" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
+                   <Input label="Laadstad" name="loadingCity" defaultValue={editingDelivery?.loadingCity} />
+                   <Input label="Laadland" name="loadingCountry" defaultValue={editingDelivery?.loadingCountry} />
+                   <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Incoterms</label>
+                      <select name="incoterm" defaultValue={editingDelivery?.incoterm || 'EXW'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
+                         <option value="EXW">EXW</option>
+                         <option value="FCA">FCA</option>
+                         <option value="FOB">FOB</option>
+                         <option value="DAP">DAP</option>
+                      </select>
+                   </div>
+                 </>
+               )}
+
                <Input label="Aantal Pallets" name="palletCount" type="number" defaultValue={editingDelivery?.palletCount} />
                <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallet Type</label>

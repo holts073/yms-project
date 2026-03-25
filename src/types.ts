@@ -13,7 +13,7 @@ export interface AddressEntry {
   contact: string;
   email: string;
   address: string;
-  type: 'supplier' | 'transporter';
+  type: 'supplier' | 'transporter' | 'customer';
   pickupAddress?: string;
   otif?: number; // On-Time In-Full percentage
   remarks?: string;
@@ -126,6 +126,7 @@ export interface AppState {
   addressBook: {
     suppliers: AddressEntry[];
     transporters: AddressEntry[];
+    customers: AddressEntry[];
   };
   logs: LogEntry[];
   users: User[];

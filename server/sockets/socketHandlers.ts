@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { 
   insertDelivery, getAllDeliveries, deleteDelivery, saveUser, getUsers, 
-  saveAddressBookEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
+  saveAddressBookEntry, deleteAddressEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
   getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, saveYmsWarehouse, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
   saveYmsAlert, deleteYmsAlert, resolveYmsAlert, addLog, getYmsDocks, getYmsAlerts
@@ -154,6 +154,23 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.action = "Deleted Delivery";
             logEntry.details = `Removed delivery ID: ${payload}`;
             io.emit("DELIVERY_UPDATED");
+            break;
+
+          case "ADD_ADDRESS":
+          case "UPDATE_ADDRESS":
+            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
+            saveAddressBookEntry(payload.entry);
+            logEntry.action = type === "ADD_ADDRESS" ? "Toegevoegd Adres" : "Gewijzigd Adres";
+            logEntry.details = `Adres ${payload.entry.name} succesvol ${type === "ADD_ADDRESS" ? "toegevoegd" : "gewijzigd"} in ${payload.category}.`;
+            io.emit("state_update", buildStaticState());
+            break;
+
+          case "DELETE_ADDRESS":
+            if (!isAdmin) throw new Error("Alleen admins kunnen adressen verwijderen");
+            deleteAddressEntry(payload.id);
+            logEntry.action = "Verwijderd Adres";
+            logEntry.details = `Adres verwijderd uit ${payload.category}.`;
+            io.emit("state_update", buildStaticState());
             break;
 
           case "BULK_UPDATE_DELIVERIES":

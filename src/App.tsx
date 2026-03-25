@@ -203,7 +203,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       case 'settings-yms': return <YmsSettings />;
       case 'reports': return <Reporting />;
       case 'yms-arrivals': return <YmsDashboard view="arrivals" />;
-      case 'yms-planning': return <YmsDashboard view="planning" />;
+      case 'yms-planning': return <YmsDashboard view="planning" onBack={() => handleNavigate('dashboard')} />;
       case 'yms-public': return <YmsPublic onBack={() => handleNavigate('dashboard')} />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
@@ -226,7 +226,10 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="w-72 bg-card border-r border-border flex flex-col p-6 transition-colors duration-300">
+      <aside className={cn(
+        "bg-card border-r border-border flex flex-col p-6 transition-all duration-300",
+        activeTab === 'yms-planning' ? "w-0 p-0 overflow-hidden border-none hidden md:hidden" : "w-72"
+      )}>
         <div className="flex items-center gap-3 mb-10 px-4">
           <img 
             src="/logo.jfif" 
@@ -234,7 +237,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v2.3.0</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.2.2</span></h1>
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">

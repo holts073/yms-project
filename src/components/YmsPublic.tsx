@@ -37,6 +37,15 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-white overflow-hidden flex flex-col p-12 font-sans relative">
+      {onBack && (
+        <button 
+          onClick={onBack}
+          className="absolute top-8 left-8 text-slate-600 hover:text-slate-300 transition-colors p-2"
+          title="Terug naar Dashboard"
+        >
+          <Truck size={24} />
+        </button>
+      )}
       <header className="flex items-center justify-between mb-16 px-4 mt-8">
         <div className="flex items-center gap-6">
           <div className="bg-indigo-600 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(79,70,229,0.3)]">
@@ -126,15 +135,6 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
           </div>
         </div>
         <p className="text-slate-600 font-bold text-lg tracking-widest uppercase">Safe & Efficient Yard Management</p>
-        
-        {onBack && (
-          <button 
-            onClick={onBack}
-            className="absolute bottom-8 right-8 opacity-20 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
-          >
-            <img src="/logo.jfif" alt="ILG Logo" className="h-10 w-auto" />
-          </button>
-        )}
       </footer>
     </div>
   );

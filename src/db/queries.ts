@@ -224,7 +224,8 @@ export function deleteUser(id: string) {
 export function getAddressBook() {
   const suppliers = db.prepare("SELECT * FROM address_book WHERE type = 'supplier'").all() as AddressEntry[];
   const transporters = db.prepare("SELECT * FROM address_book WHERE type = 'transporter'").all() as AddressEntry[];
-  return { suppliers, transporters };
+  const customers = db.prepare("SELECT * FROM address_book WHERE type = 'customer'").all() as AddressEntry[];
+  return { suppliers, transporters, customers };
 }
 
 export function saveAddressBookEntry(entry: AddressEntry) {

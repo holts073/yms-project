@@ -15,13 +15,14 @@ import { YmsDeliveryModal } from './features/YmsDeliveryModal';
 import { YmsDelivery, YmsDeliveryStatus } from '../types';
 import { FullPageLoader } from './shared/LoadingSpinner';
 
-export default function YmsDashboard({ view = 'planning' }: { view?: 'arrivals' | 'planning' }) {
+export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'arrivals' | 'planning', onBack?: () => void }) {
   const { state } = useSocket();
   const { theme, toggleTheme } = useTheme();
   const yms = useYmsData();
   const { deliveries, actions: deliveryActions } = useDeliveries();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [directionFilter, setDirectionFilter] = useState<'INBOUND' | 'OUTBOUND'>('INBOUND');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingDelivery, setEditingDelivery] = useState<Partial<YmsDelivery> | null>(null);
   const [assigningDelivery, setAssigningDelivery] = useState<YmsDelivery | null>(null);
@@ -30,10 +31,11 @@ export default function YmsDashboard({ view = 'planning' }: { view?: 'arrivals' 
   const filteredDeliveries = useMemo(() => {
     return yms.deliveries.filter((d: YmsDelivery) => 
       d.warehouseId === yms.selectedWarehouseId && 
+      d.direction === directionFilter &&
       (d.scheduledTime.startsWith(selectedDate) || ['GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'].includes(d.status)) &&
       (d.reference?.toLowerCase().includes(searchTerm.toLowerCase()) || d.supplier?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [yms.deliveries, yms.selectedWarehouseId, selectedDate, searchTerm]);
+  }, [yms.deliveries, yms.selectedWarehouseId, selectedDate, searchTerm, directionFilter]);
 
   const stats = useMemo(() => ({
     totalDeliveries: filteredDeliveries.length,
@@ -58,7 +60,27 @@ export default function YmsDashboard({ view = 'planning' }: { view?: 'arrivals' 
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onNewDelivery={() => setEditingDelivery({})}
+        onBack={onBack}
       />
+
+      <div className="flex gap-4 p-2 bg-card rounded-[2rem] border border-border w-fit shadow-sm">
+        <button
+          onClick={() => setDirectionFilter('INBOUND')}
+          className={`px-8 py-3 rounded-2xl font-black uppercase tracking-widest transition-all ${
+            directionFilter === 'INBOUND' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20' : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]/50'
+          }`}
+        >
+          Inbound (Leveringen)
+        </button>
+        <button
+          onClick={() => setDirectionFilter('OUTBOUND')}
+          className={`px-8 py-3 rounded-2xl font-black uppercase tracking-widest transition-all ${
+            directionFilter === 'OUTBOUND' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20' : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]/50'
+          }`}
+        >
+          Outbound (Klantzendingen)
+        </button>
+      </div>
 
       <YmsStats stats={stats} />
 

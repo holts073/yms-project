@@ -60,7 +60,22 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setState(newState);
     });
 
+    // Activity timeout logic (60 minutes)
+    let inactivityTimer: NodeJS.Timeout;
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        logout();
+      }, 60 * 60 * 1000);
+    };
+
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach(evt => document.addEventListener(evt, resetTimer, { passive: true }));
+    resetTimer();
+
     return () => {
+      clearTimeout(inactivityTimer);
+      activityEvents.forEach(evt => document.removeEventListener(evt, resetTimer));
       newSocket.close();
     };
   }, [isAuthenticated]);
