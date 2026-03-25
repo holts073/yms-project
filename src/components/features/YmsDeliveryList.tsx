@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Truck, MapPin, Warehouse as WarehouseIcon, CheckCircle2, MoreVertical, Zap, AlertCircle, Clock, Anchor } from 'lucide-react';
+import { Clock, MapPin, CheckCircle2, AlertTriangle, MoreVertical, Edit2, LayoutGrid, Warehouse, Truck, Anchor, Zap, AlertCircle, Warehouse as WarehouseIcon } from 'lucide-react';
+import { useYmsData } from '../../hooks/useYmsData';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { YmsDelivery, YmsDock, YmsWaitingArea, YmsDeliveryStatus } from '../../types';
@@ -9,20 +10,16 @@ import { isFastLaneEligible } from '../../lib/ymsRules';
 
 interface YmsDeliveryListProps {
   deliveries: YmsDelivery[];
-  docks: YmsDock[];
-  waitingAreas: YmsWaitingArea[];
-  getStatusLabel: (status: string) => string;
-  onUpdateStatus: (d: YmsDelivery, status: YmsDeliveryStatus) => void;
-  onAssignDock: (d: YmsDelivery, dockId: number) => void;
-  onAssignWaitingArea: (d: YmsDelivery, waId: number) => void;
-  onRegisterExpected: (d: YmsDelivery) => void;
-  onEdit: (d: YmsDelivery) => void;
+  getStatusLabel: (status: any) => string;
+  onUpdateStatus: (id: string, status: any) => void;
+  onAssignDock: (delivery: YmsDelivery, dockId: string) => void;
+  onAssignWaitingArea: (delivery: YmsDelivery, waId: string) => void;
+  onRegisterExpected: (delivery: YmsDelivery) => void;
+  onEdit: (delivery: YmsDelivery) => void;
 }
 
 export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
   deliveries,
-  docks,
-  waitingAreas,
   getStatusLabel,
   onUpdateStatus,
   onAssignDock,
@@ -30,6 +27,8 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
   onRegisterExpected,
   onEdit
 }) => {
+  const { docks, waitingAreas } = useYmsData();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const statuses: YmsDeliveryStatus[] = ['EXPECTED', 'PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'];
 
   const calculateWaitTime = (time?: string) => {

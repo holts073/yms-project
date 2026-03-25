@@ -3,15 +3,16 @@ import { MapPin, Thermometer } from 'lucide-react';
 import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
+import { useYmsData } from '../../hooks/useYmsData';
 import { YmsDock } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface YmsDockGridProps {
-  docks: YmsDock[];
   onUpdateDock: (dock: any) => void;
 }
 
-export const YmsDockGrid: React.FC<YmsDockGridProps> = ({ docks, onUpdateDock }) => {
+export const YmsDockGrid: React.FC<YmsDockGridProps> = ({ onUpdateDock }) => {
+  const { docks } = useYmsData();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {docks.map((dock) => (

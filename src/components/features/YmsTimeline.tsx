@@ -2,23 +2,24 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Clock, MoreVertical, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { YmsDelivery, YmsDock } from '../../types';
+import { useYmsData } from '../../hooks/useYmsData';
+import { YmsDock, YmsDelivery, YmsDeliveryStatus } from '../../types';
 
 interface YmsTimelineProps {
-  docks: YmsDock[];
   deliveries: YmsDelivery[];
-  onSaveDelivery: (d: Partial<YmsDelivery>) => void;
-  getStatusLabel: (status: string) => string;
-  isToday: boolean;
+  onSaveDelivery?: (delivery: YmsDelivery) => void;
+  getStatusLabel?: (status: string) => string;
+  isToday?: boolean;
 }
 
 export const YmsTimeline: React.FC<YmsTimelineProps> = ({
-  docks,
   deliveries,
   onSaveDelivery,
   getStatusLabel,
-  isToday
+  isToday = false
 }) => {
+  const { docks } = useYmsData();
+  const timelineRef = React.useRef<HTMLDivElement>(null);
   const startHour = 7;
   const totalHours = 16;
   const hourWidth = 200;
@@ -126,8 +127,11 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
                         )}>
                           {getStatusLabel(delivery.status)}
                         </span>
-                        <MoreVertical size={12} className="text-slate-300 group-hover/card:text-slate-500" />
+                        <MoreVertical size={12} className="text-slate-300 group-hover/card:text-slate-500 dark:group-hover/card:text-slate-400" />
                       </div>
+                      <span className="text-xs text-[var(--muted-foreground)] dark:text-slate-400 tabular-nums">
+                      {String(hour).padStart(2, '0')}:00
+                    </span>
                       <div className="flex items-center gap-1 mt-0.5">
                         <span className={cn(
                           "text-[8px] font-black px-1 rounded-sm",

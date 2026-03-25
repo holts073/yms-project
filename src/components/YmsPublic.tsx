@@ -62,14 +62,14 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
           <p className="text-7xl font-mono font-black text-indigo-400 tabular-nums">
             {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
-          <p className="text-xl text-slate-500 font-bold uppercase tracking-widest mt-2">
+          <p className="text-xl text-slate-400 font-bold uppercase tracking-widest mt-2">
             {new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-4 gap-8 mb-8 px-8 py-6 bg-slate-900/50 rounded-3xl border border-white/5 text-slate-500 font-black text-xl uppercase tracking-[0.3em]">
+        <div className="grid grid-cols-4 gap-8 mb-8 px-8 py-6 bg-slate-900/50 rounded-3xl border border-white/5 text-slate-400 font-black text-xl uppercase tracking-[0.3em]">
           <div className="flex items-center gap-4"><Truck size={24} /> Kenteken</div>
           <div className="flex items-center gap-4"><Clock size={24} /> Tijd</div>
           <div className="flex items-center gap-4"><MapPin size={24} /> Dock</div>

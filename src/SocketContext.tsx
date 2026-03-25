@@ -121,6 +121,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  // State Reconciliation (Heartbeat)
+  useEffect(() => {
+    if (!socket || !isAuthenticated) return;
+
+    const heartbeat = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('REQUEST_SYNC');
+      }
+    }, 30000); // Sync every 30 seconds
+
+    return () => clearInterval(heartbeat);
+  }, [socket, isAuthenticated]);
+
   return (
     <SocketContext.Provider value={{ socket, state, currentUser, isAuthenticated, login, logout, dispatch }}>
       {children}

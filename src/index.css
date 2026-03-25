@@ -19,6 +19,16 @@
     --accent-foreground: #4f46e5;
     --input: #ffffff;
     --ring: #6366f1;
+
+    /* Z-Index Tokens */
+    --z-negative: -1;
+    --z-elevated: 1;
+    --z-sticky: 100;
+    --z-drawer: 200;
+    --z-overlay: 500;
+    --z-modal: 1000;
+    --z-popover: 2000;
+    --z-toast: 10000;
   }
 
   .dark {

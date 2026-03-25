@@ -3,18 +3,18 @@ import { Zap, AlertCircle } from 'lucide-react';
 import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
+import { useYmsData } from '../../hooks/useYmsData';
 import { YmsWaitingArea } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface YmsWaitingAreaGridProps {
-  waitingAreas: YmsWaitingArea[];
   onUpdateStatus: (wa: any, status: string) => void;
 }
 
 export const YmsWaitingAreaGrid: React.FC<YmsWaitingAreaGridProps> = ({
-  waitingAreas,
   onUpdateStatus
 }) => {
+  const { waitingAreas } = useYmsData();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {waitingAreas.map((wa) => (

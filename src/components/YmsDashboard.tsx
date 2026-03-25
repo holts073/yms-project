@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useSocket } from '../SocketContext';
+import { ErrorBoundary } from './shared/ErrorBoundary';
 import { useYmsData } from '../hooks/useYmsData';
 import { useDeliveries } from '../hooks/useDeliveries';
 import { useTheme } from '../ThemeContext';
@@ -95,13 +96,14 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         <div className="flex flex-col gap-10">
           <section className="space-y-6">
             <h3 className="text-2xl font-black text-foreground">Docks & Planning</h3>
-            <YmsTimeline 
-              docks={yms.docks}
-              deliveries={filteredDeliveries}
-              onSaveDelivery={deliveryActions.updateDelivery as any}
-              getStatusLabel={(s) => s}
-              isToday={selectedDate === new Date().toISOString().split('T')[0]}
-            />
+            <ErrorBoundary fallbackTitle="Timeline Fout">
+              <YmsTimeline 
+                deliveries={filteredDeliveries}
+                onSaveDelivery={deliveryActions.updateDelivery as any}
+                getStatusLabel={(s) => s}
+                isToday={selectedDate === new Date().toISOString().split('T')[0]}
+              />
+            </ErrorBoundary>
           </section>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
@@ -109,8 +111,6 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
               <h3 className="text-2xl font-black text-foreground">Actieve Leveringen</h3>
               <YmsDeliveryList 
                 deliveries={filteredDeliveries}
-                docks={yms.docks}
-                waitingAreas={yms.waitingAreas}
                 getStatusLabel={(s) => s}
                 onUpdateStatus={deliveryActions.updateDeliveryStatus}
                 onAssignDock={(d, id) => deliveryActions.assignDock(d.id, id)}
@@ -122,12 +122,12 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             <div className="space-y-10">
               <div className="space-y-6">
                 <h3 className="text-2xl font-black text-foreground">Dock Status</h3>
-                <YmsDockGrid docks={yms.docks} onUpdateDock={yms.actions.updateDock} />
+                <YmsDockGrid onUpdateDock={yms.actions.updateDock} />
               </div>
               
               <div className="space-y-6">
                 <h3 className="text-2xl font-black text-foreground">Wachtruimtes</h3>
-                <YmsWaitingAreaGrid waitingAreas={yms.waitingAreas} onUpdateStatus={(wa, s) => yms.actions.updateWaitingArea({ ...wa, adminStatus: s })} />
+                <YmsWaitingAreaGrid onUpdateStatus={(wa, s) => yms.actions.updateWaitingArea({ ...wa, adminStatus: s })} />
               </div>
             </div>
           </div>
