@@ -64,7 +64,9 @@ const stmts = {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteYmsAlert: db.prepare('DELETE FROM yms_alerts WHERE id = ?'),
-  resolveYmsAlert: db.prepare('UPDATE yms_alerts SET resolved = 1 WHERE id = ?')
+  resolveYmsAlert: db.prepare('UPDATE yms_alerts SET resolved = 1 WHERE id = ?'),
+  getPalletTransactionsByEntity: db.prepare('SELECT * FROM pallet_transactions WHERE entityId = ? ORDER BY createdAt DESC'),
+  insertPalletTransaction: db.prepare('INSERT OR REPLACE INTO pallet_transactions (id, entityId, entityType, deliveryId, balanceChange, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
 };
 
 export function getDeliveries(page: number = 1, limit: number = 15, search: string = '', typeFilter: string = 'all', sort: string = 'eta', statusLess100: boolean = false) {
@@ -234,6 +236,22 @@ export function saveAddressBookEntry(entry: AddressEntry) {
 
 export function deleteAddressEntry(id: string) {
   stmts.deleteAddressEntry.run(id);
+}
+
+export function savePalletTransaction(t: { entityId: string, entityType: string, deliveryId: string, balanceChange: number }) {
+  stmts.insertPalletTransaction.run(Math.random().toString(36).substr(2, 9), t.entityId, t.entityType, t.deliveryId, t.balanceChange, new Date().toISOString());
+}
+
+export function getPalletBalances() {
+  const rows = db.prepare('SELECT entityId, SUM(balanceChange) as balance FROM pallet_transactions GROUP BY entityId').all() as { entityId: string, balance: number }[];
+  return rows.reduce((acc, r) => {
+    acc[r.entityId] = r.balance;
+    return acc;
+  }, {} as Record<string, number>);
+}
+
+export function getPalletTransactions(entityId: string) {
+  return stmts.getPalletTransactionsByEntity.all(entityId) as any[];
 }
 
 export function getLogs() {

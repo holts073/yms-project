@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Palette } from 'lucide-react';
 
 // UI Components
 import Dashboard from './components/Dashboard';
@@ -118,6 +118,15 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const { state, currentUser, isAuthenticated, logout } = useSocket();
     const { theme, toggleTheme } = useTheme();
+
+    const getThemeIcon = () => {
+      switch(theme) {
+        case 'dark': return <Moon size={16} />;
+        case 'ilg': return <div className="w-4 h-4 rounded-full bg-gradient-to-br from-rose-500 to-indigo-800" />;
+        case 'meledi': return <div className="w-4 h-4 rounded-full bg-gradient-to-br from-orange-500 to-stone-900" />;
+        default: return <Sun size={16} />;
+      }
+    };
 
     React.useEffect(() => {
       if (['statistics', 'reports', 'logs'].includes(activeTab)) {
@@ -237,7 +246,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.2.2</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.3.0</span></h1>
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
@@ -342,9 +351,10 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             </div>
             <button 
               onClick={toggleTheme}
-              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-slate-400"
+              className="p-2 hover:bg-slate-200 hover:dark:bg-[var(--muted)] rounded-full transition-colors text-slate-500 dark:text-slate-400 flex items-center justify-center"
+              title={`Huidig thema: ${theme}`}
             >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              {getThemeIcon()}
             </button>
           </div>
           <button 

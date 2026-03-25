@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Search, BookUser } from 'lucide-react';
 import { useAddressBook } from '../hooks/useAddressBook';
+import { useSocket } from '../SocketContext';
 import { Button } from './shared/Button';
 import { AddressTable } from './features/AddressTable';
 import { AddressModal } from './features/AddressModal';
@@ -8,6 +9,7 @@ import { AddressEntry } from '../types';
 import { cn } from '../lib/utils';
 
 const AddressBook = () => {
+  const { state } = useSocket();
   const { suppliers, transporters, customers, actions } = useAddressBook();
   const [activeTab, setActiveTab] = useState<'suppliers' | 'transporters' | 'customers'>('suppliers');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,6 +98,7 @@ const AddressBook = () => {
 
       <AddressTable 
         entries={currentEntries}
+        balances={state?.palletBalances}
         onEdit={(e) => { setEditingEntry(e); setIsModalOpen(true); }}
         onDelete={(id) => actions.deleteAddress(activeTab, id)}
       />

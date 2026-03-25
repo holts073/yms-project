@@ -128,6 +128,7 @@ export interface AppState {
     transporters: AddressEntry[];
     customers: AddressEntry[];
   };
+  palletBalances: Record<string, number>;
   logs: LogEntry[];
   users: User[];
   settings: AppSettings;

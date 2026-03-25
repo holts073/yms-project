@@ -6,12 +6,14 @@ import { cn } from '../../lib/utils';
 
 interface AddressTableProps {
   entries: AddressEntry[];
+  balances?: Record<string, number>;
   onEdit: (entry: AddressEntry) => void;
   onDelete: (id: string) => void;
 }
 
 export const AddressTable: React.FC<AddressTableProps> = ({
   entries,
+  balances = {},
   onEdit,
   onDelete
 }) => {
@@ -24,6 +26,7 @@ export const AddressTable: React.FC<AddressTableProps> = ({
             <th className="px-8 py-4 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Contact</th>
             <th className="px-8 py-4 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">E-mail</th>
             <th className="px-8 py-4 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Adres</th>
+            <th className="px-8 py-4 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Pallet Saldo</th>
             <th className="px-8 py-4 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider text-right">Acties</th>
           </tr>
         </thead>
@@ -41,6 +44,16 @@ export const AddressTable: React.FC<AddressTableProps> = ({
               <td className="px-8 py-4 text-sm text-[var(--muted-foreground)]">{entry.contact}</td>
               <td className="px-8 py-4 text-sm text-[var(--muted-foreground)]">{entry.email}</td>
               <td className="px-8 py-4 text-sm text-[var(--muted-foreground)] truncate max-w-xs">{entry.address}</td>
+              <td className="px-8 py-4 text-sm font-bold">
+                <span className={cn(
+                  "px-3 py-1 rounded-full",
+                  (balances[entry.id] || 0) > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : 
+                  (balances[entry.id] || 0) < 0 ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" : 
+                  "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                )}>
+                  {(balances[entry.id] || 0) > 0 ? '+' : ''}{balances[entry.id] || 0} EUR
+                </span>
+              </td>
               <td className="px-8 py-4 text-right">
                 <div className="flex justify-end gap-2">
                   <button 
@@ -61,7 +74,7 @@ export const AddressTable: React.FC<AddressTableProps> = ({
           ))}
           {entries.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-8 py-12 text-center text-[var(--muted-foreground)] italic font-medium">
+              <td colSpan={6} className="px-8 py-12 text-center text-[var(--muted-foreground)] italic font-medium">
                 Geen contacten gevonden in deze categorie.
               </td>
             </tr>

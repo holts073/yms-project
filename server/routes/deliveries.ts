@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDeliveries, getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts } from '../../src/db/queries';
+import { getDeliveries, getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts, getPalletBalances } from '../../src/db/queries';
 import { getSetting } from '../../src/db/sqlite';
 
 const router = Router();
@@ -8,6 +8,7 @@ const router = Router();
 export const buildStaticState = () => {
   return {
     addressBook: getAddressBook(),
+    palletBalances: getPalletBalances(),
     logs: getLogs(),
     users: getUsers().map((u: any) => {
       const { passwordHash, ...safeUser } = u;

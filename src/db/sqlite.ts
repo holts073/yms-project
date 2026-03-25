@@ -111,6 +111,15 @@ db.exec(`
     description TEXT,
     address TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS pallet_transactions (
+    id TEXT PRIMARY KEY,
+    entityId TEXT NOT NULL,   -- supplierId or transporterId or customerId
+    entityType TEXT NOT NULL, -- supplier, transporter, customer
+    deliveryId TEXT NOT NULL, 
+    balanceChange INTEGER NOT NULL,
+    createdAt TEXT NOT NULL
+  );
 `);
 
 // Migration for existing yms_warehouses

@@ -4,7 +4,7 @@ import {
   saveAddressBookEntry, deleteAddressEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
   getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, saveYmsWarehouse, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
-  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, addLog, getYmsDocks, getYmsAlerts
+  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, addLog, getYmsDocks, getYmsAlerts, savePalletTransaction
 } from '../../src/db/queries';
 import { saveSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
@@ -111,6 +111,26 @@ export const setupSocketHandlers = (io: Server) => {
             } else {
               logEntry.action = "Updated Delivery";
               logEntry.details = `Details bijgewerkt voor: ${newPayload.reference}`;
+            }
+
+            // Pallet Exchange Logic
+            if (newPayload.status === 100 && existing?.status !== 100 && newPayload.palletExchange && newPayload.palletCount > 0) {
+              const entityId = newPayload.supplierId || newPayload.transporterId || newPayload.customerId;
+              if (entityId) {
+                // Inbound (bringing goods) = they owe us pallets? Or we owe them?
+                // Let's assume positive balance means they have our pallets, negative means we owe them.
+                // Simple logic: Inbound adds to our stock, so we owe them (+balance). Outbound we send them pallets, so they owe us (-balance).
+                const isOutbound = newPayload?.type === 'exworks' || newPayload?.direction === 'OUTBOUND';
+                const sign = isOutbound ? -1 : 1;
+                
+                savePalletTransaction({
+                  entityId,
+                  entityType: newPayload.supplierId ? 'supplier' : (newPayload.transporterId ? 'transporter' : 'customer'),
+                  deliveryId: newPayload.id,
+                  balanceChange: newPayload.palletCount * sign
+                });
+                logEntry.details += ` | Palletruil geregistreerd: ${newPayload.palletCount * sign} pallets.`;
+              }
             }
 
             insertDelivery(newPayload);

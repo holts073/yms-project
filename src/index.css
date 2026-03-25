@@ -35,6 +35,34 @@
     --ring: #4f46e5;
   }
 
+  .ilg {
+    --background: #fdf2f2;
+    --foreground: #1e1b4b; /* dark blue text */
+    --card: #ffffff;
+    --card-foreground: #1e1b4b;
+    --border: #fca5a5;
+    --muted: #fee2e2;
+    --muted-foreground: #ef4444;
+    --accent: #f87171;
+    --accent-foreground: #ffffff;
+    --input: #ffffff;
+    --ring: #ef4444;
+  }
+
+  .meledi {
+    --background: #f8fafc;
+    --foreground: #0f172a; 
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #ea580c;
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+    --accent: #ea580c; /* Meledi oranje accent */
+    --accent-foreground: #ffffff;
+    --input: #ffffff;
+    --ring: #ea580c;
+  }
+
   body {
     background: linear-gradient(135deg, var(--background) 0%, var(--background) 100%);
     color: var(--foreground);

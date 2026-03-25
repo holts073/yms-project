@@ -3,6 +3,7 @@ import { Modal } from '../shared/Modal';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { YmsDelivery, YmsTemperature, YmsWarehouse } from '../../types';
+import { Combobox } from '../ui/Combobox';
 
 interface YmsDeliveryModalProps {
   isOpen: boolean;
@@ -52,24 +53,24 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-6">
-          <Input 
-            as="select"
-            label="Leverancier"
-            value={delivery?.supplierId || ''}
-            onChange={(e) => onUpdateEditing({...delivery, supplierId: e.target.value})}
-          >
-            <option value="">Selecteer</option>
-            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </Input>
-          <Input 
-            as="select"
-            label="Transporteur"
-            value={delivery?.transporterId || ''}
-            onChange={(e) => onUpdateEditing({...delivery, transporterId: e.target.value})}
-          >
-            <option value="">Selecteer</option>
-            {transporters.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </Input>
+          <div className="space-y-1">
+            <label className="text-sm font-bold text-foreground">Leverancier</label>
+            <Combobox 
+              value={delivery?.supplierId || ''}
+              onChange={(val) => onUpdateEditing({...delivery, supplierId: val})}
+              options={suppliers.map(s => ({ value: s.id, label: s.name }))}
+              placeholder="Zoek leverancier..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-bold text-foreground">Transporteur</label>
+            <Combobox 
+              value={delivery?.transporterId || ''}
+              onChange={(val) => onUpdateEditing({...delivery, transporterId: val})}
+              options={transporters.map(t => ({ value: t.id, label: t.name }))}
+              placeholder="Zoek transporteur..."
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-6">

@@ -70,15 +70,31 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
                     <motion.div
                       layoutId={delivery.id}
                       key={delivery.id}
-                      drag="x"
-                      dragConstraints={{ left: 0, right: timelineWidth }}
+                      drag={true}
                       dragMomentum={false}
+                      whileDrag={{ zIndex: 50, scale: 1.05, opacity: 0.9 }}
                       onDragEnd={(_, info) => {
                          const timeDeltaMinutes = (info.offset.x / hourWidth) * 60;
-                         if (Math.abs(timeDeltaMinutes) > 5) {
+                         const dockRowHeight = 97; // approx h-24 (96px) + 1px border
+                         const dockDeltaIndex = Math.round(info.offset.y / dockRowHeight);
+                         
+                         let newDockId = delivery.dockId;
+                         if (dockDeltaIndex !== 0) {
+                           const currentDockIndex = docks.findIndex(d => d.id === delivery.dockId);
+                           const newDockIndex = currentDockIndex + dockDeltaIndex;
+                           if (newDockIndex >= 0 && newDockIndex < docks.length) {
+                             newDockId = docks[newDockIndex].id;
+                           }
+                         }
+
+                         if (Math.abs(timeDeltaMinutes) > 5 || dockDeltaIndex !== 0) {
                            const newDate = new Date(delivery.scheduledTime);
                            newDate.setMinutes(newDate.getMinutes() + timeDeltaMinutes);
-                           onSaveDelivery({ ...delivery, scheduledTime: newDate.toISOString() });
+                           onSaveDelivery({ 
+                             ...delivery, 
+                             scheduledTime: newDate.toISOString(),
+                             dockId: newDockId
+                           });
                          }
                       }}
                       className="absolute top-2 bottom-2 bg-card border border-border rounded-xl shadow-md p-2 cursor-grab active:cursor-grabbing z-10 hover:border-indigo-500 transition-colors group/card overflow-hidden"

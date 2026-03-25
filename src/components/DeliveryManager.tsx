@@ -8,6 +8,17 @@ import { Modal } from './shared/Modal';
 import { Card } from './shared/Card';
 import { Button } from './shared/Button';
 import { Input } from './shared/Input';
+import { Combobox } from './ui/Combobox';
+
+const ComboboxWrapper = ({ name, options, defaultValue, placeholder }: any) => {
+  const [val, setVal] = useState(defaultValue || (options.length > 0 ? options[0].value : ''));
+  return (
+    <>
+      <input type="hidden" name={name} value={val} />
+      <Combobox options={options} value={val} onChange={setVal} placeholder={placeholder} />
+    </>
+  );
+};
 
 const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFilter?: string; initialSelectedId?: string }) => {
   const { state, dispatch, currentUser } = useSocket();
@@ -161,15 +172,21 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                </div>
                <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</label>
-                  <select name="supplierId" defaultValue={editingDelivery?.supplierId} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
-                     {state.addressBook?.suppliers.map((s:any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  <ComboboxWrapper 
+                    name="supplierId" 
+                    defaultValue={editingDelivery?.supplierId} 
+                    options={(state.addressBook?.suppliers || []).map((s:any) => ({ value: s.id, label: s.name }))}
+                    placeholder="Zoek leverancier..." 
+                  />
                </div>
                <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Transporteur</label>
-                  <select name="transporterId" defaultValue={editingDelivery?.transporterId} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
-                     {state.addressBook?.transporters.map((s:any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  <ComboboxWrapper 
+                    name="transporterId" 
+                    defaultValue={editingDelivery?.transporterId} 
+                    options={(state.addressBook?.transporters || []).map((s:any) => ({ value: s.id, label: s.name }))}
+                    placeholder="Zoek transporteur..." 
+                  />
                </div>
                <Input label="ETA Magazijn" name="etaWarehouse" type="date" defaultValue={editingDelivery?.etaWarehouse?.split('T')[0]} />
                
