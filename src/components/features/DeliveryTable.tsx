@@ -1,9 +1,11 @@
 import React from 'react';
-import { Package, Truck, FileText, MapPin, Edit2, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Package, Truck, FileText, MapPin, Edit2, Trash2, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { Delivery } from '../../types';
 import { cn } from '../../lib/utils';
 import { Button } from '../shared/Button';
 import { Badge } from '../shared/Badge';
+import { MilestoneStepper } from '../ui/MilestoneStepper';
+import { isRegisteredOnTime } from '../../lib/logistics';
 
 interface DeliveryTableProps {
   deliveries: Delivery[];
@@ -60,7 +62,14 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                     {d.type === 'container' ? <Package size={28} /> : <Truck size={28} />}
                  </div>
                  <div>
-                    <h3 className="text-xl font-black text-foreground group-hover:text-indigo-600 transition-colors">{d.reference}</h3>
+                    <div className="flex items-center gap-2">
+                       <h3 className="text-xl font-black text-foreground group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{d.reference}</h3>
+                       {isRegisteredOnTime(d) ? (
+                         <div title="Tijdig aangemeld (>24u)" className="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 p-1 rounded-full"><Clock size={12} /></div>
+                       ) : (
+                         <div title="Te laat aangemeld (<24u)" className="text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-1 rounded-full animate-pulse"><Clock size={12} /></div>
+                       )}
+                    </div>
                     <p className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">{d.containerNumber || (d as any).licensePlate || 'GEEN NR'}</p>
                     <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] line-clamp-1 mt-1">{s?.name || 'Onbekend Leverancier'}</p>
                  </div>
@@ -112,11 +121,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
               )}
               
               <div className="pt-3">
-                 <div className="flex gap-1.5">
-                    {Array.from({ length: steps }).map((_, i) => (
-                       <div key={i} className={cn("h-1.5 flex-1 rounded-full", i <= currentIdx ? "bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.5)]" : "bg-border")} />
-                    ))}
-                 </div>
+                 <MilestoneStepper delivery={d} />
               </div>
             </div>
 

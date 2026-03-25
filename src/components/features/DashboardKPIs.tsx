@@ -7,6 +7,7 @@ interface DashboardKPIsProps {
   stats: {
     actionRequired: number;
     enRoute: number;
+    customs: number;
     inTransit: number;
     arrivalsNoDock: number;
     plannedDockDelays: number;
@@ -19,8 +20,8 @@ interface DashboardKPIsProps {
     occupiedWaitingAreas: number;
     totalWaitingAreas: number;
   };
-  filterType: 'action' | 'today' | 'enroute';
-  onFilterChange: (type: 'action' | 'today' | 'enroute') => void;
+  filterType: 'action' | 'today' | 'enroute' | 'customs' | 'in_transit';
+  onFilterChange: (type: 'action' | 'today' | 'enroute' | 'customs' | 'in_transit') => void;
   onNavigate: (tab: string) => void;
 }
 
@@ -28,7 +29,7 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
   return (
     <div className="space-y-8">
       {/* Supply Chain Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard 
           title="Actie Vereist" 
           value={stats.actionRequired} 
@@ -36,7 +37,7 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
           variant="danger"
           active={filterType === 'action'}
           onClick={() => onFilterChange('action')}
-          description="Documenten ontbreken"
+          description="Documenten missen"
         />
         <StatCard 
           title="Onderweg" 
@@ -48,10 +49,21 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
           description="Naar magazijn"
         />
         <StatCard 
+          title="Douane" 
+          value={stats.customs} 
+          icon={<Activity size={20} />} 
+          variant="warning"
+          active={filterType === 'customs'}
+          onClick={() => onFilterChange('customs')}
+          description="Inklaring lopende"
+        />
+        <StatCard 
           title="In Transit" 
           value={stats.inTransit} 
           icon={<Clock size={20} />} 
           variant="info"
+          active={filterType === 'in_transit'}
+          onClick={() => onFilterChange('in_transit')}
           description="Niet geladen / Onderweg"
         />
       </div>

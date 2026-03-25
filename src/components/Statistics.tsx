@@ -9,6 +9,7 @@ import { useDeliveries } from '../hooks/useDeliveries';
 import { useYmsData } from '../hooks/useYmsData';
 import { StatCard } from './shared/StatCard';
 import { Card } from './shared/Card';
+import { isRegisteredOnTime } from '../lib/logistics';
 
 const Statistics = () => {
   const { state, currentUser } = useSocket();
@@ -40,7 +41,21 @@ const Statistics = () => {
     const totalPallets = deliveries.reduce((sum, d) => sum + (d.palletCount || 0), 0);
     const costPerPallet = totalPallets > 0 ? Math.round(totalCost / totalPallets) : 0;
 
-    return { activeCount: active.length, otif, avgLeadTime, costPerPallet, completedCount: completed.length, onTimeCount: onTime.length };
+    // 24h Compliance
+    const timely = deliveries.filter(d => isRegisteredOnTime(d));
+    const complianceRate = deliveries.length > 0 ? Math.round((timely.length / deliveries.length) * 100) : 0;
+
+    return { 
+      activeCount: active.length, 
+      otif, 
+      avgLeadTime, 
+      costPerPallet, 
+      completedCount: completed.length, 
+      onTimeCount: onTime.length,
+      complianceRate,
+      timelyCount: timely.length,
+      totalCount: deliveries.length
+    };
   }, [deliveries]);
 
   const completedYms = useMemo(() => yms.deliveries.filter(d => d.status === 'COMPLETED' || d.status === 'GATE_OUT'), [yms.deliveries]);
@@ -115,6 +130,14 @@ const Statistics = () => {
           unit="stuks"
           icon={<Package size={20} />}
           iconClassName="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+        />
+        <StatCard 
+          title="24h Compliance"
+          value={statsData.complianceRate}
+          unit="%"
+          icon={<Activity size={20} />}
+          iconClassName="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+          secondaryLabel={`${statsData.timelyCount} / ${statsData.totalCount} tijdige aanmeldingen`}
         />
       </div>
 

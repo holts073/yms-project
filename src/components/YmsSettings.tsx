@@ -103,7 +103,7 @@ export default function YmsSettings() {
             <div className="space-y-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-black text-foreground">Dock Overrides</h3>
-                <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={() => dispatch('YMS_ADD_DOCK_OVERRIDE', {
+                <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={() => dispatch('YMS_SAVE_DOCKOVERRIDE', {
                   id: Math.random().toString(36).substr(2, 9),
                   dockId: docks[0]?.id || 1,
                   warehouseId: selectedWarehouseId,
@@ -134,7 +134,7 @@ export default function YmsSettings() {
                         {override.status === 'Blocked' ? 'GEBLOKKEERD' : 'BESCHIKBAAR'}
                       </Badge>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => dispatch('Y_DELETE_DOCK_OVERRIDE', override.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                    <Button variant="ghost" size="sm" onClick={() => dispatch('YMS_DELETE_DOCKOVERRIDE', override.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20">
                       Verwijderen
                     </Button>
                   </div>

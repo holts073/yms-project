@@ -10,7 +10,7 @@ import { Card } from './shared/Card';
 const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: string, id?: string) => void }) => {
   const { state, dispatch, currentUser } = useSocket();
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', true);
-  const [filterType, setFilterType] = useState<'action' | 'today' | 'enroute'>('action');
+  const [filterType, setFilterType] = useState<'action' | 'today' | 'enroute' | 'customs' | 'in_transit'>('action');
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
@@ -19,7 +19,8 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
     const actionRequired = deliveries.filter(d => d.status < 100 && d.documents.some(doc => doc.required && doc.status === 'missing')).length;
     const today = new Date().toISOString().split('T')[0];
     const enRoute = deliveries.filter(d => d.status >= 75 && d.status < 100).length;
-    const inTransit = deliveries.filter(d => d.status < 50).length;
+    const customs = deliveries.filter(d => d.status >= 50 && d.status < 75).length;
+    const inTransit = deliveries.filter(d => d.status >= 25 && d.status < 50).length;
     
     // YMS Stats
     const yms = state?.yms || { deliveries: [], docks: [], waitingAreas: [] };
@@ -39,7 +40,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
     const avgTime = completedToday.length > 0 ? Math.round(completedToday.reduce((acc, d) => acc + (new Date(d.statusTimestamps!.GATE_OUT!).getTime() - new Date(d.statusTimestamps!.GATE_IN!).getTime()) / 60000, 0) / completedToday.length) : 0;
 
     return {
-      actionRequired, enRoute, inTransit,
+      actionRequired, enRoute, inTransit, customs,
       arrivalsNoDock, plannedDockDelays, dockOccupancy, occupiedDocks, totalDocks,
       averageTurnaroundTime: avgTime, yardOccupancy, lateArrivals, occupiedWaitingAreas, totalWaitingAreas: yms.waitingAreas.length
     };
@@ -48,6 +49,8 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
   const displayedDeliveries = useMemo(() => {
     if (filterType === 'action') return deliveries.filter(d => d.status < 100 && d.documents.some(doc => doc.required && doc.status === 'missing'));
     if (filterType === 'enroute') return deliveries.filter(d => d.status >= 75 && d.status < 100);
+    if (filterType === 'customs') return deliveries.filter(d => d.status >= 50 && d.status < 75);
+    if (filterType === 'in_transit') return deliveries.filter(d => d.status >= 25 && d.status < 50);
     const today = new Date().toISOString().split('T')[0];
     return deliveries.filter(d => d.status < 100 && (d.etaWarehouse === today || d.eta === today));
   }, [deliveries, filterType]);
@@ -72,7 +75,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
       transporterId: delivery.transporterId
     });
     
-    dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 });
+    dispatch('UPDATE_DELIVERY', { ...delivery, status: 100 });
     toast.success('Ingecheckt bij YMS.');
   };
 
@@ -94,7 +97,10 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
 
       <section className="space-y-6">
         <h3 className="text-xl font-black text-foreground uppercase tracking-tight px-4">
-          {filterType === 'action' ? 'Actie Vereist' : (filterType === 'enroute' ? 'Onderweg naar Magazijn' : 'Verwacht Vandaag')}
+          {filterType === 'action' ? 'Actie Vereist' : 
+           (filterType === 'enroute' ? 'Onderweg naar Magazijn' : 
+           (filterType === 'customs' ? 'DOUANE / Inklaringsproces' : 
+           (filterType === 'in_transit' ? 'In Transit' : 'Verwacht Vandaag')))}
         </h3>
         <Card noPadding className="overflow-hidden">
           <DashboardTable 

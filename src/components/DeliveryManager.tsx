@@ -3,6 +3,9 @@ import { toast } from 'sonner';
 import { useSocket } from '../SocketContext';
 import { Plus, Search, Download, Truck } from 'lucide-react';
 import { useDeliveries } from '../hooks/useDeliveries';
+import { gatekeeperCheck } from '../lib/logistics';
+import { cn } from '../lib/utils';
+import { Badge } from './shared/Badge';
 import { DeliveryTable } from './features/DeliveryTable';
 import { Modal } from './shared/Modal';
 import { Card } from './shared/Card';
@@ -42,6 +45,12 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
   const handleYmsRegister = (delivery: any) => {
+    const error = gatekeeperCheck(delivery, 100);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
     const registrationTime = new Date().toISOString();
     dispatch('YMS_SAVE_DELIVERY', {
       id: Math.random().toString(36).substr(2, 9),
@@ -57,7 +66,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       status: 'GATE_IN',
       transporterId: delivery.transporterId
     });
-    dispatch('UPDATE_DELIVERY', { ...delivery, status: 80 });
+    dispatch('UPDATE_DELIVERY', { ...delivery, status: 100 });
     toast.success('Ingecheckt bij YMS.');
   };
 
@@ -119,7 +128,14 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
             onDelete={(id) => dispatch('DELETE_DELIVERY', id)}
             onMailTransport={(d) => toast.info('Transport mail interface geopend')}
             onYmsRegister={handleYmsRegister}
-            onUpdateStatus={(d, s) => dispatch('UPDATE_DELIVERY', { ...d, status: s })}
+            onUpdateStatus={(d, s) => {
+              const error = gatekeeperCheck(d, s);
+              if (error) {
+                toast.error(error);
+                return;
+              }
+              dispatch('UPDATE_DELIVERY', { ...d, status: s });
+            }}
             canEdit={canEdit}
             suppliers={state?.addressBook?.suppliers || []}
           />
@@ -146,15 +162,43 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
              e.preventDefault();
              const formData = new FormData(e.currentTarget);
              const data = Object.fromEntries(formData.entries());
-             const finalData = {
-               ...editingDelivery,
-               ...data,
-               id: editingDelivery?.id || Math.random().toString(36).substr(2, 9),
-               status: editingDelivery?.status || 0,
-               documents: editingDelivery?.documents || [],
-               updatedAt: new Date().toISOString(),
-               createdAt: editingDelivery?.createdAt || new Date().toISOString()
-             };
+              const documents = editingDelivery?.documents || [];
+              const isScanRequired = data.isScanRequired === 'on';
+
+              if (!editingDelivery && documents.length === 0) {
+                if (formType === 'container') {
+                  documents.push(
+                    { id: 'd1', name: 'Packing List', status: 'pending', required: false },
+                    { id: 'd2', name: 'Invoice', status: 'pending', required: false },
+                    { id: 'd3', name: 'Certificate of Origin', status: 'pending', required: false },
+                    { id: 'd4', name: 'SWB / Bill of Lading', status: 'pending', required: true },
+                    { id: 'd5', name: 'NOA (Notification of Arrival)', status: 'pending', required: true }
+                  );
+                } else {
+                  documents.push(
+                    { id: 'd1', name: 'Transport Order', status: 'pending', required: true }
+                  );
+                }
+              }
+
+              // Handle Scan Release document
+              const hasScanDoc = documents.some(d => d.name.toLowerCase().includes('scan'));
+              if (isScanRequired && !hasScanDoc) {
+                documents.push({ id: `scan-${Date.now()}`, name: 'Scan Release (Douane)', status: 'pending', required: true });
+              } else if (!isScanRequired && hasScanDoc) {
+                const idx = documents.findIndex(d => d.name.toLowerCase().includes('scan'));
+                if (idx > -1) documents.splice(idx, 1);
+              }
+
+              const finalData = {
+                ...editingDelivery,
+                ...data,
+                id: editingDelivery?.id || Math.random().toString(36).substr(2, 9),
+                status: editingDelivery?.status || 0,
+                documents,
+                updatedAt: new Date().toISOString(),
+                createdAt: editingDelivery?.createdAt || new Date().toISOString()
+              };
              dispatch(editingDelivery ? 'UPDATE_DELIVERY' : 'ADD_DELIVERY', finalData);
              setIsModalOpen(false);
              toast.success(editingDelivery ? 'Vracht bijgewerkt.' : 'Vracht aangemaakt.');
@@ -190,31 +234,43 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                </div>
                <Input label="ETA Magazijn" name="etaWarehouse" type="date" defaultValue={editingDelivery?.etaWarehouse?.split('T')[0]} />
                
-               {formType === 'container' && (
-                 <>
-                   <Input label="Container nummer" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
-                   <Input label="Haven van Aankomst" name="portOfArrival" defaultValue={editingDelivery?.portOfArrival} />
-                   <Input label="ETA Haven" name="etaPort" type="date" defaultValue={editingDelivery?.etaPort?.split('T')[0]} />
-                 </>
-               )}
+                <div className="space-y-2">
+                   <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Incoterms</label>
+                   <select name="incoterm" defaultValue={editingDelivery?.incoterm || 'EXW'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
+                      <option value="EXW">EXW</option>
+                      <option value="FCA">FCA</option>
+                      <option value="FOB">FOB</option>
+                      <option value="CIF">CIF</option>
+                      <option value="DDP">DDP</option>
+                      <option value="DAP">DAP</option>
+                   </select>
+                </div>
 
-               {formType === 'exworks' && (
-                 <>
-                   <Input label="Kenteken" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
-                   <Input label="Laadstad" name="loadingCity" defaultValue={editingDelivery?.loadingCity} />
-                   <Input label="Laadland" name="loadingCountry" defaultValue={editingDelivery?.loadingCountry} />
-                   <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Incoterms</label>
-                      <select name="incoterm" defaultValue={editingDelivery?.incoterm || 'EXW'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
-                         <option value="EXW">EXW</option>
-                         <option value="FCA">FCA</option>
-                         <option value="FOB">FOB</option>
-                         <option value="DAP">DAP</option>
-                      </select>
-                   </div>
-                 </>
-               )}
+                {formType === 'container' && (
+                  <>
+                    <Input label="Container nummer" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
+                    <Input label="Haven van Aankomst" name="portOfArrival" defaultValue={editingDelivery?.portOfArrival} />
+                    <Input label="ETA Haven" name="etaPort" type="date" defaultValue={editingDelivery?.etaPort?.split('T')[0]} />
+                    <div className="flex items-center gap-3 pt-6 pl-4">
+                       <input 
+                         type="checkbox" 
+                         name="isScanRequired" 
+                         id="isScanRequired" 
+                         defaultChecked={editingDelivery?.documents?.some((d:any) => d.name.toLowerCase().includes('scan'))} 
+                         className="w-5 h-5 rounded border-border text-rose-600 focus:ring-rose-500" 
+                       />
+                       <label htmlFor="isScanRequired" className="text-sm font-bold text-foreground">DOUANE Scan benodigd</label>
+                    </div>
+                  </>
+                )}
 
+                {formType === 'exworks' && (
+                  <>
+                    <Input label="Kenteken" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
+                    <Input label="Laadstad" name="loadingCity" defaultValue={editingDelivery?.loadingCity} />
+                    <Input label="Laadland" name="loadingCountry" defaultValue={editingDelivery?.loadingCountry} />
+                  </>
+                )}
                <Input label="Aantal Pallets" name="palletCount" type="number" defaultValue={editingDelivery?.palletCount} />
                <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallet Type</label>
@@ -232,12 +288,44 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                      <option value="Frozen">Vries</option>
                   </select>
                </div>
-               <Input label="Gewicht (kg)" name="weight" type="number" defaultValue={editingDelivery?.weight} />
-               <div className="flex items-center gap-3 pt-6 pl-4">
-                  <input type="checkbox" name="palletExchange" id="palletExchange" defaultChecked={editingDelivery?.palletExchange} className="w-5 h-5 rounded border-border" />
-                  <label htmlFor="palletExchange" className="text-sm font-bold text-foreground">Palletruil Toepassen</label>
-               </div>
-            </div>
+                <Input label="Gewicht (kg)" name="weight" type="number" defaultValue={editingDelivery?.weight} />
+                <div className="flex items-center gap-3 pt-6 pl-4">
+                   <input type="checkbox" name="palletExchange" id="palletExchange" defaultChecked={editingDelivery?.palletExchange} className="w-5 h-5 rounded border-border" />
+                   <label htmlFor="palletExchange" className="text-sm font-bold text-foreground">Palletruil Toepassen</label>
+                </div>
+             </div>
+
+             {/* Document Checklist */}
+             <div className="border-t border-border pt-6 mt-6">
+                <h4 className="text-sm font-black uppercase tracking-widest text-[var(--muted-foreground)] mb-4">Documenten Checklist</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   {(editingDelivery?.documents || []).map((doc: any, idx: number) => (
+                     <div key={doc.id} className="flex items-center justify-between p-3 bg-[var(--muted)]/50 rounded-xl border border-border/50">
+                        <div className="flex items-center gap-3">
+                           <input 
+                             type="checkbox" 
+                             checked={doc.status === 'received'} 
+                             onChange={() => {
+                               const newDocs = [...editingDelivery.documents];
+                               newDocs[idx] = { ...newDocs[idx], status: newDocs[idx].status === 'received' ? 'pending' : 'received' };
+                               setEditingDelivery({ ...editingDelivery, documents: newDocs });
+                             }}
+                             className="w-5 h-5 rounded border-border text-emerald-600 focus:ring-emerald-500"
+                           />
+                           <span className={cn("text-sm font-bold", doc.required ? "text-foreground" : "text-[var(--muted-foreground)]")}>
+                             {doc.name} {doc.required && <span className="text-rose-500">*</span>}
+                           </span>
+                        </div>
+                        <Badge variant={doc.status === 'received' ? 'success' : 'warning'} size="xs">
+                           {doc.status === 'received' ? 'Gereed' : 'Wachtend'}
+                        </Badge>
+                     </div>
+                   ))}
+                   {(editingDelivery?.documents || []).length === 0 && !editingDelivery && (
+                     <p className="text-xs text-[var(--muted-foreground)] italic col-span-2">Documenten worden automatisch toegevoegd bij het aanmaken op basis van type.</p>
+                   )}
+                </div>
+             </div>
 
             <div className="flex gap-4 pt-6 border-t border-border">
                <Button variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>Annuleren</Button>
