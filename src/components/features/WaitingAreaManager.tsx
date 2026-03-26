@@ -1,5 +1,5 @@
 import React from 'react';
-import { ParkingSquare } from 'lucide-react';
+import { ParkingSquare, Plus } from 'lucide-react';
 import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
@@ -16,9 +16,22 @@ export const WaitingAreaManager: React.FC<WaitingAreaManagerProps> = ({ waitingA
   const filtered = waitingAreas.filter(wa => wa.warehouseId === warehouseId);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {filtered.map((wa) => (
-        <Card key={wa.id} className="hover:shadow-lg transition-all group border-2 hover:border-indigo-500/20">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest">Wachtruimtes Configureren ({warehouseId})</h3>
+        <Button variant="outline" size="xs" leftIcon={<Plus size={12} />} onClick={() => onUpdate({
+          id: (waitingAreas.length + 1).toString(),
+          warehouseId,
+          name: `Wachtplaats ${waitingAreas.length + 1}`,
+          status: 'Available',
+          adminStatus: 'Active'
+        } as any)}>
+          Toevoegen
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {filtered.map((wa) => (
+          <Card key={wa.id} className="hover:shadow-lg transition-all group border-2 hover:border-indigo-500/20">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">
               <ParkingSquare size={24} />
@@ -41,6 +54,7 @@ export const WaitingAreaManager: React.FC<WaitingAreaManagerProps> = ({ waitingA
             </div>
         </Card>
       ))}
+      </div>
     </div>
   );
 };

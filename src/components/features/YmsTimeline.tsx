@@ -10,13 +10,15 @@ interface YmsTimelineProps {
   onSaveDelivery?: (delivery: YmsDelivery) => void;
   getStatusLabel?: (status: string) => string;
   isToday?: boolean;
+  selectedDate: string;
 }
 
 export const YmsTimeline: React.FC<YmsTimelineProps> = ({
   deliveries,
   onSaveDelivery,
   getStatusLabel,
-  isToday = false
+  isToday = false,
+  selectedDate
 }) => {
   const { docks } = useYmsData();
   const timelineRef = React.useRef<HTMLDivElement>(null);
@@ -26,8 +28,8 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
   const timelineWidth = totalHours * hourWidth;
 
   return (
-    <div className="flex-1 bg-card border border-border rounded-[2.5rem] overflow-hidden flex flex-col shadow-sm">
-      <div className="flex-1 overflow-auto custom-scrollbar relative">
+    <div className="flex-1 bg-card rounded-[2.5rem] border border-border overflow-auto flex flex-col shadow-2xl relative">
+      <div className="flex-1 overflow-auto custom-scrollbar relative bg-[var(--muted)]/5">
         {/* Timeline Header */}
         <div className="flex sticky top-0 z-20 bg-[var(--muted)] border-b border-border">
           <div className="w-40 flex-shrink-0 border-r border-border p-4 font-bold text-xs text-[var(--muted-foreground)] uppercase tracking-widest bg-[var(--muted)]">Docks</div>
@@ -37,7 +39,13 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
         </div>
 
         {/* Timeline Content */}
-        <div className="relative">
+        <div className="relative flex-1 overflow-auto" style={{ minHeight: `${Math.max(400, docks.length * 100)}px` }}>
+          {docks.length === 0 && (
+            <div className="py-20 text-center text-[var(--muted-foreground)] italic px-4">
+              Geen actieve docks gevonden voor dit magazijn. Ga naar Instellingen om docks te activeren.
+            </div>
+          )}
+          
           {docks.map(dock => (
             <div key={dock.id} className={cn("flex border-b border-border group", dock.status === 'Blocked' && 'bg-[var(--muted)]/50 grayscale')}>
               <div className="w-40 flex-shrink-0 border-r border-border p-4 bg-[var(--muted)]/50 group-hover:bg-[var(--muted)] transition-colors">
@@ -60,10 +68,23 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
                   <div key={i} className="w-[200px] border-r border-border flex-shrink-0" />
                 ))}
                 
-                {dock.status !== 'Blocked' && deliveries.filter(d => d.dockId === dock.id && d.status !== 'COMPLETED' && d.status !== 'GATE_OUT').map(delivery => {
+                {dock.status !== 'Blocked' && deliveries.filter(d => {
+                  return String(d.dockId) === String(dock.id);
+                }).map(delivery => {
+                  if (!delivery.scheduledTime) return null;
                   const date = new Date(delivery.scheduledTime);
+                  if (isNaN(date.getTime())) return null;
+                  
+                  // Only show deliveries for the selected date on the timeline
+                  const dDate = date.toISOString().split('T')[0];
+                  if (dDate !== selectedDate) return null;
+
                   const hour = date.getHours();
                   const min = date.getMinutes();
+                  
+                  // Stay within visible range (7:00 - 23:00)
+                  if (hour < startHour || hour >= startHour + totalHours) return null;
+
                   const leftPos = (hour - startHour) * hourWidth + (min / 60) * hourWidth;
                   const width = (delivery.estimatedDuration || 90) / 60 * hourWidth;
                   

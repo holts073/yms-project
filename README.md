@@ -27,8 +27,8 @@ Dit project wordt ontwikkeld en bewaakt door een gespecialiseerd team van 8 AI-a
 - **Socket.io**: Voor real-time status-updates over de gehele Control Tower.
 - **Better-SQLite3 (WAL Mode)**: Robuuste, lokale data-opslag geoptimaliseerd voor hoge performance.
 
-## ⚙️ Quick Start (v3.4.1)
-*Nieuw in v3.2.2+: Geavanceerde Dark Mode, Verbeterde Session Management en Dock Directionality.*
+## ⚙️ Quick Start (v3.2.3.3)
+*Nieuw in v3.2.3.3: Live Active Users counter, PDF Transport Orders, Tablet Persistence en Adressenboek Data-Verrijking.*
 
 1. **Installatie**
    ```bash

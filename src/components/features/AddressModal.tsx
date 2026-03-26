@@ -10,7 +10,7 @@ interface AddressModalProps {
   entry: Partial<AddressEntry> | null;
   onSave: (e: React.FormEvent) => void;
   onUpdateEditing: (u: any) => void;
-  category: 'suppliers' | 'transporters';
+  category: 'suppliers' | 'transporters' | 'customers';
 }
 
 export const AddressModal: React.FC<AddressModalProps> = ({
@@ -29,12 +29,30 @@ export const AddressModal: React.FC<AddressModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={onSave} className="space-y-6 pb-4">
-        <Input 
-          label="Bedrijfsnaam"
-          required
-          value={entry?.name || ''}
-          onChange={e => onUpdateEditing({ ...entry, name: e.target.value })}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input 
+            label="Bedrijfsnaam"
+            required
+            value={entry?.name || ''}
+            onChange={e => onUpdateEditing({ ...entry, name: e.target.value })}
+          />
+          {category === 'suppliers' && (
+            <Input 
+              label="Leveranciersnummer"
+              placeholder="Bijv. LEV-1001"
+              value={(entry as any)?.supplier_number || ''}
+              onChange={e => onUpdateEditing({ ...entry, supplier_number: e.target.value })}
+            />
+          )}
+          {category === 'customers' && (
+            <Input 
+              label="Klantnummer"
+              placeholder="Bijv. KLA-2002"
+              value={(entry as any)?.customer_number || ''}
+              onChange={e => onUpdateEditing({ ...entry, customer_number: e.target.value })}
+            />
+          )}
+        </div>
         <Input 
           label="Contactpersoon"
           required

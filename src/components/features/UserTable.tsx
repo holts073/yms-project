@@ -65,12 +65,12 @@ export const UserTable: React.FC<UserTableProps> = ({
                       value={user.role}
                       onChange={(e) => onUpdateRole(user, e.target.value as UserRole)}
                       disabled={user.id === currentUser?.id}
-                      className="bg-[var(--muted)] border-none rounded-full px-4 py-2 text-xs font-bold text-foreground focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 dark:bg-slate-800 outline-none"
+                      className="bg-[var(--muted)] border border-border rounded-full px-4 py-2 text-xs font-bold text-foreground focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 dark:bg-slate-700 dark:text-white outline-none"
                     >
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                      <option value="staff">Staff</option>
-                      <option value="viewer">Viewer</option>
+                      <option value="admin" className="bg-white dark:bg-slate-800">Admin</option>
+                      <option value="manager" className="bg-white dark:bg-slate-800">Manager</option>
+                      <option value="staff" className="bg-white dark:bg-slate-800">Staff</option>
+                      <option value="viewer" className="bg-white dark:bg-slate-800">Viewer</option>
                     </select>
                     
                     {user.id !== currentUser?.id && (

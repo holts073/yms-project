@@ -38,7 +38,19 @@ export const AddressTable: React.FC<AddressTableProps> = ({
                   <div className="p-2 bg-[var(--muted)] text-[var(--muted-foreground)] rounded-lg group-hover:bg-indigo-100 group-hover:text-indigo-600 dark:group-hover:bg-indigo-900/30 dark:group-hover:text-indigo-400 transition-colors">
                     <Building2 size={16} />
                   </div>
-                  <span className="font-bold text-foreground">{entry.name}</span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-foreground">{entry.name}</span>
+                    {entry.supplier_number && (
+                      <span className="text-[10px] uppercase tracking-tighter font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 px-1.5 py-0.5 rounded w-fit">
+                        Supplier: {entry.supplier_number}
+                      </span>
+                    )}
+                    {entry.customer_number && (
+                      <span className="text-[10px] uppercase tracking-tighter font-black text-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded w-fit">
+                        Customer: {entry.customer_number}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </td>
               <td className="px-8 py-4 text-sm text-[var(--muted-foreground)]">{entry.contact}</td>
@@ -46,12 +58,12 @@ export const AddressTable: React.FC<AddressTableProps> = ({
               <td className="px-8 py-4 text-sm text-[var(--muted-foreground)] truncate max-w-xs">{entry.address}</td>
               <td className="px-8 py-4 text-sm font-bold">
                 <span className={cn(
-                  "px-3 py-1 rounded-full",
-                  (balances[entry.id] || 0) > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : 
-                  (balances[entry.id] || 0) < 0 ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" : 
-                  "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                  "px-3 py-1 rounded-full text-xs font-black",
+                  (balances[entry.id] || 0) > 0 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300" : 
+                  (balances[entry.id] || 0) < 0 ? "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300" : 
+                  "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300"
                 )}>
-                  {(balances[entry.id] || 0) > 0 ? '+' : ''}{balances[entry.id] || 0} EUR
+                  {(balances[entry.id] || 0) > 0 ? '+' : ''}{balances[entry.id] || 0} st
                 </span>
               </td>
               <td className="px-8 py-4 text-right">

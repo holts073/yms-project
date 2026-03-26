@@ -2,6 +2,7 @@ import React from 'react';
 import { Warehouse, Plus, Settings, Trash2, MapPin } from 'lucide-react';
 import { Table } from '../shared/Table';
 import { Button } from '../shared/Button';
+import { Badge } from '../shared/Badge';
 import { YmsWarehouse } from '../../types';
 
 interface WarehouseManagerProps {
@@ -55,6 +56,15 @@ export const WarehouseManager: React.FC<WarehouseManagerProps> = ({
       className: 'text-center'
     },
     {
+      header: 'Gate',
+      accessor: (w: YmsWarehouse) => (
+        <Badge variant={w.hasGate ? 'info' : 'outline'}>
+          {w.hasGate ? 'Met Poort' : 'Geen Poort'}
+        </Badge>
+      ),
+      className: 'text-center'
+    },
+    {
       header: 'Acties',
       accessor: (w: YmsWarehouse) => (
         <div className="flex items-center justify-end gap-2">
@@ -64,6 +74,14 @@ export const WarehouseManager: React.FC<WarehouseManagerProps> = ({
             onClick={() => onSelect(w.id)}
           >
             {selectedId === w.id ? 'Actief' : 'Selecteer'}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => { if(confirm('Infrastructuur herstellen (docks 1-10)?')) { onSelect(w.id); window.dispatchEvent(new CustomEvent('YMS_ACTION', { detail: { type: 'YMS_INITIALIZE_INFRASTRUCTURE', payload: w.id } })); } }}
+            className="text-[10px] text-indigo-600 hover:bg-indigo-50"
+          >
+            Herstel
           </Button>
           <button onClick={() => onEdit(w)} className="p-2 text-[var(--muted-foreground)] hover:text-amber-600 transition-colors"><Settings size={18} /></button>
           {w.id !== 'W01' && (

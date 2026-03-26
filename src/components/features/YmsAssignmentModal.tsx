@@ -11,7 +11,7 @@ interface YmsAssignmentModalProps {
   delivery: YmsDelivery | null;
   docks: YmsDock[];
   waitingAreas: YmsWaitingArea[];
-  onAssignDock: (dockId: number) => void;
+  onAssignDock: (dockId: number, scheduledTime: string) => void;
   onAssignWaitingArea: (waId: number) => void;
 }
 
@@ -43,22 +43,50 @@ export const YmsAssignmentModal: React.FC<YmsAssignmentModalProps> = ({
           <p className="text-sm text-[var(--muted-foreground)] mt-2">Temperatuur: {delivery.temperature} | Pallets: {delivery.palletCount}</p>
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Plan Datum</label>
+            <input 
+              type="date" 
+              className="w-full bg-card border border-border rounded-xl p-3 text-foreground"
+              defaultValue={new Date().toISOString().split('T')[0]}
+              id="assign-date"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Plan Tijd</label>
+            <input 
+              type="time" 
+              className="w-full bg-card border border-border rounded-xl p-3 text-foreground"
+              defaultValue={new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+              id="assign-time"
+            />
+          </div>
+        </div>
+
         <div className="space-y-4">
           <h5 className="font-bold text-foreground flex items-center gap-2">
             <MapPin size={18} className="text-indigo-600" /> Beschikbare Docks
           </h5>
           <div className="grid grid-cols-2 gap-3">
-            {docks.filter(d => d.status === 'Available').map(dock => (
+            {docks.filter(d => d.status === 'Available' || d.status === 'Scheduled').map(dock => (
               <button
                 key={dock.id}
-                onClick={() => onAssignDock(dock.id)}
+                onClick={() => {
+                  const date = (document.getElementById('assign-date') as HTMLInputElement).value;
+                  const time = (document.getElementById('assign-time') as HTMLInputElement).value;
+                  onAssignDock(dock.id, `${date}T${time}:00`);
+                }}
                 className="flex flex-col items-start p-4 bg-card border border-border rounded-2xl hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-left group"
               >
-                <span className="font-bold text-foreground group-hover:text-indigo-600">{dock.name}</span>
+                <div className="flex justify-between w-full">
+                  <span className="font-bold text-foreground group-hover:text-indigo-600">{dock.name}</span>
+                  {dock.isOverridden && <Badge variant="warning">Alt</Badge>}
+                </div>
                 <span className="text-[10px] text-[var(--muted-foreground)] uppercase">{dock.allowedTemperatures.join(', ')}</span>
               </button>
             ))}
-            {docks.filter(d => d.status === 'Available').length === 0 && (
+            {docks.length === 0 && (
               <p className="col-span-2 text-sm text-[var(--muted-foreground)] italic p-4 text-center">Geen docks beschikbaar</p>
             )}
           </div>

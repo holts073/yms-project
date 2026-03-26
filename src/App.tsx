@@ -131,8 +131,6 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     React.useEffect(() => {
       if (['statistics', 'reports', 'logs'].includes(activeTab)) {
         setOpenDropdown('analysis');
-      } else if (['yms-arrivals', 'yms-planning'].includes(activeTab)) {
-        setOpenDropdown('yard');
       } else if (activeTab.startsWith('settings')) {
         setOpenDropdown('settings');
       }
@@ -142,8 +140,6 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       setActiveTab(tab);
       if (['statistics', 'reports', 'logs'].includes(tab)) {
         setOpenDropdown('analysis');
-      } else if (['yms-arrivals', 'yms-planning'].includes(tab)) {
-        setOpenDropdown('yard');
       } else if (tab.startsWith('settings')) {
         setOpenDropdown('settings');
       } else {
@@ -170,7 +166,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     }
     
     // Close dropdowns when clicking a top-level item that isn't in a dropdown
-    if (!['statistics', 'reports', 'logs', 'yms-arrivals', 'yms-planning'].includes(tab) && !tab.startsWith('settings')) {
+    if (!['statistics', 'reports', 'logs'].includes(tab) && !tab.startsWith('settings')) {
       setOpenDropdown(null);
     }
   };
@@ -246,8 +242,19 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.3.0</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.2.3.3</span></h1>
         </div>
+
+        {state?.activeUsers !== undefined && (
+          <div className="px-6 mb-6">
+            <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-2xl w-fit">
+              <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+                {state.activeUsers} {state.activeUsers === 1 ? 'gebruiker' : 'gebruikers'} actief
+              </span>
+            </div>
+          </div>
+        )}
 
         <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
           <SidebarItem 
@@ -268,17 +275,22 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             onClick={() => handleSidebarClick('deliveries')} 
           />
           
-          <SidebarDropdown 
+          <div className="pt-4 pb-1 px-6">
+            <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Yard Management</p>
+          </div>
+
+          <SidebarItem 
             icon={ClipboardList} 
-            label="Yard (Operationeel)" 
-            active={['yms-arrivals', 'yms-planning'].includes(activeTab)} 
-            isOpen={openDropdown === 'yard'}
-            onToggle={() => toggleDropdown('yard')}
-            items={[
-              { id: 'yms-arrivals', label: 'Aankomst & Inspectie', active: activeTab === 'yms-arrivals' },
-              { id: 'yms-planning', label: 'Dock Planning', active: activeTab === 'yms-planning' }
-            ]}
-            onSelect={handleSidebarClick}
+            label="Aankomst & Inspectie" 
+            active={activeTab === 'yms-arrivals'} 
+            onClick={() => handleSidebarClick('yms-arrivals')} 
+          />
+
+          <SidebarItem 
+            icon={Calendar} 
+            label="Dock Planning" 
+            active={activeTab === 'yms-planning'} 
+            onClick={() => handleSidebarClick('yms-planning')} 
           />
           
           <SidebarItem 

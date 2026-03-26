@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapPin, Thermometer } from 'lucide-react';
+import { MapPin, Thermometer, Plus } from 'lucide-react';
 import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
+import { Button } from '../shared/Button';
 import { YmsDock, YmsTemperature } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -22,9 +23,24 @@ export const DockManager: React.FC<DockManagerProps> = ({ docks, warehouseId, on
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {filteredDocks.map(dock => (
-        <Card key={dock.id} padding="lg" className="hover:shadow-lg transition-all group border-2 hover:border-indigo-500/20">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest">Docks Configureren ({warehouseId})</h3>
+        <Button variant="outline" size="xs" leftIcon={<Plus size={12} />} onClick={() => onUpdate({
+          id: filteredDocks.length + 1,
+          warehouseId: warehouseId,
+          name: `Nieuw Dock ${filteredDocks.length + 1}`,
+          allowedTemperatures: ['Droog'],
+          status: 'Available',
+          adminStatus: 'Active',
+          direction_capability: 'BOTH'
+        } as YmsDock)}>
+          Dock Toevoegen
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {filteredDocks.map(dock => (
+          <Card key={dock.id} padding="lg" className="hover:shadow-lg transition-all group border-2 hover:border-indigo-500/20">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">
               <MapPin size={24} />
@@ -93,6 +109,7 @@ export const DockManager: React.FC<DockManagerProps> = ({ docks, warehouseId, on
           </div>
         </Card>
       ))}
+      </div>
     </div>
   );
 };

@@ -61,8 +61,8 @@ export const useDeliveries = (
     dispatch('DELETE_DELIVERY', id);
   };
 
-  const assignDock = (deliveryId: string, dockId: number) => {
-    dispatch('YMS_ASSIGN_DOCK', { deliveryId, dockId });
+  const assignDock = (deliveryId: string, dockId: number, scheduledTime?: string) => {
+    dispatch('YMS_ASSIGN_DOCK', { deliveryId, dockId, scheduledTime });
   };
 
   const registerArrival = (deliveryId: string) => {

@@ -16,6 +16,7 @@ interface YmsDeliveryListProps {
   onAssignWaitingArea: (delivery: YmsDelivery, waId: string) => void;
   onRegisterExpected: (delivery: YmsDelivery) => void;
   onEdit: (delivery: YmsDelivery) => void;
+  onAssignClick?: (delivery: YmsDelivery) => void;
 }
 
 export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
@@ -25,7 +26,8 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
   onAssignDock,
   onAssignWaitingArea,
   onRegisterExpected,
-  onEdit
+  onEdit,
+  onAssignClick
 }) => {
   const { docks, waitingAreas } = useYmsData();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -56,8 +58,8 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {deliveries.filter(d => statuses.includes(d.status)).map(delivery => {
-           const dockName = delivery.dockId ? docks.find(d => d.id === delivery.dockId)?.name : null;
-           const waName = delivery.waitingAreaId ? waitingAreas.find(w => w.id.toString() === delivery.waitingAreaId?.toString())?.name : null;
+           const dockName = delivery.dockId ? docks.find(d => String(d.id) === String(delivery.dockId))?.name : null;
+           const waName = delivery.waitingAreaId ? waitingAreas.find(w => String(w.id) === String(delivery.waitingAreaId))?.name : null;
            
            return (
             <motion.div 
@@ -142,7 +144,7 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
                      </Button>
                    )}
                    {(delivery.status === 'GATE_IN' || delivery.status === 'PLANNED') && (
-                     <Button size="xs" variant="outline" leftIcon={<WarehouseIcon size={14} />}>
+                     <Button size="xs" variant="outline" leftIcon={<WarehouseIcon size={14} />} onClick={() => onAssignClick?.(delivery)}>
                        Toewijzen
                      </Button>
                    )}

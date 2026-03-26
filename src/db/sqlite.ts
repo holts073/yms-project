@@ -20,14 +20,16 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS address_book (
     id TEXT PRIMARY KEY,
-    type TEXT NOT NULL, -- 'supplier' or 'transporter'
+    type TEXT NOT NULL, -- 'supplier' or 'transporter' or 'customer'
     name TEXT NOT NULL,
     contact TEXT,
     email TEXT,
     address TEXT,
     pickupAddress TEXT,
     otif INTEGER,
-    remarks TEXT
+    remarks TEXT,
+    supplier_number TEXT,
+    customer_number TEXT
   );
 
   CREATE TABLE IF NOT EXISTS deliveries (
@@ -109,7 +111,8 @@ db.exec(`
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
-    address TEXT
+    address TEXT,
+    hasGate INTEGER DEFAULT 0 -- 0 = No Gate, 1 = Has Gate
   );
 
   CREATE TABLE IF NOT EXISTS pallet_transactions (
@@ -122,9 +125,12 @@ db.exec(`
   );
 `);
 
-// Migration for existing yms_warehouses
 try {
   db.prepare('ALTER TABLE yms_warehouses ADD COLUMN address TEXT').run();
+} catch (e) {}
+
+try {
+  db.prepare('ALTER TABLE yms_warehouses ADD COLUMN hasGate INTEGER DEFAULT 0').run();
 } catch (e) {}
 
 db.exec(`
@@ -184,10 +190,7 @@ db.exec(`
     tempAlertThreshold INTEGER DEFAULT 30,
     lastEtaUpdate TEXT,
     direction TEXT DEFAULT 'INBOUND',
-    palletCount INTEGER DEFAULT 0,
-    FOREIGN KEY(warehouseId) REFERENCES yms_warehouses(id),
-    FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks(id, warehouseId),
-    FOREIGN KEY(waitingAreaId, warehouseId) REFERENCES yms_waiting_areas(id, warehouseId)
+    palletCount INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS yms_dock_overrides (
@@ -279,7 +282,9 @@ const migrations = [
   { table: 'yms_deliveries', column: 'palletCount', type: 'INTEGER DEFAULT 0' },
   { table: 'yms_docks', column: 'isFastLane', type: 'INTEGER DEFAULT 0' },
   { table: 'yms_docks', column: 'adminStatus', type: 'TEXT DEFAULT "Active"' },
-  { table: 'yms_waiting_areas', column: 'adminStatus', type: 'TEXT DEFAULT "Active"' }
+  { table: 'yms_waiting_areas', column: 'adminStatus', type: 'TEXT DEFAULT "Active"' },
+  { table: 'address_book', column: 'supplier_number', type: 'TEXT' },
+  { table: 'address_book', column: 'customer_number', type: 'TEXT' }
 ];
 
 migrations.forEach(m => {

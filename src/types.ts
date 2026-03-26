@@ -17,6 +17,8 @@ export interface AddressEntry {
   pickupAddress?: string;
   otif?: number; // On-Time In-Full percentage
   remarks?: string;
+  supplier_number?: string;
+  customer_number?: string;
 }
 
 export interface AuditEntry {
@@ -79,7 +81,7 @@ export interface LogEntry {
   reference?: string;
 }
 
-export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer';
+export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer' | 'tablet';
 
 export interface UserPermissions {
   manageDeliveries?: boolean;
@@ -141,6 +143,7 @@ export interface AppState {
     dockOverrides: YmsDockOverride[];
     alerts: YmsAlert[];
   };
+  activeUsers: number;
 }
 
 export type YmsTemperature = 'Droog' | 'Vries' | 'Koel' | 'Fast Lane';
@@ -152,6 +155,7 @@ export interface YmsWarehouse {
   name: string;
   description?: string;
   address?: string;
+  hasGate: boolean;
 }
 
 export interface YmsDock {

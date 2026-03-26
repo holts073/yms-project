@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { AppState, User } from './types';
+import { toast } from 'sonner';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -48,9 +49,30 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const token = localStorage.getItem('token');
     const newSocket = io(window.location.origin, {
       auth: { token },
-      transports: ['polling']
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      forceNew: true // Ensure fresh session on every init
     });
     setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('Socket connected successfully');
+      toast.success('Verbonden met centrale server', { id: 'socket-status' });
+    });
+
+    newSocket.on('disconnect', () => {
+      console.warn('Socket disconnected');
+      toast.error('Verbinding met server verloren', { id: 'socket-status' });
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err.message);
+      toast.error(`Verbindingsfout: ${err.message}`, { id: 'socket-status' });
+      if (err.message.includes('Authentication error') || err.message.includes('Invalid token')) {
+        logout();
+      }
+    });
 
     newSocket.on('init', (initialState: AppState) => {
       setState(initialState);
@@ -60,9 +82,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setState(newState);
     });
 
-    // Activity timeout logic (60 minutes)
+    newSocket.on('error_message', (msg: string) => {
+      toast.error(msg, {
+        duration: 5000,
+        position: 'top-right'
+      });
+    });
+
+    // Activity timeout logic (60 minutes) - Disabled for Tablet role
     let inactivityTimer: NodeJS.Timeout;
     const resetTimer = () => {
+      if (currentUser?.role === 'tablet') return;
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
         logout();
@@ -132,6 +162,16 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, 30000); // Sync every 30 seconds
 
     return () => clearInterval(heartbeat);
+  }, [socket, isAuthenticated]);
+
+  // Global event listener for dispatching actions from deep components
+  useEffect(() => {
+    const handleAction = (e: any) => {
+      const { type, payload } = e.detail;
+      dispatch(type, payload);
+    };
+    window.addEventListener('YMS_ACTION', handleAction);
+    return () => window.removeEventListener('YMS_ACTION', handleAction);
   }, [socket, isAuthenticated]);
 
   return (

@@ -32,11 +32,10 @@ export const Badge: React.FC<BadgeProps> = ({
     <span
       className={cn(
         'rounded-full font-bold uppercase tracking-widest inline-flex items-center justify-center',
-        variants[variant],
-        sizes[size],
+        variants[variant as keyof typeof variants],
+        sizes[size as keyof typeof sizes],
         className
       )}
-      {...props}
     >
       {children}
     </span>

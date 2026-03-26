@@ -32,11 +32,11 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
   const filteredDeliveries = useMemo(() => {
     return yms.deliveries.filter((d: YmsDelivery) => 
       d.warehouseId === yms.selectedWarehouseId && 
-      d.direction === directionFilter &&
-      (d.scheduledTime.startsWith(selectedDate) || ['GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'].includes(d.status)) &&
+      (d.direction === directionFilter || view === 'planning') && // Show all directions in planning view to be safe
+      ((d.scheduledTime && d.scheduledTime.startsWith(selectedDate)) || ['GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'].includes(d.status)) &&
       (d.reference?.toLowerCase().includes(searchTerm.toLowerCase()) || d.supplier?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [yms.deliveries, yms.selectedWarehouseId, selectedDate, searchTerm, directionFilter]);
+  }, [yms.deliveries, yms.selectedWarehouseId, selectedDate, searchTerm, directionFilter, view]);
 
   const stats = useMemo(() => ({
     totalDeliveries: filteredDeliveries.length,
@@ -60,7 +60,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         onSelectDate={setSelectedDate}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onNewDelivery={() => setEditingDelivery({})}
+        onNewDelivery={() => setEditingDelivery({ warehouseId: yms.selectedWarehouseId || undefined })}
         onBack={onBack}
       />
 
@@ -94,7 +94,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         />
       ) : (
         <div className="flex flex-col gap-10">
-          <section className="space-y-6">
+          <section className="space-y-6 flex flex-col h-[600px]">
             <h3 className="text-2xl font-black text-foreground">Docks & Planning</h3>
             <ErrorBoundary fallbackTitle="Timeline Fout">
               <YmsTimeline 
@@ -102,6 +102,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
                 onSaveDelivery={deliveryActions.updateDelivery as any}
                 getStatusLabel={(s) => s}
                 isToday={selectedDate === new Date().toISOString().split('T')[0]}
+                selectedDate={selectedDate}
               />
             </ErrorBoundary>
           </section>
@@ -115,8 +116,15 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
                 onUpdateStatus={deliveryActions.updateDeliveryStatus}
                 onAssignDock={(d, id) => deliveryActions.assignDock(d.id, id)}
                 onAssignWaitingArea={(d, id) => deliveryActions.updateDelivery({ ...d, waitingAreaId: id, status: 'IN_YARD' })}
-                onRegisterExpected={deliveryActions.registerArrival as any}
+                onRegisterExpected={(d) => {
+                  if (yms.currentWarehouse && !yms.currentWarehouse.hasGate) {
+                    setAssigningDelivery(d);
+                  } else {
+                    deliveryActions.registerArrival(d.id);
+                  }
+                }}
                 onEdit={setEditingDelivery}
+                onAssignClick={setAssigningDelivery}
               />
             </div>
             <div className="space-y-10">
@@ -153,7 +161,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         delivery={assigningDelivery}
         docks={yms.docks}
         waitingAreas={yms.waitingAreas}
-        onAssignDock={(id) => { deliveryActions.assignDock(assigningDelivery!.id, id); setAssigningDelivery(null); }}
+        onAssignDock={(id, time) => { deliveryActions.assignDock(assigningDelivery!.id, id, time); setAssigningDelivery(null); }}
         onAssignWaitingArea={(id) => { deliveryActions.updateDelivery({ ...assigningDelivery!, waitingAreaId: id, status: 'IN_YARD' }); setAssigningDelivery(null); }}
       />
     </div>

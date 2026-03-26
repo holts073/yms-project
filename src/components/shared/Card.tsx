@@ -33,11 +33,10 @@ export const Card: React.FC<CardProps> = ({
     <div 
       className={cn(
         'rounded-[2rem] border transition-all',
-        variants[variant],
-        paddings[padding],
+        variants[variant as keyof typeof variants],
+        paddings[padding as keyof typeof paddings],
         className
       )}
-      {...props}
     >
       {children}
     </div>

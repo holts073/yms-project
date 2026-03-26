@@ -160,6 +160,20 @@ export default function YmsSettings() {
           <Input label="Naam" value={editingWarehouse?.name || ''} onChange={e => setEditingWarehouse({...editingWarehouse, name: e.target.value})} />
           <Input label="Adres" value={editingWarehouse?.address || ''} onChange={e => setEditingWarehouse({...editingWarehouse, address: e.target.value})} />
           <Input as="textarea" label="Beschrijving" rows={3} value={editingWarehouse?.description || ''} onChange={e => setEditingWarehouse({...editingWarehouse, description: e.target.value})} />
+          
+          <div className="flex items-center gap-3 p-4 bg-[var(--muted)]/50 rounded-2xl border border-border">
+            <input 
+              type="checkbox" 
+              id="hasGate" 
+              checked={!!editingWarehouse?.hasGate} 
+              onChange={e => setEditingWarehouse({...editingWarehouse, hasGate: e.target.checked})}
+              className="w-5 h-5 rounded-md border-border text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="hasGate" className="text-sm font-bold text-foreground cursor-pointer">
+              Heeft dit magazijn een toegangspoort? (Gate-In registratie)
+            </label>
+          </div>
+
           <div className="flex gap-4 pt-4">
             <Button variant="secondary" className="flex-1" onClick={() => setEditingWarehouse(null)}>Annuleren</Button>
             <Button className="flex-1" onClick={() => handleSaveWarehouse(editingWarehouse!)}>Opslaan</Button>
