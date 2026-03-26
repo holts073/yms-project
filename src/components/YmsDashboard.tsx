@@ -215,8 +215,8 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         suppliers={state.addressBook?.suppliers || []}
         transporters={state.addressBook?.transporters || []}
         warehouses={yms.warehouses}
-        docks={yms.allDocks}
-        waitingAreas={yms.allWaitingAreas}
+        docks={yms.docks}
+        waitingAreas={yms.waitingAreas}
       />
       
       <YmsAssignmentModal 

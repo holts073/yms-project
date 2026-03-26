@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.5.0 — Bijgewerkt: 2026-03-26 door @System-Architect*
+*Versie: v3.5.1 — Bijgewerkt: 2026-03-26 door @System-Architect*
 
 > [!NOTE]
 > Bijgewerkt na sessie 2026-03-17: Gebruikersbeheer (password hashing), Dynamische Documentinstellingen en Vite `allowedHosts`.
@@ -134,9 +134,22 @@ Wachtwoorden worden **nooit** in plaintext opgeslagen. De volledige flow:
 ### Vite Deployment Config
 `vite.config.ts` bevat `server.allowedHosts: ['ship.holtslag.me']` voor productie-deploy op het custome domein.
 
-## 8. Kwaliteitsbewaking (Release Criteria)
+## 8. Kwaliteitsbewaking (Automated Validation Suite)
 
+Sinds v3.5.1 hanteert het platform een volledig geautomatiseerde validatie-suite die handmatige browser-interactie overbodig maakt:
+
+| Laag | Tool | Scope |
+|---|---|---|
+| **E2E Testing** | Playwright | Kritieke user-flows zoals de Priority Queue en Dock-toewijzing. |
+| **Integration** | Vitest | Uni-directionele dataflow validatie (Action → Socket → DB). |
+| **Integrity** | tsx script | Database health checks (`db-health.ts`) op inconsistenties. |
+
+### 8.1 Headless E2E Standard
+Alle kritieke UI-flows worden gevalideerd in een headless browser omgeving. Hiervoor worden componenten geïnstrumenteerd met `data-testid` attributen. Een harde vereiste is dat alle shared Atoms (`Card`, `Badge`, `Button`) hun props spreaden naar het onderliggende DOM-element om te voorkomen dat test-identifiers verloren gaan.
+
+### 8.2 Release Criteria
 Zie `AGENTS.md` voor de volledige release-criteria-checklist. Kernpunten:
+- ✅ `npm run test:full` slaagt 100%
 - ✅ Geen console-errors in de browser
 - ✅ Container-kaarten tonen correcte data
 - ✅ Sonner-toasts voor alle backend-fouten

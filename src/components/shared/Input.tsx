@@ -17,6 +17,7 @@ export const Input: React.FC<InputProps> = ({
   containerClassName,
   as = 'input',
   children, // for select options
+  noMargin, // Destructure to avoid leaking to DOM
   ...props
 }) => {
   const baseClasses = 'w-full px-6 py-4 bg-[var(--muted)]/50 border border-border/50 rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground font-medium outline-none transition-all placeholder:text-[var(--muted-foreground)]/50';

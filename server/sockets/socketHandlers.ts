@@ -123,7 +123,10 @@ export const setupSocketHandlers = (io: Server) => {
             if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
             const allDels = getAllDeliveries();
             const existing = allDels.find(d => d.id === payload.id);
-            let newPayload = { ...payload };
+            
+            // CRITICAL: Merge payload with existing to prevent NOT NULL constraint failures (e.g. 'type')
+            // during INSERT OR REPLACE when the frontend only sends partial updates (like status).
+            let newPayload = { ...existing, ...payload };
             
             if (existing && existing.status !== newPayload.status) {
               const getStatusLabel = (p: any) => {

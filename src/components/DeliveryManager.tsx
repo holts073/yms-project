@@ -109,7 +109,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
              leftIcon={<Search size={18} />} 
              value={filter} 
              onChange={e => setFilter(e.target.value)} 
-             noMargin
+             // noMargin safely destructured in Input.tsx
            />
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -126,7 +126,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       </Card>
 
       <section className="space-y-6">
-        <Card noPadding className="overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <DeliveryTable 
             deliveries={deliveries}
             selectedIds={selectedIds}

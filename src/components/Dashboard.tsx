@@ -102,7 +102,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
            (filterType === 'customs' ? 'DOUANE / Inklaringsproces' : 
            (filterType === 'in_transit' ? 'In Transit' : 'Verwacht Vandaag')))}
         </h3>
-        <Card noPadding className="overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <DashboardTable 
             deliveries={displayedDeliveries}
             suppliers={state?.addressBook?.suppliers || []}

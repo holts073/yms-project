@@ -1,5 +1,5 @@
-# ILG Foodgroup — Supply Chain# YMS Control Tower v3.5
-*Versie: v3.2.3.3*
+# ILG Foodgroup — Supply Chain# YMS Control Tower v3.5.1
+*Versie: v3.5.1 — Bijgewerkt: 2026-03-26*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat.
 
@@ -17,12 +17,15 @@ npm install
 
 # 2. Start de development server
 npm run dev
+
+# 3. Voer de volledige validatie-suite uit (Headless)
+npm run test:full
 ```
 
 De applicatie is beschikbaar op `http://localhost:3000`.
 
 **Standaard inloggegevens:**
-- Admin: `admin@ilg.nl` / `Admin1234!`
+- Admin: `admin@ilgfood.com` / `welkom123`
 
 ## 🛠️ Stack & Technologie
 
@@ -60,17 +63,13 @@ Zie `ARCHITECTURE.md` voor de volledige blauwdruk.
 - **✅ Dynamische Documentinstellingen**: Nieuwe pagina `/instellingen/documenten` waarmee verplichte en optionele documenten per zendingtype (`container` / `ex-works`) beheerd worden zonder code-wijzigingen.
 - **✅ Vite `allowedHosts`**: Productiedeploy op `ship.holtslag.me` geconfigureerd in `vite.config.ts`.
 
-## 🤖 Het Ontwikkelteam (AI-Agenten)
+## 🤖 Automated Validation Framework (@QA-Automator)
 
-| Agent | Verantwoordelijkheid |
-|---|---|
-| [System-Architect] | Sockets, routing, architectuurbewaking |
-| [Frontend-Specialist] | UI/UX, React-componenten |
-| [Data-Specialist] | SQLite, queries, REST-endpoints |
-| @Yard-Strategist | Logistieke flow & statusovergangen |
-| @QA-Automator | Bug-preventie & build-stabiliteit |
-| @UX-Visual-Director | Dark Mode, visuele hiërarchie |
-| @Integration-Specialist | Externe API's & Webhooks |
+Sinds v3.5.1 beschikt het systeem over een volledig geautomatiseerde test-suite om de stabiliteit van de v3.5.0 architectuur te garanderen:
+
+*   **`npm run test:full`**: Voert achtereenvolgens de Socket de Integratietests, Database Health Check en Playwright E2E tests uit.
+*   **Headless E2E**: Playwright tests draaien 'headless' voor snelle validatie van de Priority Queue en dock-flows.
+*   **CI/CD Ready**: De suite is geoptimaliseerd voor headless omgevingen en vereist geen handmatige browser-interactie.
 
 ## 🔐 Beveiliging
 

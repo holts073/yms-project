@@ -11,6 +11,7 @@ export const Badge: React.FC<BadgeProps> = ({
   className,
   variant = 'default',
   size = 'sm',
+  leftIcon: _leftIcon, // Destructure to avoid leaking to DOM
   ...props
 }) => {
   const variants = {

@@ -12,6 +12,7 @@ export const Card: React.FC<CardProps> = ({
   className, 
   variant = 'default',
   padding = 'md',
+  noPadding, // Destructure to avoid leaking to DOM
   ...props 
 }) => {
   const variants = {

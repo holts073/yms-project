@@ -1,5 +1,5 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.2.3.3 — Bijgewerkt: 2026-03-26 — Refactor: 2026-03-26*
+*Versie: v3.5.1 — Bijgewerkt: 2026-03-26 — Refactor: 2026-03-26*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
 
@@ -18,13 +18,16 @@ Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moet
 - **Wachtwoord bevestigingsveld** ✅: "Bevestig Wachtwoord" veld + client-side validatie toegevoegd aan `UserModal.tsx` (sessie 2026-03-26).
 - **Error Boundaries** ✅: `ErrorBoundary` gewrapped rondom `YmsDeliveryList` in `YmsDashboard.tsx` (sessie 2026-03-26).
 - **`any`-types in queries.ts** ✅: Alle functies in `queries.ts` zijn nu strikt getyped met interfaces uit `types.ts`. Raw database rows worden expliciet gemapped (sessie 2026-03-26).
+- **Broken Data-TestID in Atoms** ✅: Shared components (`Card`, `Badge`) verloren hun `data-testid` omdat props niet gespread werden naar de onderliggende DOM-elementen. Gefixt in v3.5.1.
+- **E2E Testing Foundation** ✅: Playwright framework opgezet en voor de eerste keer headless gedraaid in de nieuwe v3.5.0 architectuur (sessie 2026-03-26).
+- **Demo Data Script** ✅: `scripts/seed_demo.ts` gerectificeerd voor correcte temperature en status enums (sessie 2026-03-26).
 
 ## 🔴 Prioriteit 1: Beveiliging & Integriteit
 
 - **Zwak standaardwachtwoord**: Nieuwe gebruikers krijgen `welkom123` als standaardwachtwoord. Overweeg een forced-reset flow bij eerste login.
 - **Schema Migratie Strategie**: Het huidige patroon van `CREATE TABLE IF NOT EXISTS` kan bestaande schema-problemen (verkeerde constraints) niet repareren. Implementeer een formele migratie-engine (bijv. genummerde SQL-bestanden in `/migrations/`) die bij server-start incrementeel wordt toegepast.
 - **WAL-Lock Probleem**: De SQLite WAL-mode veroorzaakte hangende node-scripts wanneer de server actief was. Gebruik `BEGIN IMMEDIATE` voor kritieke schema-wijzigingen of voer resets altijd uit met de server gestopt.
-- **Geen Cascade-Deletes meer**: Door het verwijderen van de compound FK zijn cascade-deletes op docks/wachtruimtes niet meer automatisch. Implementeer handmatige cleanup-logica in `deleteYmsDock` en `deleteYmsWaitingArea`.
+- **Prop-Spreading in Atoms**: Absoluut kritiek — elk nieuw gedeeld component MOET `{...props}` spreaden op het hoofd-element, anders falen geautomatiseerde E2E tests door ontbrekende identifiers.
 
 ## 🟡 Prioriteit 2: Code Kwaliteit
 - **Prop-drilling in YmsDashboard**: `YmsDashboard.tsx` geeft nog teveel props door naar sub-componenten. Verplaats dock/waitingArea access naar de reeds bestaande `useYmsData` hook in leaf-componenten.

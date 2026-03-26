@@ -29,35 +29,26 @@ Dit document schetst de strategische visie en de actuele status van het YMS Plat
 - **Dynamische Documentinstellingen**: Documentvereisten per zendingtype beheerbaar via `Instellingen > Documentinstellingen` zonder code-wijzigingen. Seeded in `sqlite.ts`.
 - **Vite `allowedHosts`**: Productiedeploy op custom domein `ship.holtslag.me` geconfigureerd.
 
+## ✅ Voltooid in v3.5.1 (Huidige Versie)
+- **Automated Validation Framework**: Volledige test-suite met Vitest (Integration), DB-Health monitor en Playwright (E2E).
+- **Headless Testing Foundation**: Infrastructuur voor geautomatiseerde validatie zonder browser-interactie.
+- **Atoms Prop-Spreading Fix**: Architecturale fix voor `Card` en `Badge` componenten voor robuuste `data-testid` support.
+
 ## ✅ Voltooid in v3.4.2
 - **State Reconciliation**: Heartbeat-mechanisme in `SocketContext` (30s sync interval).
 - **Unit Testing Foundation**: Vitest setup met logistieke test-suites.
 - **Architectural Cleanup**: Prop-drilling gereduceerd; Z-index management gecentraliseerd.
 
-## 🕒 Next Up: Fase 3 — Dock Planning UX (v3.3)
-*Focus op de gebruikerservaring van de dag-operatie.*
-- [ ] **Drag & Drop Timeline**: Leveringen verplaatsen tussen docks via drag-and-drop op de YmsTimeline.
-- [ ] **Live Dock Status**: Automatisch omzetten van dock-status (Occupied/Available) bij levering-statuswijzigingen.
-- [ ] **Wachtrij-module**: Zichtbaar overzicht van trucks die wachten op een dock-oproep.
+## 🕒 Next Up: Fase 3.2 — Live Dock Status (v3.5.2)
+*Focus op backend-automatisering van dock-bezetting.*
+- [ ] **Auto-Occupancy**: Docks automatisch op 'Occupied' zetten bij `DOCKED` status.
+- [ ] **Auto-Release**: Docks automatisch vrijgeven bij `GATE_OUT`.
+- [ ] **Conflict Detection**: Waarschuwingen bij dubbele dock-reserveringen.
 
-## 🕒 Fase 4: Automated QA & Stability
-- [ ] **E2E Testing**: Playwright voor de kritieke dock-toewijzings-flow.
-- [ ] **Visual Regression**: Automatische visuele controles na UI-wijzigingen.
-
-## 🕒 Fase 5: Compliance & Reporting
-- [ ] **Power-User Archive**: Geavanceerde filters en analytics.
-- [ ] **Advanced Audit Trails**: Diepere logging van status-wijzigingen.
-
-## 🚀 Fase 6: Strategic Expansion (v3.5)
-- [ ] **External Carrier Portal**: Nieuwe rol met afzonderlijke login.
-- [ ] **SAP CSV Import**: Semi-automatische import van dagelijkse SAP-lijsten.
-- [ ] **Billboard Meldingssysteem**: Digitaal oproepsysteem voor trucks op straat.
-
-## 🔗 Fase 7: Enterprise Integration (v3.6)
-- [ ] **SAP Service Layer API**: Directe REST-koppeling met SAP Business One.
-- [ ] **EDI-Standaardisatie**: Electronic Data Interchange met externe transporteurs.
+## 🕒 Fase 3.3: Drag & Drop Timeline
+- [ ] **Drag & Drop**: Leveringen verplaatsen tussen docks via drag-and-drop op de YmsTimeline.
 
 ---
-*Status: v3.2.3.3 — Dock Planning Stabiel + Global Pipeline Verbeteringen*
-*Regie: @System-Architect & @Integration-Specialist*
+*Status: v3.5.1 — Automated Validation Framework Operationeel*
+*Regie: @System-Architect & @QA-Automator*
 *Laatst bijgewerkt: 2026-03-26*

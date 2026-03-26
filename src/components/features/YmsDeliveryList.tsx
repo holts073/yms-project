@@ -160,10 +160,10 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
                      </Button>
                    )}
                    {delivery.status === 'DOCKED' && (
-                     <Button size="xs" variant="outline" onClick={() => onUpdateStatus(delivery, 'UNLOADING')}>Lossen</Button>
+                     <Button size="xs" variant="outline" onClick={() => onUpdateStatus(delivery.id, 'UNLOADING')}>Lossen</Button>
                    )}
                    {(delivery.status === 'UNLOADING' || delivery.status === 'LOADING') && (
-                     <Button size="xs" leftIcon={<CheckCircle2 size={14} />} onClick={() => onUpdateStatus(delivery, 'COMPLETED')}>Gereed</Button>
+                     <Button size="xs" leftIcon={<CheckCircle2 size={14} />} onClick={() => onUpdateStatus(delivery.id, 'COMPLETED')}>Gereed</Button>
                    )}
                    <button onClick={() => onEdit(delivery)} className="p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--muted)] rounded-full transition-colors">
                      <MoreVertical size={16} />
