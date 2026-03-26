@@ -24,6 +24,11 @@ Dit document schetst de strategische visie en de actuele status van het YMS Plat
 - **Sidebar Dropdowns**: Yard Operational als dropdown in de sidebar, losse menu-items verwijderd.
 - **DockManager Upsert**: `+ Dock Toevoegen` gebruikt warehouse-specifieke ID-generatie om PK-conflicten te voorkomen.
 
+### Global Pipeline — Sessie 2026-03-17
+- **Gebruikersbeheer met Wachtwoorden**: Wachtwoorden instelbaar via de UI; server-side bcrypt hashing per `ADD_USER` / `UPDATE_USER`.
+- **Dynamische Documentinstellingen**: Documentvereisten per zendingtype beheerbaar via `Instellingen > Documentinstellingen` zonder code-wijzigingen. Seeded in `sqlite.ts`.
+- **Vite `allowedHosts`**: Productiedeploy op custom domein `ship.holtslag.me` geconfigureerd.
+
 ## ✅ Voltooid in v3.4.2
 - **State Reconciliation**: Heartbeat-mechanisme in `SocketContext` (30s sync interval).
 - **Unit Testing Foundation**: Vitest setup met logistieke test-suites.
@@ -53,6 +58,6 @@ Dit document schetst de strategische visie en de actuele status van het YMS Plat
 - [ ] **EDI-Standaardisatie**: Electronic Data Interchange met externe transporteurs.
 
 ---
-*Status: v3.2.3.3 — Dock Planning Stabiel*
+*Status: v3.2.3.3 — Dock Planning Stabiel + Global Pipeline Verbeteringen*
 *Regie: @System-Architect & @Integration-Specialist*
 *Laatst bijgewerkt: 2026-03-26*

@@ -1,48 +1,101 @@
-# ILG Foodgroup - Supply Chain Control Tower (YMS)
+# ILG Foodgroup — Supply Chain Control Tower (YMS)
+*Versie: v3.2.3.3*
 
-Het ILG Yard Management Systeem (YMS) is getransformeerd van een simpele planningstool naar een allesomvattende **Control Tower**. Het orkestreert de volledige supply chain flow, van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat (Gate-out).
+Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat.
 
 ## 🚀 De Drie Kernmodules
-Ons systeem is modulair opgebouwd om elke fase van de logistieke keten te beheersen:
 
-1. **Global Pipeline (Inbound):** Volledig inzicht in `Containers` (haven-data, douanevrijgave) en `Ex-works` orders. Hier bewaken we de 'Estimated Time of Arrival' (ETA) en de documentstroom voordat goederen de yard bereiken.
-2. **Active Yard (Operationeel):** Het kloppend hart van de operatie. Real-time beheer van actieve docks, wachtruimtes (Waiting Areas) en de visuele Dock-Timeline voor een vlekkeloze afhandeling van trucks.
-3. **Outbound Planning:** Strategische toewijzing van docks voor klantzendingen, waarbij we de doorloop van lege naar beladen trailers optimaliseren.
+1. **Global Pipeline (Inbound):** Volledig inzicht in `Containers` (haven-data, douanevrijgave) en `Ex-works` orders. ETA-bewaking en documentstroom vóór aankomst.
+2. **Active Yard (Operationeel):** Real-time beheer van actieve docks, wachtruimtes en de visuele **Dock-Timeline** voor vlekkeloze afhandeling van trucks.
+3. **Outbound Planning:** Strategische toewijzing van docks voor klantzendingen.
 
-## 🤖 AI-Driven Development: Het Team
-Dit project wordt ontwikkeld en bewaakt door een gespecialiseerd team van 8 AI-agenten/rollen, elk met hun eigen expertise:
+## ⚙️ Quick Start
 
-- **[Frontend-Specialist]**: De architect van de UI/UX, verantwoordelijk voor de React 19 interface en vloeiende interacties.
-- **[System-Architect]**: De bewaker van de "Brug" (Sockets & Integratie) en de routering van data tussen frontend en backend.
-- **[Data-Specialist]**: Beheerder van de persistentielaag en API-integriteit via Node.js en SQLite.
-- **@Yard-Strategist**: Bewaker van de end-to-end logistieke flow en de statusovergangen van vrachten.
-- **@QA-Automator**: De laatste verdedigingslinie; scant op bugs, console-errors en waarborgt de build-stabiliteit.
-- **@UX-Visual-Director**: Onze esthetische gids; fine-tunt de Dark Mode, visuele hiërarchie en witte ruimte.
-- **@Integration-Specialist**: Bouwer van externe bruggen (API's, Webhooks) naar transporteurs en leveranciers.
-- **System Orchestrator**: De coördinerende kracht die de samenhang tussen alle specialisten en de broncode beheert.
+```bash
+# 1. Installeer afhankelijkheden
+npm install
+
+# 2. Start de development server
+npm run dev
+```
+
+De applicatie is beschikbaar op `http://localhost:3000`.
+
+**Standaard inloggegevens:**
+- Admin: `admin@ilg.nl` / `Admin1234!`
 
 ## 🛠️ Stack & Technologie
-- **React 19 & Vite**: Voor een moderne, responsieve gebruikerservaring.
-- **Tailwind CSS v4 & Framer Motion**: Voor een premium look-and-feel met vloeiende animaties.
-- **Socket.io**: Voor real-time status-updates over de gehele Control Tower.
-- **Better-SQLite3 (WAL Mode)**: Robuuste, lokale data-opslag geoptimaliseerd voor hoge performance.
 
-## ⚙️ Quick Start (v3.2.3.3)
-*Nieuw in v3.2.3.3: Live Active Users counter, PDF Transport Orders, Tablet Persistence en Adressenboek Data-Verrijking.*
+| Laag | Technologie |
+|---|---|
+| Frontend | React 19, Vite, Tailwind CSS v4, Framer Motion |
+| Real-time | Socket.io (JWT-authenticatie per verbinding) |
+| Backend | Node.js, Express |
+| Database | Better-SQLite3 (WAL-mode) — bestand: `database.sqlite` |
+| Testing | Vitest |
 
-1. **Installatie**
-   ```bash
-   npm install
-   ```
-2. **Database Reset (Schoon begin)**
-   ```bash
-   npx tsx scripts/reset_db.ts
-   ```
-3. **Start Development**
-   ```bash
-   npm run dev
-   ```
+## 📐 Architectuur in het kort
 
-## 🔐 Beveiliging & Toegang
-Het systeem maakt gebruik van robuuste password throttling en JWT-beveiligde socket-communicatie. Elke actie wordt gelogd in de `audit_logs` voor volledige traceerbaarheid.
+Het systeem hanteert een strikte **uni-directionele dataflow**:
 
+```
+UI Action → socket.emit('action') → Server validatie → SQLite write
+    → buildStaticState(warehouseId) → socket.emit('state_update') → React re-render
+```
+
+Zie `ARCHITECTURE.md` voor de volledige blauwdruk.
+
+## 🆕 Changelog v3.2.3.3
+
+### YMS & Infrastructuur
+- **🔴 Kritieke Fix**: `FOREIGN KEY(dockId, warehouseId)` compound-constraint verwijderd uit `yms_deliveries`. Dit blokkeerde alle dock-toewijzingen.
+- **🔴 SQL Fix**: Parameter-volgorde in `saveYmsDelivery` gerectificeerd — dockId werd eerder als scheduledTime opgeslagen.
+- **✅ Dock Upsert**: `saveYmsDock` gebruikt nu `INSERT OR REPLACE` waardoor nieuwe docks correct worden opgeslagen.
+- **✅ Optionele Gate**: Magazijnen zonder gate (`hasGate = false`) sturen trucks direct van aanmelding naar dock.
+- **✅ Warehouse Isolatie**: State-updates zijn nu strikt per magazijn gefilterd.
+- **✅ Error Toasts**: Backend-exceptions zijn zichtbaar als Sonner-toasts in de UI.
+
+### Global Pipeline (sessie 2026-03-17)
+- **✅ Gebruikersbeheer**: Admins kunnen nu wachtwoorden instellen en wijzigen vanuit de UI. Hashing via `bcrypt` op de server.
+- **✅ Dynamische Documentinstellingen**: Nieuwe pagina `/instellingen/documenten` waarmee verplichte en optionele documenten per zendingtype (`container` / `ex-works`) beheerd worden zonder code-wijzigingen.
+- **✅ Vite `allowedHosts`**: Productiedeploy op `ship.holtslag.me` geconfigureerd in `vite.config.ts`.
+
+## 🤖 Het Ontwikkelteam (AI-Agenten)
+
+| Agent | Verantwoordelijkheid |
+|---|---|
+| [System-Architect] | Sockets, routing, architectuurbewaking |
+| [Frontend-Specialist] | UI/UX, React-componenten |
+| [Data-Specialist] | SQLite, queries, REST-endpoints |
+| @Yard-Strategist | Logistieke flow & statusovergangen |
+| @QA-Automator | Bug-preventie & build-stabiliteit |
+| @UX-Visual-Director | Dark Mode, visuele hiërarchie |
+| @Integration-Specialist | Externe API's & Webhooks |
+
+## 🔐 Beveiliging
+
+- JWT-authenticatie op alle socket-verbindingen en API-endpoints
+- Role-based access control (admin / staff / tablet)
+- Tablet-accounts: JWT 365 dagen, geen inactiviteits-timeout
+- Wachtwoorden opgeslagen als `bcrypt`-hash (cost factor 10) — nooit in plaintext
+- Alle gebruikersacties worden gelogd in `audit_logs`
+
+> [!CAUTION]
+> Zorg dat `JWT_SECRET` als omgevingsvariabele is ingesteld in productie (`.env`). De hardcoded fallback is **uitsluitend** voor lokale ontwikkeling.
+
+## 📁 Projectstructuur
+
+```
+/src
+  /components
+    /shared       # Atoms: Button, Modal, Badge, Card
+    /features     # Organisms: YmsTimeline, DockGrid, DeliveryTable
+  /hooks          # useYmsData, useDeliveries
+  /db             # queries.ts, sqlite.ts
+  /types.ts       # Centrale TypeScript-interfaces
+/server
+  /routes         # Express-endpoints + buildStaticState
+  /sockets        # socketHandlers.ts — centrale actie-router
+  /services       # pdfService, etc.
+database.sqlite   # Lokale SQLite data
+```

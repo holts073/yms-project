@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('[BEVEILIGING] JWT_SECRET is niet ingesteld als omgevingsvariabele. Server start geannuleerd.');
+}
+const JWT_SECRET_RESOLVED = JWT_SECRET || 'fallback_secret_key_for_dev_only';
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Allow login and forgot-password without token
@@ -17,7 +21,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET_RESOLVED);
     (req as any).user = decoded;
     next();
   } catch (error) {

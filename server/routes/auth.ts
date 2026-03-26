@@ -6,7 +6,11 @@ import { getUsers, saveUser, addLog } from '../../src/db/queries';
 import { getSetting } from '../../src/db/sqlite';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('[BEVEILIGING] JWT_SECRET is niet ingesteld als omgevingsvariabele. Server start geannuleerd.');
+}
+const JWT_SECRET_RESOLVED = JWT_SECRET || 'fallback_secret_key_for_dev_only';
 
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
@@ -29,7 +33,7 @@ router.post("/login", (req, res) => {
   }
 
   const expiresIn = user.role === 'tablet' ? '365d' : '1h';
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn });
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET_RESOLVED, { expiresIn });
   const { passwordHash, ...safeUser } = user;
 
   addLog({

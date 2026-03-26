@@ -320,3 +320,23 @@ export function getSetting(key: string, defaultValue: any = null) {
 export function saveSetting(key: string, value: any) {
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, JSON.stringify(value));
 }
+
+// Initial Seed for shipment_settings (alleen als het nog niet bestaat)
+const existingShipmentSettings = db.prepare("SELECT value FROM settings WHERE key = 'shipment_settings'").get();
+if (!existingShipmentSettings) {
+  const initialShipmentSettings = {
+    container: [
+      { name: 'Seaway Bill / B/L', required: true, triggers_status_jump: true, triggers_status_value: 25 },
+      { name: 'Commercial Invoice', required: true, triggers_status_jump: false },
+      { name: 'Packing List', required: true, triggers_status_jump: false },
+      { name: 'Notification of Arrival', required: true, triggers_status_jump: true, triggers_status_value: 50 },
+      { name: 'Certificate of Origin', required: false, triggers_status_jump: false }
+    ],
+    exworks: [
+      { name: 'CMR / Vrachtbrief', required: true, triggers_status_jump: true, triggers_status_value: 50 },
+      { name: 'Commercial Invoice', required: true, triggers_status_jump: false },
+      { name: 'Packing List', required: true, triggers_status_jump: false }
+    ]
+  };
+  db.prepare("INSERT INTO settings (key, value) VALUES ('shipment_settings', ?)").run(JSON.stringify(initialShipmentSettings));
+}

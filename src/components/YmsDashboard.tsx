@@ -110,22 +110,24 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
             <div className="xl:col-span-2 space-y-6">
               <h3 className="text-2xl font-black text-foreground">Actieve Leveringen</h3>
-              <YmsDeliveryList 
-                deliveries={filteredDeliveries}
-                getStatusLabel={(s) => s}
-                onUpdateStatus={deliveryActions.updateDeliveryStatus}
-                onAssignDock={(d, id) => deliveryActions.assignDock(d.id, id)}
-                onAssignWaitingArea={(d, id) => deliveryActions.updateDelivery({ ...d, waitingAreaId: id, status: 'IN_YARD' })}
-                onRegisterExpected={(d) => {
-                  if (yms.currentWarehouse && !yms.currentWarehouse.hasGate) {
-                    setAssigningDelivery(d);
-                  } else {
-                    deliveryActions.registerArrival(d.id);
-                  }
-                }}
-                onEdit={setEditingDelivery}
-                onAssignClick={setAssigningDelivery}
-              />
+              <ErrorBoundary fallbackTitle="Leveringenlijst Fout">
+                <YmsDeliveryList 
+                  deliveries={filteredDeliveries}
+                  getStatusLabel={(s) => s}
+                  onUpdateStatus={deliveryActions.updateDeliveryStatus}
+                  onAssignDock={(d, id) => deliveryActions.assignDock(d.id, id)}
+                  onAssignWaitingArea={(d, id) => deliveryActions.updateDelivery({ ...d, waitingAreaId: id, status: 'IN_YARD' })}
+                  onRegisterExpected={(d) => {
+                    if (yms.currentWarehouse && !yms.currentWarehouse.hasGate) {
+                      setAssigningDelivery(d);
+                    } else {
+                      deliveryActions.registerArrival(d.id);
+                    }
+                  }}
+                  onEdit={setEditingDelivery}
+                  onAssignClick={setAssigningDelivery}
+                />
+              </ErrorBoundary>
             </div>
             <div className="space-y-10">
               <div className="space-y-6">

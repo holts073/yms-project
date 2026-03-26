@@ -1,6 +1,9 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
 *Versie: v3.2.3.3 — Bijgewerkt: 2026-03-26 door @System-Architect*
 
+> [!NOTE]
+> Bijgewerkt na sessie 2026-03-17: Gebruikersbeheer (password hashing), Dynamische Documentinstellingen en Vite `allowedHosts`.
+
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
 ## 1. Atomic Design & Mappenstructuur
@@ -53,6 +56,17 @@ Het systeem hanteert een strikte uni-directionele dataflow om race-conditions en
 
 ## 4. Database Architectuur (SQLite via better-sqlite3)
 
+### Tabelstructuur — Kern (Global Pipeline)
+```
+users          (id PK, name, email, passwordHash, role, permissions JSON)
+deliveries     (id PK, type, reference, supplierId, status, eta, ...)
+documents      (id PK, deliveryId FK, name, status, required)
+address_book   (id PK, type, name, contact, email, ...)
+logs           (id PK, timestamp, user, action, details)
+audit_logs     (id PK, deliveryId FK, timestamp, user, action, details)
+settings       (key PK, value JSON)
+```
+
 ### Tabelstructuur — YMS-kern
 ```
 yms_warehouses (id PK, name, hasGate)
@@ -63,6 +77,17 @@ yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, ...)
 
 > [!IMPORTANT]
 > **v3.2.3.3 Kritieke Fix**: De `FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks` compound-constraint in `yms_deliveries` is verwijderd uit `sqlite.ts`. Deze constraint werd ongeldig na schema-wijzigingen, waardoor **elke write naar yms_deliveries** met een `foreign key mismatch`-error faalde — dit was de definitieve root cause van de onzichtbare dock-planning.
+
+### `settings`-tabel: Dynamische Configuratie
+De `settings`-tabel slaat JSON-blobs op per sleutel. Bekende sleutels:
+
+| Key | Inhoud |
+|---|---|
+| `companySettings` | Bedrijfsnaam, email, transportTemplate, SMTP-config |
+| `settings` | Terminologie-instellingen |
+| `shipment_settings` | Verplichte/optionele documenten per type (`container` / `exworks`) |
+
+Het `shipment_settings`-object wordt bij opstart geseeded als het nog niet bestaat (`sqlite.ts`). Wijzigingen via de UI (`UPDATE_SETTINGS` socket-event) persisteren direct.
 
 ### Prepared Statements (queries.ts)
 Alle SQL-operaties verlopen via **expliciete kolomnamen** in `INSERT OR REPLACE`-statements om parameter-volgorde-fouten te elimineren:
@@ -86,12 +111,26 @@ Magazijnen configureren via `yms_warehouses.hasGate`:
 
 De `YMS_ASSIGN_DOCK` handler detecteert dit automatisch op basis van de huidige levering-status.
 
-## 7. Sessiebeheer & Tablet Mode
+## 7. Sessiebeheer, Authenticatie & Gebruikersbeheer
 
 | Rol | JWT-duur | Inactiviteits-timer |
 |---|---|---|
 | `admin` / `staff` | 8 uur | 60 minuten |
 | `tablet` | 365 dagen | Uitgeschakeld (Always-On) |
+
+### Wachtwoord-flow (bcrypt)
+Wachtwoorden worden **nooit** in plaintext opgeslagen. De volledige flow:
+```
+[Admin maalt nieuw/gewijzigd wachtwoord] → socket.emit('ADD_USER' | 'UPDATE_USER', { password })
+    → server.ts: bcrypt.genSaltSync(10) + bcrypt.hashSync(password, salt)
+    → saveUser({ ...userData, passwordHash }) → INSERT OR REPLACE INTO users
+    → Bij login: bcrypt.compareSync(password, user.passwordHash)
+```
+- Nieuwe gebruikers zonder wachtwoord krijgen **`welkom123`** als default (hash).
+- Bij updaten van een gebruiker **zonder** wachtwoord in de payload blijft de bestaande `passwordHash` ongewijzigd.
+
+### Vite Deployment Config
+`vite.config.ts` bevat `server.allowedHosts: ['ship.holtslag.me']` voor productie-deploy op het custome domein.
 
 ## 8. Kwaliteitsbewaking (Release Criteria)
 

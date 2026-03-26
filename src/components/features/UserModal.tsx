@@ -42,7 +42,13 @@ export const UserModal: React.FC<UserModalProps> = ({
           <p className="font-bold text-xl">{feedback.message}</p>
         </motion.div>
       ) : (
-        <form onSubmit={onSave} className="space-y-6 pb-4">
+        <form onSubmit={(e) => {
+          if (user?.password && user?.passwordConfirm && user.password !== user.passwordConfirm) {
+            e.preventDefault();
+            return;
+          }
+          onSave(e);
+        }} className="space-y-6 pb-4">
           <Input 
             label="Naam"
             required
@@ -60,9 +66,22 @@ export const UserModal: React.FC<UserModalProps> = ({
             label={user?.id ? 'Wachtwoord (leeg laten om te behouden)' : 'Wachtwoord'}
             required={!user?.id}
             type="password"
+            id="userPasswordField"
             value={user?.password || ''}
             onChange={e => onUpdateEditing({ ...user, password: (e.target as HTMLInputElement).value })}
           />
+          {(user?.password || !user?.id) && (
+            <Input 
+              label="Bevestig Wachtwoord"
+              required={!user?.id}
+              type="password"
+              id="userPasswordConfirmField"
+              value={user?.passwordConfirm || ''}
+              onChange={e => onUpdateEditing({ ...user, passwordConfirm: (e.target as HTMLInputElement).value })}
+              className={user?.password && user?.passwordConfirm && user.password !== user.passwordConfirm ? 'ring-2 ring-rose-500' : ''}
+              helpText={user?.password && user?.passwordConfirm && user.password !== user.passwordConfirm ? 'Wachtwoorden komen niet overeen' : undefined}
+            />
+          )}
           <Input 
             as="select"
             label="Rol"

@@ -53,7 +53,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
 
     const registrationTime = new Date().toISOString();
     dispatch('YMS_SAVE_DELIVERY', {
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       mainDeliveryId: delivery.id,
       warehouseId: 'W01',
       reference: delivery.reference,
