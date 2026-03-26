@@ -29,7 +29,14 @@ Dit document schetst de strategische visie en de actuele status van het YMS Plat
 - **Dynamische Documentinstellingen**: Documentvereisten per zendingtype beheerbaar via `Instellingen > Documentinstellingen` zonder code-wijzigingen. Seeded in `sqlite.ts`.
 - **Vite `allowedHosts`**: Productiedeploy op custom domein `ship.holtslag.me` geconfigureerd.
 
-## ✅ Voltooid in v3.6.0 (Huidige Versie)
+## ✅ Voltooid in v3.6.1 (Stabiliteits Sprint)
+### Security, Architecture & Performance
+- **Operational Security**: forced password reset (`requiresReset`) en bcrypt hash resilience.
+- **Shell-First Rendering**: UI laadt direct na login; state-sync gebeurt achter de schermen met skeleton-loaders.
+- **Prop-drilling Cleanup**: YMS componenten praten direct met de data-layer via hooks.
+- **Test Stability**: E2E suite 100% betrouwbaar en geoptimaliseerd voor headless CI/CD.
+
+## ✅ Voltooid in v3.6.0
 ### UI Enhancements & Logistics Flow
 - **Dashboard Navigation**: Directe deep-linking vanuit Action Required naar delivery details.
 - **Pipeline Flexibility**: Toggle-mechanisme voor Grid (Cards) vs List (Table) weergave.
@@ -53,6 +60,6 @@ Dit document schetst de strategische visie en de actuele status van het YMS Plat
 - [ ] **Auto-Occupancy**: Docks automatisch op 'Occupied' zetten bij `DOCKED` status en vrijgeven bij `GATE_OUT`.
 
 ---
-*Status: v3.6.0 — UI Enhancements & Archive Overhaul COMPLETED*
+*Status: v3.6.1 — Stability, Security & Architecture Shell COMPLETED*
 *Regie: @System-Architect & @Team*
 *Laatst bijgewerkt: 2026-03-26*

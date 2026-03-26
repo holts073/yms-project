@@ -1,8 +1,8 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.6.0 — Bijgewerkt: 2026-03-26 door @System-Architect*
+*Versie: v3.6.1 — Bijgewerkt: 2026-03-26 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na v3.6.0 release: Dashboard Navigatie, Transport Mail, Pipeline Toggle en Logboek.
+> Bijgewerkt na v3.6.1 release: Shell-First UI, Forced Password Reset en Bcrypt Resilience.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
@@ -93,11 +93,18 @@ Sinds v3.5.1 hanteert het platform een volledig geautomatiseerde validatie-suite
 | **Integration** | Vitest | Uni-directionele dataflow validatie (Action → Socket → DB). |
 | **Integrity** | tsx script | Database health checks (`db-health.ts`) op inconsistenties. |
 
-## 8. Release Criteria (v3.6.0)
-- ✅ `npm run test:full` slaagt 100%
-- ✅ Bill of Lading (B/L) is zichtbaar in alle views (Dashboard, Pipeline, Archive)
-- ✅ Pipeline View Toggle (Grid/List) werkt vloeiend zonder re-fetch
-- ✅ Archive Logboek toont correcte audit trail data
-- ✅ Directe navigatie vanaf Dashboard opent correcte detail-modal
-- ✅ Sonner-toasts voor alle backend-fouten
-- ✅ Z-index: toasts > modals > sidebar
+## 9. Operationele Beveiliging & Shell-First UI (v3.6.1)
+
+Met de introductie van v3.6.1 hebben we de focus verlegd naar **Stabiliteit** en **Zichtbare Snelheid**:
+
+- **Shell-First Rendering**: `App.tsx` rendert de sidebar en navigatie onmiddellijk na authenticatie, zonder te wachten op de volledige socket-synchronisatie. De content-area toont skeletons totdat `state` niet meer `null` is.
+- **Null-State Resilience**: Componenten zoals `Dashboard.tsx` zijn nu volledig resilient tegen initial null-states via optional chaining (`state?.addressBook?...`).
+- **Forced Password Reset**: Bij gebruik van het standaardwachtwoord (`welkom123`) wordt de `requiresReset` flag geactiveerd, wat de gebruiker dwingt tot een wachtwoordwijziging.
+- **Bcrypt Resilience**: De auth-flow bevat een try-catch om fouten met legacy of "dummy" hashes te voorkomen, met een veilige fallback naar de default-check.
+
+## 10. Release Criteria (v3.6.1)
+- ✅ `npm run test:full` slaagt 100% (incl. E2E in ~1.7s)
+- ✅ Geen `TypeError` bij initial loading (null-state safe)
+- ✅ Password reset logic is database-gefaciliteerd
+- ✅ Prop-drilling in YmsDashboard volledig gesaneerd via `useYmsData`
+- ✅ Docks en Wachtrijen worden correct gereset bij opschonen

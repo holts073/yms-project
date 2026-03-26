@@ -1,5 +1,5 @@
-# ILG Foodgroup — Supply Chain# YMS Control Tower v3.6.0
-*Versie: v3.6.0 — Bijgewerkt: 2026-03-26*
+# ILG Foodgroup — Supply Chain# YMS Control Tower v3.6.1
+*Versie: v3.6.1 — Bijgewerkt: 2026-03-26*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat.
 
@@ -48,6 +48,18 @@ UI Action → socket.emit('action') → Server validatie → SQLite write
 ```
 
 Zie `ARCHITECTURE.md` voor de volledige blauwdruk.
+
+## 🆕 Changelog v3.6.1 (Stabiliteits Sprint)
+
+### Security & Integriteit
+- **✅ Forced Password Reset**: Gebruikers met default wachtwoorden worden nu gemarkeerd voor een verplichte reset (`requiresReset`).
+- **✅ Bcrypt Resilience**: Verbeterde login-flow die crash-proof is bij incomplete of legacy wachtwoord-hashes.
+- **✅ Deep Cleanup Audit**: Volledige opschoning van test-data en weeskinderen in de database.
+
+### UI & Architectuur
+- **✅ Shell-First UX**: De app-shell laadt onmiddellijk; content verschijnt via skeletons zodra de data gesynchroniseerd is.
+- **✅ Prop-drilling Cleanup**: `YmsDashboard` is vereenvoudigd; alle sub-componenten gebruiken nu de gecentraliseerde `useYmsData` hook.
+- **✅ 100% Test Stability**: E2E suite is nu volledig betrouwbaar en geoptimaliseerd (~1.7s looptijd).
 
 ## 🆕 Changelog v3.6.0
 
