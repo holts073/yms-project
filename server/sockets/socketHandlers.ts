@@ -128,6 +128,10 @@ export const setupSocketHandlers = (io: Server) => {
             // during INSERT OR REPLACE when the frontend only sends partial updates (like status).
             let newPayload = { ...existing, ...payload };
             
+            if (!existing && (!payload.type || !payload.reference)) {
+               throw new Error(`Validatiefout: Kan levering ${payload.id} niet bijwerken. Record bestaat niet en payload is incompleet (mis type/reference).`);
+            }
+            
             if (existing && existing.status !== newPayload.status) {
               const getStatusLabel = (p: any) => {
                 if (p.status === 100) return 'Afgeleverd';

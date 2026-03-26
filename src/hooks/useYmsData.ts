@@ -29,6 +29,7 @@ export const useYmsData = () => {
   const updateDock = (dock: any) => dispatch('YMS_SAVE_DOCK', dock);
   
   const updateWaitingArea = (wa: any) => dispatch('YMS_SAVE_WAITINGAREA', wa);
+  const updateDelivery = (d: any) => dispatch('YMS_SAVE_DELIVERY', d);
 
   const addWarehouse = (w: any) => dispatch('YMS_SAVE_WAREHOUSE', w);
   const updateWarehouse = (w: any) => dispatch('YMS_SAVE_WAREHOUSE', w);
@@ -52,6 +53,7 @@ export const useYmsData = () => {
       setSelectedWarehouse,
       updateDock,
       updateWaitingArea,
+      updateDelivery,
       addWarehouse,
       updateWarehouse,
       deleteWarehouse,

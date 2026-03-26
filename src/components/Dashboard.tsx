@@ -6,11 +6,13 @@ import { useDeliveries } from '../hooks/useDeliveries';
 import { DashboardKPIs } from './features/DashboardKPIs';
 import { DashboardTable } from './features/DashboardTable';
 import { Card } from './shared/Card';
+import { TransportMailModal } from './features/TransportMailModal';
 
 const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: string, id?: string) => void }) => {
   const { state, dispatch, currentUser } = useSocket();
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', true);
   const [filterType, setFilterType] = useState<'action' | 'today' | 'enroute' | 'customs' | 'in_transit'>('action');
+  const [mailDelivery, setMailDelivery] = useState<any>(null);
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
@@ -108,12 +110,20 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             suppliers={state?.addressBook?.suppliers || []}
             onSelect={(id) => onNavigate?.('deliveries', undefined, id)}
             onYmsRegister={handleYmsRegister}
-            onMailTransport={(d) => toast.info('Transport mail wordt geopend...')} // Logic simplified for brevity, original email logic can be restored if needed
+            onMailTransport={(d) => setMailDelivery(d)}
             onUpdateStatus={(d, s) => dispatch('UPDATE_DELIVERY', { ...d, status: s })}
             canEdit={canEdit}
           />
         </Card>
       </section>
+
+      <TransportMailModal 
+        isOpen={!!mailDelivery}
+        onClose={() => setMailDelivery(null)}
+        delivery={mailDelivery}
+        transporter={state.addressBook?.transporters.find((t: any) => t.id === mailDelivery?.transporterId)}
+        supplier={state.addressBook?.suppliers.find((s: any) => s.id === mailDelivery?.supplierId)}
+      />
     </div>
   );
 };

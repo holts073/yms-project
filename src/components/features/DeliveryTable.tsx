@@ -8,6 +8,7 @@ import { MilestoneStepper } from '../ui/MilestoneStepper';
 import { isRegisteredOnTime } from '../../lib/logistics';
 
 interface DeliveryTableProps {
+  viewMode?: 'grid' | 'list';
   deliveries: Delivery[];
   selectedIds: string[];
   onToggleSelect: (id: string) => void;
@@ -22,6 +23,7 @@ interface DeliveryTableProps {
 }
 
 export const DeliveryTable: React.FC<DeliveryTableProps> = ({
+  viewMode = 'grid',
   deliveries,
   selectedIds,
   onToggleSelect,
@@ -38,12 +40,97 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
     return <div className="p-8 text-center text-[var(--muted-foreground)] font-medium">Geen leveringen gevonden in de pipeline.</div>;
   }
 
+  if (viewMode === 'list') {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-border bg-[var(--muted)]/50">
+              <th className="p-4 w-10">
+                <input 
+                  type="checkbox" 
+                  checked={selectedIds.length === deliveries.length && deliveries.length > 0} 
+                  onChange={onToggleSelectAll}
+                  className="w-4 h-4 rounded border-border text-indigo-600"
+                />
+              </th>
+              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Referentie / B/L</th>
+              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</th>
+              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">ETA</th>
+              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Milestones</th>
+              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)] text-right">Actie</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deliveries.map(d => {
+              const s = suppliers.find(sup => sup.id === d.supplierId);
+              const missingDocs = d.documents.filter(doc => doc.required && doc.status === 'missing').length;
+              
+              return (
+                <tr 
+                  key={d.id} 
+                  className="border-b border-border/50 hover:bg-[var(--muted)]/30 transition-colors cursor-pointer group"
+                  onClick={() => onOpenModal(d)}
+                >
+                  <td className="p-4" onClick={e => e.stopPropagation()}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.includes(d.id)} 
+                      onChange={() => onToggleSelect(d.id)}
+                      className="w-4 h-4 rounded border-border text-indigo-600"
+                    />
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-foreground group-hover:text-indigo-600 transition-colors">{d.reference}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400">{d.containerNumber || (d as any).licensePlate || 'GEEN NR'}</span>
+                        {d.billOfLading && (
+                          <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 font-bold">B/L: {d.billOfLading}</span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-sm font-bold text-[var(--muted-foreground)]">{s?.name || 'Onbekend'}</td>
+                  <td className="p-4 text-sm font-bold text-foreground">
+                    {d.etaWarehouse ? new Date(d.etaWarehouse).toLocaleDateString('nl-NL') : '-'}
+                  </td>
+                  <td className="p-4">
+                    <div className="max-w-[150px]">
+                      <MilestoneStepper delivery={d} />
+                    </div>
+                  </td>
+                  <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
+                       {missingDocs > 0 && <AlertTriangle size={14} className="text-rose-500" title={`${missingDocs} doc(s) missen`} />}
+                       {d.notes && (
+                         <div className="relative group/note">
+                            <FileText size={14} className="text-indigo-500 opacity-60 hover:opacity-100" />
+                            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-popover text-popover-foreground text-[10px] rounded-lg shadow-xl border border-border hidden group-hover/note:block z-50">
+                               {d.notes}
+                            </div>
+                         </div>
+                       )}
+                       {d.status >= 50 && d.status < 100 && (
+                         <Button size="xs" onClick={() => onYmsRegister(d)}>YMS</Button>
+                       )}
+                       {canEdit && <button onClick={() => confirm('Verwijderen?') && onDelete(d.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-full"><Trash2 size={16} /></button>}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6 bg-[var(--muted)]/30">
       {deliveries.map(d => {
         const s = suppliers.find(sup => sup.id === d.supplierId);
         const steps = d.type === 'container' ? 5 : 4;
-        const currentIdx = d.status === 100 ? steps - 1 : (d.status >= 75 ? steps - 2 : (d.status >= 50 ? steps - 3 : (d.status >= 25 ? 1 : 0)));
         const missingDocs = d.documents.filter(doc => doc.required && doc.status === 'missing').length;
 
         return (
@@ -70,6 +157,9 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                          <div title="Te laat aangemeld (<24u)" className="text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-1 rounded-full animate-pulse"><Clock size={12} /></div>
                        )}
                     </div>
+                    {d.billOfLading && (
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">B/L: {d.billOfLading}</p>
+                    )}
                     <p className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">{d.containerNumber || (d as any).licensePlate || 'GEEN NR'}</p>
                     <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] line-clamp-1 mt-1">{s?.name || 'Onbekend Leverancier'}</p>
                  </div>
@@ -127,7 +217,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
 
             {/* Footer */}
             <div className="flex items-center justify-between pt-1">
-               <div>
+               <div className="flex items-center gap-2">
                   {missingDocs > 0 ? (
                     <div className="flex items-center gap-1.5 text-rose-500 font-bold text-xs bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-full border border-rose-100 dark:border-rose-900/30">
                        <AlertTriangle size={14} /> {missingDocs} doc(s) missen
@@ -135,6 +225,16 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                   ) : (
                     <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">
                        <CheckCircle2 size={14} /> Compleet
+                    </div>
+                  )}
+                  {d.notes && (
+                    <div className="relative group/note">
+                       <FileText size={16} className="text-indigo-500 opacity-60 hover:opacity-100 transition-opacity" />
+                       <div className="absolute bottom-full left-0 mb-3 w-64 p-3 bg-popover text-popover-foreground text-xs rounded-xl shadow-2xl border border-border hidden group-hover/note:block z-50 leading-relaxed">
+                          <p className="font-bold mb-1 uppercase tracking-tighter text-[10px] text-[var(--muted-foreground)]">Opmerkingen:</p>
+                          {d.notes}
+                          <div className="absolute bottom-[-6px] left-4 w-3 h-3 bg-popover border-r border-b border-border rotate-45" />
+                       </div>
                     </div>
                   )}
                </div>

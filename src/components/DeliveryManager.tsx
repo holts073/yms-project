@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useSocket } from '../SocketContext';
-import { Plus, Search, Download, Truck } from 'lucide-react';
+import { Plus, Search, Download, Truck, LayoutDashboard, List } from 'lucide-react';
 import { useDeliveries } from '../hooks/useDeliveries';
 import { gatekeeperCheck } from '../lib/logistics';
 import { cn } from '../lib/utils';
@@ -12,6 +12,7 @@ import { Card } from './shared/Card';
 import { Button } from './shared/Button';
 import { Input } from './shared/Input';
 import { Combobox } from './ui/Combobox';
+import { TransportMailModal } from './features/TransportMailModal';
 
 const ComboboxWrapper = ({ name, options, defaultValue, placeholder }: any) => {
   const [val, setVal] = useState(defaultValue || (options.length > 0 ? options[0].value : ''));
@@ -31,7 +32,9 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<any>(null);
+  const [mailDelivery, setMailDelivery] = useState<any>(null);
   const [formType, setFormType] = useState<'container' | 'exworks'>('container');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const openModal = (d?: any) => {
     setEditingDelivery(d || null);
@@ -41,6 +44,19 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
 
   const ITEMS_PER_PAGE = 20;
   const { deliveries, totalPages } = useDeliveries(currentPage, ITEMS_PER_PAGE, filter, typeFilter, 'eta', true);
+
+  useEffect(() => {
+    if (initialSelectedId && deliveries.length > 0) {
+      const delivery = deliveries.find(d => d.id === initialSelectedId);
+      if (delivery) {
+        // Wait a bit for the component to be fully ready
+        const timer = setTimeout(() => {
+          openModal(delivery);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [initialSelectedId, deliveries]);
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
@@ -123,18 +139,35 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
              </button>
            ))}
         </div>
+        <div className="flex items-center gap-1 bg-[var(--muted)] p-1 rounded-xl ml-auto">
+           <button 
+             onClick={() => setViewMode('grid')}
+             className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-card text-indigo-600 shadow-sm" : "text-[var(--muted-foreground)] hover:text-foreground")}
+             title="Rooster weergave"
+           >
+             <LayoutDashboard size={18} />
+           </button>
+           <button 
+             onClick={() => setViewMode('list')}
+             className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-card text-indigo-600 shadow-sm" : "text-[var(--muted-foreground)] hover:text-foreground")}
+             title="Lijst weergave"
+           >
+             <List size={18} />
+           </button>
+        </div>
       </Card>
 
       <section className="space-y-6">
         <Card padding="none" className="overflow-hidden">
           <DeliveryTable 
+            viewMode={viewMode}
             deliveries={deliveries}
             selectedIds={selectedIds}
             onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
             onToggleSelectAll={() => setSelectedIds(selectedIds.length === deliveries.length ? [] : deliveries.map(d => d.id))}
             onOpenModal={(d) => openModal(d)}
             onDelete={(id) => dispatch('DELETE_DELIVERY', id)}
-            onMailTransport={(d) => toast.info('Transport mail interface geopend')}
+            onMailTransport={(d) => setMailDelivery(d)}
             onYmsRegister={handleYmsRegister}
             onUpdateStatus={(d, s) => {
               const error = gatekeeperCheck(d, s);
@@ -257,6 +290,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                 {formType === 'container' && (
                   <>
                     <Input label="Container nummer" name="containerNumber" defaultValue={editingDelivery?.containerNumber} />
+                    <Input label="Bill of Lading (B/L)" name="billOfLading" type="number" defaultValue={editingDelivery?.billOfLading} />
                     <Input label="Haven van Aankomst" name="portOfArrival" defaultValue={editingDelivery?.portOfArrival} />
                     <Input label="ETA Haven" name="etaPort" type="date" defaultValue={editingDelivery?.etaPort?.split('T')[0]} />
                     <div className="flex items-center gap-3 pt-6 pl-4">
@@ -341,6 +375,14 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
             </div>
          </form>
       </Modal>
+
+      <TransportMailModal 
+        isOpen={!!mailDelivery}
+        onClose={() => setMailDelivery(null)}
+        delivery={mailDelivery}
+        transporter={state.addressBook?.transporters.find((t: any) => t.id === mailDelivery?.transporterId)}
+        supplier={state.addressBook?.suppliers.find((s: any) => s.id === mailDelivery?.supplierId)}
+      />
     </div>
   );
 };

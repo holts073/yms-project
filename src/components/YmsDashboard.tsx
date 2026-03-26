@@ -34,6 +34,26 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
   const { deliveries, actions: deliveryActions } = useDeliveries();
   
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleYmsStatusUpdate = (delivery: any, status: any) => {
+    // 1. Update YMS record
+    if (delivery.temperature || delivery.warehouseId) {
+      const updated = { ...delivery, status };
+      yms.actions.updateDelivery(updated);
+      
+      // 2. Coordinated update to Main Tracker if linked
+      if (delivery.mainDeliveryId) {
+         if (status === 'COMPLETED') {
+           deliveryActions.updateDeliveryStatus(delivery.mainDeliveryId, 100);
+         } else if (status === 'UNLOADING' || status === 'LOADING') {
+           deliveryActions.updateDeliveryStatus(delivery.mainDeliveryId, 90);
+         }
+      }
+    } else {
+      // Standard delivery update
+      deliveryActions.updateDeliveryStatus(delivery.id, status);
+    }
+  };
   const [directionFilter, setDirectionFilter] = useState<'INBOUND' | 'OUTBOUND'>('INBOUND');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingDelivery, setEditingDelivery] = useState<Partial<YmsDelivery> | null>(null);
@@ -176,7 +196,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
                 <YmsDeliveryList 
                   deliveries={filteredDeliveries}
                   getStatusLabel={(s) => s}
-                  onUpdateStatus={deliveryActions.updateDeliveryStatus}
+                  onUpdateStatus={handleYmsStatusUpdate}
                   onAssignDock={(d, id) => deliveryActions.assignDock(d.id, id)}
                   onAssignWaitingArea={(d, id) => deliveryActions.updateDelivery({ ...d, waitingAreaId: id, status: 'IN_YARD' })}
                   onRegisterExpected={(d) => {
