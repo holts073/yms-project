@@ -121,8 +121,8 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
         isOpen={!!mailDelivery}
         onClose={() => setMailDelivery(null)}
         delivery={mailDelivery}
-        transporter={state.addressBook?.transporters.find((t: any) => t.id === mailDelivery?.transporterId)}
-        supplier={state.addressBook?.suppliers.find((s: any) => s.id === mailDelivery?.supplierId)}
+        transporter={state?.addressBook?.transporters?.find((t: any) => t.id === mailDelivery?.transporterId)}
+        supplier={state?.addressBook?.suppliers?.find((s: any) => s.id === mailDelivery?.supplierId)}
       />
     </div>
   );

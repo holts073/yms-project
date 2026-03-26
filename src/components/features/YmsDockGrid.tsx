@@ -7,12 +7,8 @@ import { useYmsData } from '../../hooks/useYmsData';
 import { YmsDock } from '../../types';
 import { cn } from '../../lib/utils';
 
-interface YmsDockGridProps {
-  onUpdateDock: (dock: any) => void;
-}
-
-export const YmsDockGrid: React.FC<YmsDockGridProps> = ({ onUpdateDock }) => {
-  const { docks } = useYmsData();
+export const YmsDockGrid: React.FC = () => {
+  const { docks, actions } = useYmsData();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {docks.map((dock) => (
@@ -56,7 +52,7 @@ export const YmsDockGrid: React.FC<YmsDockGridProps> = ({ onUpdateDock }) => {
                 variant="ghost" 
                 size="sm" 
                 className="text-xs text-indigo-600 dark:text-indigo-400 p-0 hover:bg-transparent"
-                onClick={() => onUpdateDock({ ...dock, status: dock.status === 'Blocked' ? 'Available' : 'Blocked' })}
+                onClick={() => actions.updateDock({ ...dock, status: dock.status === 'Blocked' ? 'Available' : 'Blocked' })}
              >
                 {dock.status === 'Blocked' ? 'Deblokkeren' : 'Blokkeren'}
              </Button>

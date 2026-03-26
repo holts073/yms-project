@@ -7,14 +7,8 @@ import { useYmsData } from '../../hooks/useYmsData';
 import { YmsWaitingArea } from '../../types';
 import { cn } from '../../lib/utils';
 
-interface YmsWaitingAreaGridProps {
-  onUpdateStatus: (wa: any, status: string) => void;
-}
-
-export const YmsWaitingAreaGrid: React.FC<YmsWaitingAreaGridProps> = ({
-  onUpdateStatus
-}) => {
-  const { waitingAreas } = useYmsData();
+export const YmsWaitingAreaGrid: React.FC = () => {
+  const { waitingAreas, actions } = useYmsData();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {waitingAreas.map((wa) => (
@@ -45,7 +39,7 @@ export const YmsWaitingAreaGrid: React.FC<YmsWaitingAreaGridProps> = ({
                 size="icon" 
                 className="h-6 w-6" 
                 title="Blokkeren/Deblokkeren"
-                onClick={() => onUpdateStatus(wa, wa.adminStatus === 'Blocked' ? 'Active' : 'Blocked')}
+                onClick={() => actions.updateWaitingArea({ ...wa, adminStatus: wa.adminStatus === 'Blocked' ? 'Active' : 'Blocked' })}
              >
                 <AlertCircle size={12} />
              </Button>

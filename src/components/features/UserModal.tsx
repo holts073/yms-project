@@ -2,14 +2,14 @@ import React from 'react';
 import { Modal } from '../shared/Modal';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
-import { User, UserRole } from '../../types';
+import { User, UserRole, UserPermissions } from '../../types';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: Partial<User> | null;
+  user: (Partial<User> & { password?: string, passwordConfirm?: string }) | null;
   onSave: (e: React.FormEvent) => void;
   onUpdateEditing: (u: any) => void;
   feedback: { type: 'success' | 'error', message: string } | null;
@@ -106,7 +106,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                   <label key={perm.id} className="flex items-center gap-3 cursor-pointer group">
                     <input 
                       type="checkbox" 
-                      checked={user?.permissions?.[perm.id] || false}
+                      checked={user?.permissions?.[perm.id as keyof UserPermissions] || false}
                       onChange={e => onUpdateEditing({ 
                         ...user, 
                         permissions: { ...(user?.permissions || {}), [perm.id]: e.target.checked } 

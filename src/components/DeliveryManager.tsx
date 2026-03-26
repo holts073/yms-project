@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useSocket } from '../SocketContext';
-import { Plus, Search, Download, Truck, LayoutDashboard, List } from 'lucide-react';
+import { Plus, Search, Download, Truck, LayoutDashboard, List, Package } from 'lucide-react';
 import { useDeliveries } from '../hooks/useDeliveries';
+import { Skeleton, TableSkeleton, GridSkeleton } from './shared/SkeletonLoader';
+import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import { gatekeeperCheck } from '../lib/logistics';
 import { cn } from '../lib/utils';
 import { Badge } from './shared/Badge';
@@ -43,7 +45,23 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   };
 
   const ITEMS_PER_PAGE = 20;
-  const { deliveries, totalPages } = useDeliveries(currentPage, ITEMS_PER_PAGE, filter, typeFilter, 'eta', true);
+  const { deliveries, totalPages, loading } = useDeliveries(currentPage, ITEMS_PER_PAGE, filter, typeFilter, 'eta', true);
+
+  if (loading) {
+    return (
+      <div className="p-8 space-y-8">
+        <div className="flex items-center gap-4">
+           <Skeleton variant="circle" />
+           <div className="space-y-2">
+              <Skeleton className="w-48 h-8" />
+              <Skeleton className="w-64 h-4" />
+           </div>
+        </div>
+        <Skeleton variant="row" className="h-20" />
+        {viewMode === 'grid' ? <GridSkeleton count={6} /> : <TableSkeleton rows={10} />}
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (initialSelectedId && deliveries.length > 0) {
@@ -158,29 +176,41 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
       </Card>
 
       <section className="space-y-6">
-        <Card padding="none" className="overflow-hidden">
-          <DeliveryTable 
-            viewMode={viewMode}
-            deliveries={deliveries}
-            selectedIds={selectedIds}
-            onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
-            onToggleSelectAll={() => setSelectedIds(selectedIds.length === deliveries.length ? [] : deliveries.map(d => d.id))}
-            onOpenModal={(d) => openModal(d)}
-            onDelete={(id) => dispatch('DELETE_DELIVERY', id)}
-            onMailTransport={(d) => setMailDelivery(d)}
-            onYmsRegister={handleYmsRegister}
-            onUpdateStatus={(d, s) => {
-              const error = gatekeeperCheck(d, s);
-              if (error) {
-                toast.error(error);
-                return;
-              }
-              dispatch('UPDATE_DELIVERY', { ...d, status: s });
-            }}
-            canEdit={canEdit}
-            suppliers={state?.addressBook?.suppliers || []}
-          />
-        </Card>
+      <LayoutGroup>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={viewMode}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card padding="none" className="overflow-hidden">
+              <DeliveryTable 
+                viewMode={viewMode}
+                deliveries={deliveries}
+                selectedIds={selectedIds}
+                onToggleSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
+                onToggleSelectAll={() => setSelectedIds(selectedIds.length === deliveries.length ? [] : deliveries.map(d => d.id))}
+                onOpenModal={(d) => openModal(d)}
+                onDelete={(id) => dispatch('DELETE_DELIVERY', id)}
+                onMailTransport={(d) => setMailDelivery(d)}
+                onYmsRegister={handleYmsRegister}
+                onUpdateStatus={(d, s) => {
+                  const error = gatekeeperCheck(d, s);
+                  if (error) {
+                    toast.error(error);
+                    return;
+                  }
+                  dispatch('UPDATE_DELIVERY', { ...d, status: s });
+                }}
+                canEdit={canEdit}
+                suppliers={state?.addressBook?.suppliers || []}
+              />
+            </Card>
+          </motion.div>
+        </AnimatePresence>
+      </LayoutGroup>
 
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 pt-4">

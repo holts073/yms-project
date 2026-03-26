@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
+import { useYmsData } from '../../hooks/useYmsData';
 import { Truck, MapPin, Clock, AlertTriangle, Snowflake, LayoutGrid } from 'lucide-react';
 import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
@@ -11,14 +12,13 @@ import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
 interface YmsQueueProps {
-  priorityQueue: YmsDelivery[];
   onAssignClick: (d: YmsDelivery) => void;
 }
 
 export const YmsQueue: React.FC<YmsQueueProps> = ({
-  priorityQueue,
   onAssignClick
 }) => {
+  const { priorityQueue } = useYmsData();
   // Update wait times every minute
   const [now, setNow] = useState(new Date());
   
@@ -38,7 +38,7 @@ export const YmsQueue: React.FC<YmsQueueProps> = ({
           </div>
           <h2 className="text-2xl font-black text-foreground tracking-tight">Wachtrij Arrivé</h2>
         </div>
-        <Badge variant="secondary" className="px-3 py-1 font-bold text-xs" data-testid="queue-count">
+        <Badge variant="default" className="px-3 py-1 font-bold text-xs" data-testid="queue-count">
           {queueDeliveries.length} Voertuigen
         </Badge>
       </div>

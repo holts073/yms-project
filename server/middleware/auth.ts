@@ -8,8 +8,13 @@ if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
 const JWT_SECRET_RESOLVED = JWT_SECRET || 'fallback_secret_key_for_dev_only';
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // Allow login and forgot-password without token
-  if (req.path === '/login' || req.path === '/forgot-password') {
+  // Allow login and forgot-password without token (robust check)
+  const isPublicPath = req.path === '/login' || 
+                       req.path === '/forgot-password' || 
+                       req.originalUrl.endsWith('/login') || 
+                       req.originalUrl.endsWith('/forgot-password');
+                       
+  if (isPublicPath) {
     return next();
   }
 

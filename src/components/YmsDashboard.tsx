@@ -15,6 +15,7 @@ import { YmsAssignmentModal } from './features/YmsAssignmentModal';
 import { YmsDeliveryModal } from './features/YmsDeliveryModal';
 import { YmsDelivery, YmsDeliveryStatus } from '../types';
 import { FullPageLoader } from './shared/LoadingSpinner';
+import { Skeleton, GridSkeleton, TableSkeleton } from './shared/SkeletonLoader';
 import { 
   DndContext, 
   DragOverlay, 
@@ -122,7 +123,36 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
     }
   };
 
-  if (!state) return <FullPageLoader />;
+  if (!state) {
+    return (
+      <div className="p-8 space-y-8 h-screen overflow-hidden">
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-4">
+            <Skeleton variant="circle" />
+            <div className="space-y-2">
+              <Skeleton className="w-48 h-8" />
+              <Skeleton className="w-64 h-4" />
+            </div>
+          </div>
+          <Skeleton className="w-48 h-12 rounded-2xl" />
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
+           <div className="xl:col-span-2 space-y-6">
+              <h3 className="text-2xl font-black text-foreground">Aankomst Wachtrij</h3>
+              <ErrorBoundary fallbackTitle="Wachtrij Fout">
+                <YmsQueue />
+              </ErrorBoundary>
+           </div>
+           <div className="space-y-10">
+              <h3 className="text-2xl font-black text-foreground">Wachtruimte Status</h3>
+              <ErrorBoundary fallbackTitle="Wachtruimte Fout">
+                <YmsWaitingAreaGrid />
+              </ErrorBoundary>
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   const activeDelivery = activeId ? yms.deliveries.find(d => d.id === activeId) : null;
 
@@ -171,7 +201,6 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
 
       {view === 'arrivals' ? (
             <YmsQueue 
-              priorityQueue={yms.priorityQueue} 
               onAssignClick={setAssigningDelivery} 
             />
       ) : (
@@ -181,7 +210,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             <ErrorBoundary fallbackTitle="Timeline Fout">
               <YmsTimeline 
                 deliveries={filteredDeliveries}
-                onSaveDelivery={deliveryActions.updateDelivery}
+                onSaveDelivery={yms.actions.updateDelivery}
                 getStatusLabel={(s) => s}
                 isToday={selectedDate === new Date().toISOString().split('T')[0]}
                 selectedDate={selectedDate}
@@ -214,12 +243,12 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             <div className="space-y-10">
               <div className="space-y-6">
                 <h3 className="text-2xl font-black text-foreground">Dock Status</h3>
-                <YmsDockGrid onUpdateDock={yms.actions.updateDock} />
+                <YmsDockGrid />
               </div>
               
               <div className="space-y-6">
                 <h3 className="text-2xl font-black text-foreground">Wachtruimtes</h3>
-                <YmsWaitingAreaGrid onUpdateStatus={(wa, s) => yms.actions.updateWaitingArea({ ...wa, adminStatus: s })} />
+                <YmsWaitingAreaGrid />
               </div>
             </div>
           </div>

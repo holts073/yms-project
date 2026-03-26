@@ -73,6 +73,7 @@ export const useDeliveries = (
     deliveries: pagedDeliveries,
     totalItems,
     totalPages,
+    loading: !state,
     actions: {
       updateDeliveryStatus,
       updateDelivery,

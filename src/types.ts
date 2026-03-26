@@ -96,6 +96,7 @@ export interface User {
   email: string;
   passwordHash?: string;
   permissions?: UserPermissions;
+  requiresReset?: boolean;
 }
 
 export interface AppSettings {
@@ -130,6 +131,7 @@ export interface AppState {
     transporters: AddressEntry[];
     customers: AddressEntry[];
   };
+  deliveries: Delivery[];
   palletBalances: Record<string, number>;
   logs: LogEntry[];
   users: User[];
@@ -143,6 +145,7 @@ export interface AppState {
     priorityQueue: YmsDelivery[];
     dockOverrides: YmsDockOverride[];
     alerts: YmsAlert[];
+    selectedWarehouseId: string | null;
   };
   activeUsers: number;
 }

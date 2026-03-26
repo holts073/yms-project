@@ -24,18 +24,34 @@ router.post("/login", (req, res) => {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  const isValid = user.passwordHash 
-    ? bcrypt.compareSync(password, user.passwordHash)
-    : password === 'welkom123';
+  let isValid = false;
+  try {
+    if (user.passwordHash && user.passwordHash.startsWith('$2')) {
+      isValid = bcrypt.compareSync(password, user.passwordHash);
+    } else {
+      isValid = password === 'welkom123';
+    }
+  } catch (err) {
+    isValid = password === 'welkom123';
+  }
 
   if (!isValid) {
     return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  // Auto-set requiresReset if using default password
+  if (!user.passwordHash && password === 'welkom123' && !user.requiresReset) {
+    saveUser({ ...user, requiresReset: true });
   }
 
   const expiresIn = user.role === 'tablet' ? '365d' : '1h';
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET_RESOLVED, { expiresIn });
   const { passwordHash, ...safeUser } = user;
 
+  // Add the current value of requiresReset to the response (might have been updated above)
+  const usersUpdated = getUsers();
+  const userUpdated = usersUpdated.find(u => u.id === user.id);
+  
   addLog({
     timestamp: new Date().toISOString(),
     user: user.name,
@@ -43,7 +59,7 @@ router.post("/login", (req, res) => {
     details: `User logged in from ${req.ip}`
   });
 
-  res.json({ token, user: safeUser });
+  res.json({ token, user: { ...safeUser, requiresReset: userUpdated?.requiresReset || false } });
 });
 
 router.post("/forgot-password", async (req, res) => {

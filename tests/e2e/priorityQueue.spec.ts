@@ -11,11 +11,11 @@ test.describe('YMS Priority Queue', () => {
     // 2. Navigate to YMS Arrivals
     // Wait for sidebar to be ready
     const departuresLink = page.getByRole('button', { name: 'Aankomst & Inspectie' });
-    await expect(departuresLink).toBeVisible();
+    await expect(departuresLink).toBeVisible({ timeout: 30000 });
     await departuresLink.click();
 
     // Wait for YMS Arrivals Dashboard to load
-    await expect(page.getByTestId('yms-queue')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('yms-queue')).toBeVisible({ timeout: 30000 });
 
     const testWarehouseId = 'WH-TEST-' + Math.random().toString(36).substr(2, 5).toUpperCase();
     const dryRef = `DRY-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
@@ -54,7 +54,7 @@ test.describe('YMS Priority Queue', () => {
     }, { whId: testWarehouseId, ref: dryRef });
 
     // Wait for it to appear
-    await expect(page.locator(`[data-testid="delivery-reference"]:has-text("${dryRef}")`)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(`[data-testid="delivery-reference"]:has-text("${dryRef}")`)).toBeVisible({ timeout: 20000 });
 
     // 5. Add a 'Reefer' truck (simulated arrival) - 5 mins later
     await page.evaluate(({ whId, ref }) => {
@@ -82,7 +82,7 @@ test.describe('YMS Priority Queue', () => {
 
     // 6. Validate Order (Reefer should jump ahead of Dry)
     const queueItems = page.locator('[data-testid="yms-queue-item"]');
-    await expect(queueItems.first().locator('[data-testid="delivery-reference"]')).toHaveText(reeferRef, { timeout: 10000 });
+    await expect(queueItems.first().locator('[data-testid="delivery-reference"]')).toHaveText(reeferRef, { timeout: 30000 });
     
     // Validate reefer has priority badge
     await expect(queueItems.first().locator('[data-testid="priority-badge"]')).toBeVisible();

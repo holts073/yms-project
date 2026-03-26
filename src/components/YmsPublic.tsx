@@ -26,11 +26,11 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
   
   // Show only Arrived or At Dock deliveries for the public page, filtered by warehouse
   const activeDeliveries = deliveries
-    .filter(d => d.warehouseId === warehouseId && (d.status === 'Arrived' || d.status === 'At Dock'))
+    .filter(d => d.warehouseId === warehouseId && (d.status === 'GATE_IN' || d.status === 'DOCKED'))
     .sort((a, b) => {
       // Prioritize "At Dock"
-      if (a.status === 'At Dock' && b.status !== 'At Dock') return -1;
-      if (a.status !== 'At Dock' && b.status === 'At Dock') return 1;
+      if (a.status === 'DOCKED' && b.status !== 'DOCKED') return -1;
+      if (a.status !== 'DOCKED' && b.status === 'DOCKED') return 1;
       // Then by scheduled time
       return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
     });
@@ -95,7 +95,7 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   className={`grid grid-cols-4 gap-8 items-center px-12 py-10 rounded-[3rem] border-2 transition-all ${
-                    delivery.status === 'At Dock' 
+                    delivery.status === 'DOCKED' 
                       ? 'bg-indigo-600/10 border-indigo-500/50 shadow-[0_0_80px_rgba(79,70,229,0.15)]' 
                       : 'bg-slate-900 border-white/5 opacity-80'
                   }`}
@@ -111,9 +111,9 @@ export default function YmsPublic({ onBack }: YmsPublicProps) {
                   </div>
                   <div className="text-right">
                     <span className={`px-8 py-3 rounded-full text-2xl font-black uppercase tracking-tighter shadow-lg ${
-                      delivery.status === 'At Dock' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'
+                      delivery.status === 'DOCKED' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'
                     }`}>
-                      {delivery.status === 'At Dock' ? 'Melden bij Dock' : 'Wachten'}
+                      {delivery.status === 'DOCKED' ? 'Melden bij Dock' : 'Wachten'}
                     </span>
                   </div>
                 </motion.div>

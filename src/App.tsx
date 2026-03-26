@@ -178,20 +178,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
   // Special logic for Public Page (can be accessed without auth if specifically requested)
   const isPublicHash = window.location.hash.includes('yms-public');
   
-  if (!isAuthenticated && !isPublicHash) {
+  if (!isAuthenticated || !currentUser) {
     return <Login />;
-  }
-
-  if (!state || !currentUser) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-background">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-12 h-12 border-4 border-indigo-600 dark:border-indigo-400 border-t-transparent rounded-full"
-        />
-      </div>
-    );
   }
 
   const renderContent = () => {
@@ -228,6 +216,24 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     }} />;
   }
 
+  const renderLoadingState = () => (
+    <div className="space-y-8 animate-pulse">
+      <div className="flex justify-between">
+        <div className="space-y-4">
+          <div className="h-10 w-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+        </div>
+        <div className="h-12 w-48 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="h-32 bg-slate-100 dark:bg-slate-900 rounded-[2rem]" />
+        <div className="h-32 bg-slate-100 dark:bg-slate-900 rounded-[2rem]" />
+        <div className="h-32 bg-slate-100 dark:bg-slate-900 rounded-[2rem]" />
+      </div>
+      <div className="h-[500px] w-full bg-slate-50 dark:bg-slate-950/50 rounded-[3rem]" />
+    </div>
+  );
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans transition-colors duration-300">
       {/* Sidebar */}
@@ -242,19 +248,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.5.0</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.6.1</span></h1>
         </div>
-
-        {state?.activeUsers !== undefined && (
-          <div className="px-6 mb-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-2xl w-fit">
-              <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-                {state.activeUsers} {state.activeUsers === 1 ? 'gebruiker' : 'gebruikers'} actief
-              </span>
-            </div>
-          </div>
-        )}
 
         <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
           <SidebarItem 
@@ -354,7 +349,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
 
         <div className="mt-auto pt-6 border-t border-border">
           <div className="flex items-center gap-3 px-4 py-3 bg-[var(--muted)] rounded-[1.5rem] mb-4 mt-4 transition-colors">
-            <div className="w-10 h-10 bg-[var(--accent)] rounded-full flex items-center justify-center text-[var(--accent-foreground)]">
+            <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white">
               <UserIcon size={20} />
             </div>
             <div className="flex-1 min-w-0">
@@ -392,7 +387,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
               transition={{ duration: 0.2 }}
               className="h-full"
             >
-              {renderContent()}
+              {!state ? renderLoadingState() : renderContent()}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -414,5 +409,6 @@ export default function App() {
 
 const ThemeAwareToaster = () => {
   const { theme } = useTheme();
-  return <Toaster position="top-right" richColors theme={theme} className="pointer-events-none" toastOptions={{ className: 'pointer-events-auto' }} style={{ zIndex: 9999 }} />;
+  const toasterTheme = (theme === 'ilg' || theme === 'meledi') ? 'dark' : (theme as 'light' | 'dark' | 'system');
+  return <Toaster position="top-right" richColors theme={toasterTheme} className="pointer-events-none" toastOptions={{ className: 'pointer-events-auto' }} style={{ zIndex: 9999 }} />;
 };

@@ -23,14 +23,24 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
   selectedDate
 }) => {
   const { docks } = useYmsData();
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const startHour = 7;
   const totalHours = 16;
   const hourWidth = 200;
   const timelineWidth = totalHours * hourWidth;
 
+  React.useEffect(() => {
+    if (isToday && scrollContainerRef.current) {
+      const now = new Date();
+      const currentMinutes = (now.getHours() - startHour) * 60 + now.getMinutes();
+      const scrollPos = (currentMinutes / (totalHours * 60)) * timelineWidth - 400; // Center it a bit
+      scrollContainerRef.current.scrollLeft = Math.max(0, scrollPos);
+    }
+  }, [isToday, selectedDate]);
+
   return (
-    <div className="flex-1 bg-card rounded-[2.5rem] border border-border overflow-auto flex flex-col shadow-2xl relative">
-      <div className="flex-1 overflow-auto custom-scrollbar relative bg-[var(--muted)]/5">
+    <div className="flex-1 bg-card rounded-[2.5rem] border border-border overflow-hidden flex flex-col shadow-2xl relative">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto custom-scrollbar relative bg-[var(--muted)]/5">
         {/* Timeline Header */}
         <div className="flex sticky top-0 z-20 bg-[var(--muted)] border-b border-border">
           <div className="w-40 flex-shrink-0 border-r border-border p-4 font-bold text-xs text-[var(--muted-foreground)] uppercase tracking-widest bg-[var(--muted)]">Docks</div>

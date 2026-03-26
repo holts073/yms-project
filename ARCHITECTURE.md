@@ -1,8 +1,8 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.5.1 — Bijgewerkt: 2026-03-26 door @System-Architect*
+*Versie: v3.6.0 — Bijgewerkt: 2026-03-26 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na sessie 2026-03-17: Gebruikersbeheer (password hashing), Dynamische Documentinstellingen en Vite `allowedHosts`.
+> Bijgewerkt na v3.6.0 release: Dashboard Navigatie, Transport Mail, Pipeline Toggle en Logboek.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
@@ -50,18 +50,18 @@ Het systeem hanteert een strikte uni-directionele dataflow om race-conditions en
     → [SocketContext setState()] → [React re-render]
 ```
 
-**Kritische bevindingen (v3.5.0):**
-- **Queue Management (Phase 3.5)**: De wachtrij gebruikt nu een prioriteitsalgoritme (Reefer first) en live wachttijd-calculatie in de frontend.
-- **Smart Call Logic**: Dock-selectie is nu 'temperature-aware'; docks worden aanbevolen op basis van de lading.
-- Alle `io.emit()` globale broadcasts zijn vervangen door `io.sockets.sockets.forEach()` met warehouse-filtering om data-lekkage tussen magazijnen te voorkomen.
-- Backend `error_message` events zijn gekoppeld aan Sonner-toasts voor directe UI-feedback bij server-exceptions.
+**Kritische bevindingen & v3.6.0 Feature Architecture:**
+- **Navigation Flow**: Het dashboard gebruikt `onNavigate` met een `initialSelectedId` om direct de detail-modal in de `DeliveryManager` te triggeren via een `useEffect` hook.
+- **Mail Integration**: De `TransportMailModal` genereert client-side `mailto:` links op basis van dynamische transporteur-data, waardoor geen backend SMTP-relay nodig is voor de eerste versie.
+- **State Merging (v3.5.4)**: `socketHandlers.ts` implementeert nu server-side merging van payloads om `NOT NULL` constraint violations bij partiële updates te voorkomen.
+- **Queue Management**: De wachtrij gebruikt een prioriteitsalgoritme (Reefer first) en live wachttijd-calculatie.
 
 ## 4. Database Architectuur (SQLite via better-sqlite3)
 
 ### Tabelstructuur — Kern (Global Pipeline)
 ```
 users          (id PK, name, email, passwordHash, role, permissions JSON)
-deliveries     (id PK, type, reference, supplierId, status, eta, ...)
+deliveries     (id PK, type, reference, billOfLading, supplierId, status, eta, ...)
 documents      (id PK, deliveryId FK, name, status, required)
 address_book   (id PK, type, name, contact, email, ...)
 logs           (id PK, timestamp, user, action, details)
@@ -77,80 +77,27 @@ yms_waiting_areas (id, warehouseId — composite PK)
 yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, ...)
 ```
 
-> [!IMPORTANT]
-> **v3.2.3.3 Kritieke Fix**: De `FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks` compound-constraint in `yms_deliveries` is verwijderd uit `sqlite.ts`. Deze constraint werd ongeldig na schema-wijzigingen, waardoor **elke write naar yms_deliveries** met een `foreign key mismatch`-error faalde — dit was de definitieve root cause van de onzichtbare dock-planning.
+## 5. Audit Trail & Logboek (v3.6.0)
+Elke wijziging aan een levering wordt vastgelegd in de `audit_logs` tabel. In de **Archief** module wordt deze data via de `AuditLogModal` gevisualiseerd in een chronologische tijdlijn (wie, wat, wanneer), wat essentieel is voor post-operationele analyse en compliance.
 
-### `settings`-tabel: Dynamische Configuratie
-De `settings`-tabel slaat JSON-blobs op per sleutel. Bekende sleutels:
-
-| Key | Inhoud |
-|---|---|
-| `companySettings` | Bedrijfsnaam, email, transportTemplate, SMTP-config |
-| `settings` | Terminologie-instellingen |
-| `shipment_settings` | Verplichte/optionele documenten per type (`container` / `exworks`) |
-
-Het `shipment_settings`-object wordt bij opstart geseeded als het nog niet bestaat (`sqlite.ts`). Wijzigingen via de UI (`UPDATE_SETTINGS` socket-event) persisteren direct.
-
-### Prepared Statements (queries.ts)
-Alle SQL-operaties verlopen via **expliciete kolomnamen** in `INSERT OR REPLACE`-statements om parameter-volgorde-fouten te elimineren:
-```sql
-INSERT OR REPLACE INTO yms_deliveries (
-  id, warehouseId, reference, licensePlate, supplier, supplierId,
-  mainDeliveryId, temperature, scheduledTime, arrivalTime,
-  registrationTime, isLate, dockId, ...
-) VALUES (?, ?, ?, ...)
-```
-
-## 5. Multi-Warehouse State Isolatie
-
+## 6. Multi-Warehouse State Isolatie
 Elk socket-verbinding draagt een `socket.data.selectedWarehouseId`. Bij elke `buildStaticState`-aanroep wordt `getYmsDeliveries(warehouseId)` en `getYmsDocks(warehouseId)` doorgegeven zodat elke gebruiker alleen de data van zijn eigen magazijn ziet.
 
-## 6. Optionele Gate-In Flow
+## 7. Kwaliteitsbewaking (Automated Validation Suite)
 
-Magazijnen configureren via `yms_warehouses.hasGate`:
-- **hasGate = true**: `EXPECTED → GATE_IN → DOCKED` (volledige flow)
-- **hasGate = false**: `PLANNED/EXPECTED → DOCKED` (direct toewijzen, geen gate-stap)
-
-De `YMS_ASSIGN_DOCK` handler detecteert dit automatisch op basis van de huidige levering-status.
-
-## 7. Sessiebeheer, Authenticatie & Gebruikersbeheer
-
-| Rol | JWT-duur | Inactiviteits-timer |
-|---|---|---|
-| `admin` / `staff` | 8 uur | 60 minuten |
-| `tablet` | 365 dagen | Uitgeschakeld (Always-On) |
-
-### Wachtwoord-flow (bcrypt)
-Wachtwoorden worden **nooit** in plaintext opgeslagen. De volledige flow:
-```
-[Admin maalt nieuw/gewijzigd wachtwoord] → socket.emit('ADD_USER' | 'UPDATE_USER', { password })
-    → server.ts: bcrypt.genSaltSync(10) + bcrypt.hashSync(password, salt)
-    → saveUser({ ...userData, passwordHash }) → INSERT OR REPLACE INTO users
-    → Bij login: bcrypt.compareSync(password, user.passwordHash)
-```
-- Nieuwe gebruikers zonder wachtwoord krijgen **`welkom123`** als default (hash).
-- Bij updaten van een gebruiker **zonder** wachtwoord in de payload blijft de bestaande `passwordHash` ongewijzigd.
-
-### Vite Deployment Config
-`vite.config.ts` bevat `server.allowedHosts: ['ship.holtslag.me']` voor productie-deploy op het custome domein.
-
-## 8. Kwaliteitsbewaking (Automated Validation Suite)
-
-Sinds v3.5.1 hanteert het platform een volledig geautomatiseerde validatie-suite die handmatige browser-interactie overbodig maakt:
+Sinds v3.5.1 hanteert het platform een volledig geautomatiseerde validatie-suite:
 
 | Laag | Tool | Scope |
 |---|---|---|
-| **E2E Testing** | Playwright | Kritieke user-flows zoals de Priority Queue en Dock-toewijzing. |
+| **E2E Testing** | Playwright | Kritieke user-flows zoals de Priority Queue en Dashboard Navigatie. |
 | **Integration** | Vitest | Uni-directionele dataflow validatie (Action → Socket → DB). |
 | **Integrity** | tsx script | Database health checks (`db-health.ts`) op inconsistenties. |
 
-### 8.1 Headless E2E Standard
-Alle kritieke UI-flows worden gevalideerd in een headless browser omgeving. Hiervoor worden componenten geïnstrumenteerd met `data-testid` attributen. Een harde vereiste is dat alle shared Atoms (`Card`, `Badge`, `Button`) hun props spreaden naar het onderliggende DOM-element om te voorkomen dat test-identifiers verloren gaan.
-
-### 8.2 Release Criteria
-Zie `AGENTS.md` voor de volledige release-criteria-checklist. Kernpunten:
+## 8. Release Criteria (v3.6.0)
 - ✅ `npm run test:full` slaagt 100%
-- ✅ Geen console-errors in de browser
-- ✅ Container-kaarten tonen correcte data
+- ✅ Bill of Lading (B/L) is zichtbaar in alle views (Dashboard, Pipeline, Archive)
+- ✅ Pipeline View Toggle (Grid/List) werkt vloeiend zonder re-fetch
+- ✅ Archive Logboek toont correcte audit trail data
+- ✅ Directe navigatie vanaf Dashboard opent correcte detail-modal
 - ✅ Sonner-toasts voor alle backend-fouten
 - ✅ Z-index: toasts > modals > sidebar

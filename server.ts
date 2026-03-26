@@ -35,8 +35,8 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  app.use("/api", authMiddleware); // Apply to all /api routes
-  app.use("/api", authRoutes);
+  app.use("/api", authRoutes); // Public routes (login, forgot-password) first
+  app.use("/api", authMiddleware); // Then protect everything else
   app.use("/api", deliveryRoutes);
 
   // Socket.io Handlers

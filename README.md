@@ -1,13 +1,14 @@
-# ILG Foodgroup — Supply Chain# YMS Control Tower v3.5.1
-*Versie: v3.5.1 — Bijgewerkt: 2026-03-26*
+# ILG Foodgroup — Supply Chain# YMS Control Tower v3.6.0
+*Versie: v3.6.0 — Bijgewerkt: 2026-03-26*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat.
 
 ## 🚀 De Drie Kernmodules
 
-1. **Global Pipeline (Inbound):** Volledig inzicht in `Containers` (haven-data, douanevrijgave) en `Ex-works` orders. ETA-bewaking en documentstroom vóór aankomst.
-2. **Active Yard (Operationeel):** Real-time beheer van actieve docks, wachtruimtes en de visuele **Dock-Timeline** voor vlekkeloze afhandeling van trucks.
+1. **Global Pipeline (Inbound):** Volledig inzicht in `Containers` en `Ex-works` orders met ETA-bewaking en documentstroom.
+2. **Active Yard (Operationeel):** Real-time beheer van actieve docks, wachtruimtes en de visuele **Dock-Timeline**.
 3. **Outbound Planning:** Strategische toewijzing van docks voor klantzendingen.
+4. **Archive & Audit (v3.6.0):** Historisch logboek (Audit Trail) van alle voltooide bewegingen voor compliance en analyse.
 
 ## ⚙️ Quick Start
 
@@ -47,6 +48,22 @@ UI Action → socket.emit('action') → Server validatie → SQLite write
 ```
 
 Zie `ARCHITECTURE.md` voor de volledige blauwdruk.
+
+## 🆕 Changelog v3.6.0
+
+### UI & UX Enhancements
+- **✅ Directe Navigatie**: Dashboard-acties ("Lossen") navigeren nu direct naar de detail-modal van de zending.
+- **✅ Pipeline View Toggle**: Gebruikers kunnen nu schakelen tussen een **Grid** en **Lijst** weergave voor optimaal overzicht.
+- **✅ Document Tooltips**: Opmerkingen bij zendingen zijn direct leesbaar via hover-tooltips in alle tabellen.
+
+### Logistieke Tools & Compliance
+- **✅ Transport Mail Interface**: Verstuur direct transportopdrachten op basis van Ex-Works data met een druk op de knop.
+- **✅ Bill of Lading (B/L)**: Integratie van het B/L veld voor container-zendingen in alle overzichten.
+- **✅ Audit Logbook**: Per zending in het archief is een volledig historie-overzicht (wie-wat-wanneer) beschikbaar.
+
+### Stabiliteit & Infrastructuur (v3.5.4)
+- **✅ Server-Side State Merge**: Voorkomt database crashes bij partiële updates door bestaande velden te behouden.
+- **✅ Functional UI Fix**: Runtime fouten in het Dashboard segment zijn geëlimineerd door refactoring naar moderne React patronen.
 
 ## 🆕 Changelog v3.2.3.3
 

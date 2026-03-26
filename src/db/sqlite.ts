@@ -15,7 +15,8 @@ db.exec(`
     email TEXT UNIQUE NOT NULL,
     passwordHash TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'staff',
-    permissions TEXT -- JSON string containing granular permissions
+    permissions TEXT, -- JSON string containing granular permissions
+    requiresReset INTEGER DEFAULT 0 -- 0 = No, 1 = Yes
   );
 
   CREATE TABLE IF NOT EXISTS address_book (
@@ -284,7 +285,8 @@ const migrations = [
   { table: 'yms_docks', column: 'adminStatus', type: 'TEXT DEFAULT "Active"' },
   { table: 'yms_waiting_areas', column: 'adminStatus', type: 'TEXT DEFAULT "Active"' },
   { table: 'address_book', column: 'supplier_number', type: 'TEXT' },
-  { table: 'address_book', column: 'customer_number', type: 'TEXT' }
+  { table: 'address_book', column: 'customer_number', type: 'TEXT' },
+  { table: 'users', column: 'requiresReset', type: 'INTEGER DEFAULT 0' }
 ];
 
 migrations.forEach(m => {

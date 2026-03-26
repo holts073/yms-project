@@ -37,7 +37,7 @@ const stmts = {
   deleteDelivery: db.prepare('DELETE FROM deliveries WHERE id = ?'),
   getUsers: db.prepare('SELECT * FROM users'),
   getUserPassword: db.prepare('SELECT passwordHash FROM users WHERE id = ?'),
-  insertUser: db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions) VALUES (?, ?, ?, ?, ?, ?)'),
+  insertUser: db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions, requiresReset) VALUES (?, ?, ?, ?, ?, ?, ?)'),
   deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
   getAddressBookByEmail: (type: string) => db.prepare("SELECT * FROM address_book WHERE type = ?"),
   deleteAddressEntry: db.prepare('DELETE FROM address_book WHERE id = ?'),
@@ -253,15 +253,17 @@ export function getUsers(): User[] {
   const users = stmts.getUsers.all() as Record<string, any>[];
   return users.map(u => ({
     ...u,
-    permissions: u.permissions ? JSON.parse(u.permissions) : undefined
+    permissions: u.permissions ? JSON.parse(u.permissions) : undefined,
+    requiresReset: u.requiresReset === 1
   } as User));
 }
 
 export function saveUser(u: User) {
-  const existing = stmts.getUserPassword.get(u.id) as { passwordHash: string } | undefined;
+  const existing = db.prepare('SELECT passwordHash, requiresReset FROM users WHERE id = ?').get(u.id) as { passwordHash: string, requiresReset: number } | undefined;
   const passwordHash = u.passwordHash || existing?.passwordHash || null;
+  const requiresReset = u.requiresReset !== undefined ? (u.requiresReset ? 1 : 0) : (existing?.requiresReset || 0);
   
-  stmts.insertUser.run(u.id, u.name, u.email, passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null);
+  stmts.insertUser.run(u.id, u.name, u.email, passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null, requiresReset);
 }
 
 export function deleteUser(id: string) {

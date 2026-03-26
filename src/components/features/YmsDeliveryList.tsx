@@ -95,7 +95,7 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <Badge variant={
-                      delivery.status === 'EXPECTED' ? 'secondary' : 
+                      delivery.status === 'EXPECTED' ? 'info' : 
                       delivery.status === 'GATE_IN' ? 'warning' : 'success'
                   }>
                     {getStatusLabel(delivery.status)}
