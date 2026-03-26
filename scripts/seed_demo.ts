@@ -1,5 +1,5 @@
 import { insertDelivery, saveAddressBookEntry, saveYmsDelivery, savePalletTransaction } from '../src/db/queries';
-import { Delivery } from '../src/types';
+import { Delivery, AddressEntry, YmsDeliveryStatus } from '../src/types';
 
 function generateRandomString(length: number) {
   return Math.random().toString(36).substr(2, length).toUpperCase();
@@ -177,8 +177,8 @@ const seedDemo = () => {
         direction: 'INBOUND',
         palletCount: delivery.palletCount,
         licensePlate: delivery.containerNumber,
-        isReefer: delivery.cargoType === 'Cool' ? 1 : 0,
-        temperature: delivery.cargoType === 'Cool' ? 'Chilled' : 'Ambient'
+        isReefer: (delivery.cargoType === 'Cool' || delivery.cargoType === 'Frozen'),
+        temperature: delivery.cargoType === 'Cool' ? 'Koel' : (delivery.cargoType === 'Frozen' ? 'Vries' : 'Droog')
       });
     }
   }
@@ -203,7 +203,7 @@ const seedDemo = () => {
     
     const etaMs = new Date(delivery.eta || nowMs).getTime();
     if (Math.abs(etaMs - nowMs) < 7 * 24 * 60 * 60 * 1000) {
-      const ymsStatus = isPast ? 'COMPLETED' : ['PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'LOADING', 'COMPLETED'][Math.floor(Math.random() * 6)];
+      const ymsStatus = (isPast ? 'COMPLETED' : ['PLANNED', 'GATE_IN', 'IN_YARD', 'DOCKED', 'LOADING', 'COMPLETED'][Math.floor(Math.random() * 6)]) as YmsDeliveryStatus;
       saveYmsDelivery({
         id: `YMS-${delivery.id}`,
         warehouseId: 'W01',
@@ -219,7 +219,7 @@ const seedDemo = () => {
         direction: 'OUTBOUND',
         palletCount: delivery.palletCount,
         licensePlate: delivery.containerNumber,
-        temperature: 'Ambient'
+        temperature: 'Droog'
       });
     }
   }

@@ -60,38 +60,50 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
         {deliveries.filter(d => statuses.includes(d.status)).map(delivery => {
            const dockName = delivery.dockId ? docks.find(d => String(d.id) === String(delivery.dockId))?.name : null;
            const waName = delivery.waitingAreaId ? waitingAreas.find(w => String(w.id) === String(delivery.waitingAreaId))?.name : null;
-           
+           const isReefer = delivery.isReefer || delivery.temperature === 'Vries' || delivery.temperature === 'Koel';
+           const waitMinutes = (delivery as any).metadata?.waitMinutes;
+
            return (
             <motion.div 
               layout 
               key={delivery.id} 
+              data-testid={`delivery-card-${delivery.id}`}
               initial={{ opacity: 0, scale: 0.95 }} 
               animate={{ opacity: 1, scale: 1 }} 
-              className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 hover:shadow-2xl hover:-translate-y-1 dark:hover:shadow-indigo-500/10 transition-all group flex flex-col justify-between gap-6"
+              className={cn(
+                "bg-card border rounded-3xl p-6 md:p-8 hover:shadow-2xl transition-all group flex flex-col justify-between gap-6 relative overflow-hidden",
+                isReefer ? "border-l-4 border-l-blue-500 shadow-[0_0_20px_-5px_rgba(59,130,246,0.1)] border-border/50" : "border-border/50 hover:-translate-y-1"
+              )}
             >
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                    <div className={cn(
                       "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner",
+                      isReefer ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600" :
                       delivery.status === 'EXPECTED' ? "bg-purple-50 dark:bg-purple-900/10 text-purple-600" :
                       delivery.status === 'GATE_IN' ? "bg-amber-50 dark:bg-amber-900/10 text-amber-600" :
                       delivery.status === 'DOCKED' ? "bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600" :
                       "bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600"
                    )}>
-                      <Truck size={24} />
+                      {isReefer ? <Zap size={24} className="animate-pulse" /> : <Truck size={24} />}
                    </div>
                    <div>
                      <h4 className="text-xl font-black text-foreground group-hover:text-indigo-600 transition-colors">{delivery.reference}</h4>
                      <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] line-clamp-1">{delivery.supplier}</p>
                    </div>
                 </div>
-                <Badge variant={
-                    delivery.status === 'EXPECTED' ? 'secondary' : 
-                    delivery.status === 'GATE_IN' ? 'warning' : 'success'
-                }>
-                   {getStatusLabel(delivery.status)}
-                </Badge>
+                <div className="flex flex-col items-end gap-2">
+                  <Badge variant={
+                      delivery.status === 'EXPECTED' ? 'secondary' : 
+                      delivery.status === 'GATE_IN' ? 'warning' : 'success'
+                  }>
+                    {getStatusLabel(delivery.status)}
+                  </Badge>
+                  {isReefer && (
+                    <Badge variant="danger" size="xs" className="bg-blue-600 text-white animate-pulse">PRIORITY</Badge>
+                  )}
+                </div>
               </div>
 
               {/* Body */}
@@ -102,7 +114,7 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
                      "font-bold px-2 py-0.5 rounded-md",
                      delivery.status !== 'EXPECTED' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-transparent text-foreground"
                    )}>
-                     {delivery.status !== 'EXPECTED' ? calculateWaitTime(delivery.registrationTime || delivery.scheduledTime) : '-'}
+                     {waitMinutes !== undefined ? `${waitMinutes}m` : (delivery.status !== 'EXPECTED' ? calculateWaitTime(delivery.registrationTime || delivery.scheduledTime) : '-')}
                    </span>
                  </div>
                  
@@ -133,7 +145,6 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
                     {(delivery.temperature === 'Vries' || delivery.temperature === 'Koel') && (
                       <Badge variant="info" size="xs">{delivery.temperature}</Badge>
                     )}
-                    {delivery.isReefer && <Badge variant="danger" size="xs">Reefer</Badge>}
                     {isFastLaneEligible(delivery) && <Badge variant="warning" size="xs"><Zap size={10} className="mr-1" /> Fast Lane</Badge>}
                  </div>
                  

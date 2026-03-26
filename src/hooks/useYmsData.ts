@@ -9,6 +9,7 @@ export const useYmsData = () => {
     waitingAreas = [], 
     selectedWarehouseId,
     deliveries = [],
+    priorityQueue = [],
     dockOverrides: overrides = [] 
   } = state?.yms || {};
   
@@ -34,7 +35,7 @@ export const useYmsData = () => {
   const deleteWarehouse = (id: string) => dispatch('YMS_DELETE_WAREHOUSE', id);
 
   const addOverride = (o: any) => dispatch('YMS_ADD_DOCK_OVERRIDE', o);
-  const deleteOverride = (id: string) => dispatch('Y_DELETE_DOCK_OVERRIDE', id);
+  const deleteOverride = (id: string) => dispatch('YMS_DELETE_DOCK_OVERRIDE', id);
 
   return {
     warehouses,
@@ -44,6 +45,7 @@ export const useYmsData = () => {
     allWaitingAreas: waitingAreas,
     overrides: filteredOverrides,
     deliveries,
+    priorityQueue,
     selectedWarehouseId: activeWarehouseId,
     currentWarehouse,
     actions: {

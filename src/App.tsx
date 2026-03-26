@@ -242,7 +242,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.2.3.3</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.5.0</span></h1>
         </div>
 
         {state?.activeUsers !== undefined && (

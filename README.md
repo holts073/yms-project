@@ -1,4 +1,4 @@
-# ILG Foodgroup — Supply Chain Control Tower (YMS)
+# ILG Foodgroup — Supply Chain# YMS Control Tower v3.5
 *Versie: v3.2.3.3*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat.

@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { getYmsDeliveries, getYmsAlerts, saveYmsAlert, getYmsDocks, resolveYmsAlert } from '../../src/db/queries';
 import { buildStaticState } from '../routes/deliveries';
+import { YmsAlert } from '../../src/types';
 
 export const startInventoryWorker = (io: Server) => {
   setInterval(() => {
@@ -22,7 +23,7 @@ export const startInventoryWorker = (io: Server) => {
             if (dock && dock.direction_capability !== 'BOTH' && dock.direction_capability !== d.direction) {
                 const alreadyAlerted = activeAlerts.find(a => a.type === 'DIRECTION_MISMATCH');
                 if (!alreadyAlerted) {
-                    const newAlert = {
+                    const newAlert: YmsAlert = {
                         id: Math.random().toString(36).substr(2, 9),
                         deliveryId: d.id,
                         warehouseId: d.warehouseId,
@@ -42,7 +43,7 @@ export const startInventoryWorker = (io: Server) => {
 
         // Dwell Time in Yard
         if (d.status === 'IN_YARD' && d.statusTimestamps?.IN_YARD) {
-            const dwellMins = (now.getTime() - new Date(d.statusTimestamps.IN_YARD).getTime()) / 60000;
+            const dwellMins = (now.getTime() - new Date(d.statusTimestamps.IN_YARD as string).getTime()) / 60000;
             const limit = 60;
             
             if (dwellMins > limit) {
@@ -50,7 +51,7 @@ export const startInventoryWorker = (io: Server) => {
                 const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'DWELL_TIME' && !a.resolved);
                 
                 if (!alreadyAlerted) {
-                    const newAlert = {
+                    const newAlert: YmsAlert = {
                         id: Math.random().toString(36).substr(2, 9),
                         deliveryId: d.id,
                         warehouseId: d.warehouseId,
@@ -68,7 +69,7 @@ export const startInventoryWorker = (io: Server) => {
 
         // Wait Time Logic
         if (d.status === 'GATE_IN' && d.statusTimestamps?.GATE_IN) {
-            const waitedMins = (now.getTime() - new Date(d.statusTimestamps.GATE_IN).getTime()) / 60000;
+            const waitedMins = (now.getTime() - new Date(d.statusTimestamps.GATE_IN as string).getTime()) / 60000;
             const threshold = d.tempAlertThreshold || 30;
             
             if (waitedMins > threshold) {
@@ -76,7 +77,7 @@ export const startInventoryWorker = (io: Server) => {
                 const alreadyAlerted = existingAlerts.find(a => a.deliveryId === d.id && a.type === 'WAIT_TIME' && !a.resolved);
                 
                 if (!alreadyAlerted) {
-                    const newAlert = {
+                    const newAlert: YmsAlert = {
                         id: Math.random().toString(36).substr(2, 9),
                         deliveryId: d.id,
                         warehouseId: d.warehouseId,

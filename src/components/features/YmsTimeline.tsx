@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Clock, MoreVertical, AlertCircle } from 'lucide-react';
+import { Clock, MoreVertical, AlertCircle, Snowflake, Thermometer, Flame } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useYmsData } from '../../hooks/useYmsData';
 import { YmsDock, YmsDelivery, YmsDeliveryStatus } from '../../types';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 interface YmsTimelineProps {
   deliveries: YmsDelivery[];
@@ -21,7 +23,6 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
   selectedDate
 }) => {
   const { docks } = useYmsData();
-  const timelineRef = React.useRef<HTMLDivElement>(null);
   const startHour = 7;
   const totalHours = 16;
   const hourWidth = 200;
@@ -47,135 +48,18 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
           )}
           
           {docks.map(dock => (
-            <div key={dock.id} className={cn("flex border-b border-border group", dock.status === 'Blocked' && 'bg-[var(--muted)]/50 grayscale')}>
-              <div className="w-40 flex-shrink-0 border-r border-border p-4 bg-[var(--muted)]/50 group-hover:bg-[var(--muted)] transition-colors">
-                <div className="font-bold text-foreground flex justify-between items-center">
-                    {dock.name}
-                    {dock.status === 'Blocked' && <AlertCircle size={12} className="text-rose-500" />}
-                </div>
-                <div className="flex gap-1 mt-1">
-                  {dock.allowedTemperatures.map(temp => (
-                    <div key={temp} className={cn(
-                      "w-2 h-2 rounded-full",
-                      temp === 'Vries' ? 'bg-blue-400' : temp === 'Koel' ? 'bg-indigo-400' : 'bg-amber-400'
-                    )} title={temp} />
-                  ))}
-                </div>
-              </div>
-              
-              <div className={cn("flex-1 flex relative h-24", `min-w-[${timelineWidth}px]`)} style={{ minWidth: timelineWidth }}>
-                {Array.from({ length: totalHours }).map((_, i) => (
-                  <div key={i} className="w-[200px] border-r border-border flex-shrink-0" />
-                ))}
-                
-                {dock.status !== 'Blocked' && deliveries.filter(d => {
-                  return String(d.dockId) === String(dock.id);
-                }).map(delivery => {
-                  if (!delivery.scheduledTime) return null;
-                  const date = new Date(delivery.scheduledTime);
-                  if (isNaN(date.getTime())) return null;
-                  
-                  // Only show deliveries for the selected date on the timeline
-                  const dDate = date.toISOString().split('T')[0];
-                  if (dDate !== selectedDate) return null;
-
-                  const hour = date.getHours();
-                  const min = date.getMinutes();
-                  
-                  // Stay within visible range (7:00 - 23:00)
-                  if (hour < startHour || hour >= startHour + totalHours) return null;
-
-                  const leftPos = (hour - startHour) * hourWidth + (min / 60) * hourWidth;
-                  const width = (delivery.estimatedDuration || 90) / 60 * hourWidth;
-                  
-                  return (
-                    <motion.div
-                      layoutId={delivery.id}
-                      key={delivery.id}
-                      drag={true}
-                      dragMomentum={false}
-                      whileDrag={{ zIndex: 50, scale: 1.05, opacity: 0.9 }}
-                      onDragEnd={(_, info) => {
-                         const timeDeltaMinutes = (info.offset.x / hourWidth) * 60;
-                         const dockRowHeight = 97; // approx h-24 (96px) + 1px border
-                         const dockDeltaIndex = Math.round(info.offset.y / dockRowHeight);
-                         
-                         let newDockId = delivery.dockId;
-                         if (dockDeltaIndex !== 0) {
-                           const currentDockIndex = docks.findIndex(d => d.id === delivery.dockId);
-                           const newDockIndex = currentDockIndex + dockDeltaIndex;
-                           if (newDockIndex >= 0 && newDockIndex < docks.length) {
-                             newDockId = docks[newDockIndex].id;
-                           }
-                         }
-
-                         if (Math.abs(timeDeltaMinutes) > 5 || dockDeltaIndex !== 0) {
-                           const newDate = new Date(delivery.scheduledTime);
-                           newDate.setMinutes(newDate.getMinutes() + timeDeltaMinutes);
-                           onSaveDelivery({ 
-                             ...delivery, 
-                             scheduledTime: newDate.toISOString(),
-                             dockId: newDockId
-                           });
-                         }
-                      }}
-                      className="absolute top-2 bottom-2 bg-card border border-border rounded-xl shadow-md p-2 cursor-grab active:cursor-grabbing z-10 hover:border-indigo-500 transition-colors group/card overflow-hidden"
-                      style={{ left: leftPos, width }}
-                    >
-                      {/* Resize Handle */}
-                      <div 
-                        className="absolute right-0 top-0 bottom-0 w-2 hover:bg-indigo-500/10 cursor-ew-resize z-20 group-hover/card:bg-[var(--muted)] transition-colors"
-                        onMouseDown={(e) => {
-                            e.stopPropagation();
-                            const startX = e.clientX;
-                            const startWidth = width;
-                            
-                            const onMouseUp = (upE: MouseEvent) => {
-                                const deltaX = upE.clientX - startX;
-                                const newWidth = Math.max(50, startWidth + deltaX);
-                                const newDuration = Math.round((newWidth / hourWidth) * 60);
-                                onSaveDelivery({ ...delivery, estimatedDuration: newDuration });
-                                document.removeEventListener('mouseup', onMouseUp);
-                            };
-                            document.addEventListener('mouseup', onMouseUp);
-                        }}
-                      />
-                      <div className="flex justify-between items-start">
-                        <span className={cn(
-                          "text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase",
-                          delivery.status === 'DOCKED' ? 'bg-indigo-100 text-indigo-700' : 
-                          delivery.status === 'UNLOADING' || delivery.status === 'LOADING' ? 'bg-blue-100 text-blue-700' : 'bg-[var(--muted)] text-[var(--muted-foreground)]'
-                        )}>
-                          {getStatusLabel(delivery.status)}
-                        </span>
-                        <MoreVertical size={12} className="text-slate-300 group-hover/card:text-slate-500 dark:group-hover/card:text-slate-400" />
-                      </div>
-                      <span className="text-xs text-[var(--muted-foreground)] dark:text-slate-400 tabular-nums">
-                      {String(hour).padStart(2, '0')}:00
-                    </span>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className={cn(
-                          "text-[8px] font-black px-1 rounded-sm",
-                          delivery.direction === 'OUTBOUND' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
-                        )}>
-                          {delivery.direction === 'OUTBOUND' ? 'OUT' : 'IN'}
-                        </span>
-                        <p className="font-bold text-[11px] truncate leading-tight">{delivery.reference}</p>
-                      </div>
-                      <p className="text-[9px] text-slate-400 font-mono font-bold">{delivery.licensePlate || 'NR ONBEKEND'}</p>
-                      <div className="mt-2 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[9px] font-bold text-slate-600">
-                          <Clock size={10} />
-                          {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          <span className="text-[8px] text-slate-400 ml-1">({delivery.estimatedDuration || 90}m)</span>
-                        </div>
-                        {delivery.isLate && <AlertCircle size={10} className="text-rose-500 animate-pulse" />}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
+            <YmsDockDroppableRow 
+                key={dock.id} 
+                dock={dock} 
+                deliveries={deliveries} 
+                selectedDate={selectedDate}
+                startHour={startHour}
+                totalHours={totalHours}
+                hourWidth={hourWidth}
+                timelineWidth={timelineWidth}
+                getStatusLabel={getStatusLabel}
+                onSaveDelivery={onSaveDelivery}
+            />
           ))}
           
           {/* NOW Indicator */}
@@ -189,4 +73,198 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
       </div>
     </div>
   );
+};
+
+const YmsDockDroppableRow: React.FC<{ 
+    dock: YmsDock, 
+    deliveries: YmsDelivery[], 
+    selectedDate: string,
+    startHour: number,
+    totalHours: number,
+    hourWidth: number,
+    timelineWidth: number,
+    getStatusLabel: (s: string) => string,
+    onSaveDelivery: (d: YmsDelivery) => void
+}> = ({ 
+    dock, 
+    deliveries, 
+    selectedDate, 
+    startHour, 
+    totalHours, 
+    hourWidth, 
+    timelineWidth,
+    getStatusLabel,
+    onSaveDelivery
+}) => {
+    const { isOver, setNodeRef } = useDroppable({
+        id: `dock-${dock.id}`,
+        data: {
+          type: 'dock-row',
+          dock
+        }
+    });
+
+    return (
+        <div 
+            ref={setNodeRef}
+            data-testid={`dock-row-${dock.id}`}
+            className={cn(
+                "flex border-b border-border group transition-colors", 
+                dock.status === 'Blocked' && 'bg-[var(--muted)]/50 grayscale',
+                isOver && "bg-indigo-500/5 ring-1 ring-inset ring-indigo-500/20"
+            )}
+        >
+            <div className="w-40 flex-shrink-0 border-r border-border p-4 bg-[var(--muted)]/50 group-hover:bg-[var(--muted)] transition-colors">
+                <div className="font-bold text-foreground flex justify-between items-center">
+                    {dock.name}
+                    {dock.status === 'Blocked' && <AlertCircle size={12} className="text-rose-500" />}
+                </div>
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                    {dock.allowedTemperatures.map(temp => (
+                        <div key={temp} className={cn(
+                            "flex items-center gap-0.5 px-1 rounded text-[7px] font-bold uppercase border",
+                            temp === 'Vries' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' : 
+                            temp === 'Koel' ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800' : 
+                            'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
+                        )}>
+                            {temp === 'Vries' ? <Snowflake size={8} /> : temp === 'Koel' ? <Thermometer size={8} /> : <Flame size={8} />}
+                            {temp}
+                        </div>
+                    ))}
+                </div>
+            </div>
+            
+            <div className={cn("flex-1 flex relative h-32", `min-w-[${timelineWidth}px]`)} style={{ minWidth: timelineWidth }}>
+                {Array.from({ length: totalHours }).map((_, i) => (
+                    <div key={i} className="w-[200px] border-r border-border flex-shrink-0" />
+                ))}
+                
+                {dock.status !== 'Blocked' && deliveries.filter(d => String(d.dockId) === String(dock.id)).map(delivery => {
+                    if (!delivery.scheduledTime) return null;
+                    const date = new Date(delivery.scheduledTime);
+                    if (isNaN(date.getTime())) return null;
+                    
+                    const dDate = date.toISOString().split('T')[0];
+                    if (dDate !== selectedDate) return null;
+
+                    const hour = date.getHours();
+                    if (hour < startHour || hour >= startHour + totalHours) return null;
+
+                    return (
+                        <TimelineDraggableItem 
+                            key={delivery.id} 
+                            delivery={delivery} 
+                            startHour={startHour} 
+                            hourWidth={hourWidth}
+                            getStatusLabel={getStatusLabel}
+                            onSaveDelivery={onSaveDelivery}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const TimelineDraggableItem: React.FC<{ 
+    delivery: YmsDelivery, 
+    startHour: number, 
+    hourWidth: number,
+    getStatusLabel: (s: string) => string,
+    onSaveDelivery: (d: YmsDelivery) => void
+}> = ({ 
+    delivery, 
+    startHour, 
+    hourWidth,
+    getStatusLabel,
+    onSaveDelivery
+}) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: delivery.id,
+        data: {
+          type: 'timeline-item',
+          delivery
+        }
+    });
+
+    const isReefer = delivery.isReefer || delivery.temperature === 'Vries' || delivery.temperature === 'Koel';
+    const date = new Date(delivery.scheduledTime);
+    const hour = date.getHours();
+    const min = date.getMinutes();
+    const leftPos = (hour - startHour) * hourWidth + (min / 60) * hourWidth;
+    const width = (delivery.estimatedDuration || 90) / 60 * hourWidth;
+
+    const style = {
+        left: leftPos,
+        width,
+        transform: CSS.Translate.toString(transform),
+        zIndex: isDragging ? 50 : 10,
+        opacity: isDragging ? 0.6 : 1
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...listeners}
+            {...attributes}
+            className={cn(
+                "absolute top-2 bottom-2 bg-card border border-border rounded-xl shadow-md p-2 cursor-grab active:cursor-grabbing hover:border-indigo-500 transition-all group/card overflow-hidden",
+                isDragging && "shadow-2xl border-indigo-500 scale-105 z-50",
+                isReefer && "border-l-4 border-l-blue-500 shadow-[0_4px_10px_-4px_rgba(59,130,246,0.3)]"
+            )}
+        >
+            {/* Resize Handle */}
+            <div 
+                className="absolute right-0 top-0 bottom-0 w-2 hover:bg-indigo-500/10 cursor-ew-resize z-20 group-hover/card:bg-[var(--muted)] transition-colors"
+                onMouseDown={(e) => {
+                    e.stopPropagation();
+                    const startX = e.clientX;
+                    const startWidth = width;
+                    
+                    const onMouseUp = (upE: MouseEvent) => {
+                        const deltaX = upE.clientX - startX;
+                        const newWidth = Math.max(50, startWidth + deltaX);
+                        const newDuration = Math.round((newWidth / hourWidth) * 60);
+                        onSaveDelivery({ ...delivery, estimatedDuration: newDuration });
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+                    document.addEventListener('mouseup', onMouseUp);
+                }}
+            />
+            <div className="flex justify-between items-start">
+                <span className={cn(
+                    "text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase",
+                    delivery.status === 'DOCKED' ? 'bg-indigo-100 text-indigo-700' : 
+                    delivery.status === 'UNLOADING' || delivery.status === 'LOADING' ? 'bg-blue-100 text-blue-700' : 'bg-[var(--muted)] text-[var(--muted-foreground)]'
+                )}>
+                    {getStatusLabel(delivery.status)}
+                </span>
+                <MoreVertical size={12} className="text-slate-300 group-hover/card:text-slate-500 dark:group-hover/card:text-slate-400" />
+            </div>
+            <span className="text-xs text-[var(--muted-foreground)] dark:text-slate-400 tabular-nums">
+                {String(hour).padStart(2, '0')}:00
+            </span>
+            <div className="flex items-center gap-1 mt-0.5">
+                <span className={cn(
+                    "text-[8px] font-black px-1 rounded-sm",
+                    delivery.direction === 'OUTBOUND' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                )}>
+                    {delivery.direction === 'OUTBOUND' ? 'OUT' : 'IN'}
+                </span>
+                <p className="font-bold text-[11px] truncate leading-tight">{delivery.reference}</p>
+            </div>
+            <p className="text-[9px] text-slate-400 font-mono font-bold mt-0.5">{delivery.licensePlate || 'NR ONBEKEND'}</p>
+            <div className="mt-auto flex items-center justify-between pt-1">
+                <div className="flex items-center gap-1 text-[9px] font-bold text-slate-600 dark:text-slate-400">
+                    <Clock size={10} />
+                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="flex items-center gap-1">
+                  {isReefer && <Snowflake size={10} className="text-blue-500 animate-pulse" />}
+                  {delivery.isLate && <AlertCircle size={10} className="text-rose-500 animate-pulse" />}
+                </div>
+            </div>
+        </div>
+    );
 };

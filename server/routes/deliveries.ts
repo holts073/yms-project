@@ -8,9 +8,13 @@ const router = Router();
 
 import { Server } from "socket.io";
 
+import { sortPriorityQueue } from '../services/queueService';
+
 // Function to build standard static state for Socket sync (also used via API)
 export const buildStaticState = (io?: Server, selectedWarehouseId?: string) => {
   const activeUsers = io ? io.sockets.sockets.size : 0;
+  const ymsDeliveries = getYmsDeliveries(selectedWarehouseId);
+  
   return {
     deliveries: getAllDeliveries(),
     addressBook: getAddressBook(),
@@ -24,9 +28,10 @@ export const buildStaticState = (io?: Server, selectedWarehouseId?: string) => {
     settings: getSetting('settings', {}),
     yms: {
       warehouses: getYmsWarehouses(),
-      docks: getYmsDocks(selectedWarehouseId), // Pass ID to filter/override logic
+      docks: getYmsDocks(selectedWarehouseId), 
       waitingAreas: getYmsWaitingAreas(selectedWarehouseId),
-      deliveries: getYmsDeliveries(selectedWarehouseId),
+      deliveries: ymsDeliveries,
+      priorityQueue: sortPriorityQueue(ymsDeliveries),
       dockOverrides: getYmsDockOverrides(selectedWarehouseId),
       alerts: getYmsAlerts(selectedWarehouseId),
       selectedWarehouseId: selectedWarehouseId || null

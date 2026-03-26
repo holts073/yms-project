@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.2.3.3 — Bijgewerkt: 2026-03-26 door @System-Architect*
+*Versie: v3.5.0 — Bijgewerkt: 2026-03-26 door @System-Architect*
 
 > [!NOTE]
 > Bijgewerkt na sessie 2026-03-17: Gebruikersbeheer (password hashing), Dynamische Documentinstellingen en Vite `allowedHosts`.
@@ -50,7 +50,9 @@ Het systeem hanteert een strikte uni-directionele dataflow om race-conditions en
     → [SocketContext setState()] → [React re-render]
 ```
 
-**Kritische bevindingen (v3.2.3.3):**
+**Kritische bevindingen (v3.5.0):**
+- **Queue Management (Phase 3.5)**: De wachtrij gebruikt nu een prioriteitsalgoritme (Reefer first) en live wachttijd-calculatie in de frontend.
+- **Smart Call Logic**: Dock-selectie is nu 'temperature-aware'; docks worden aanbevolen op basis van de lading.
 - Alle `io.emit()` globale broadcasts zijn vervangen door `io.sockets.sockets.forEach()` met warehouse-filtering om data-lekkage tussen magazijnen te voorkomen.
 - Backend `error_message` events zijn gekoppeld aan Sonner-toasts voor directe UI-feedback bij server-exceptions.
 

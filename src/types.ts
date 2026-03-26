@@ -140,6 +140,7 @@ export interface AppState {
     docks: YmsDock[];
     waitingAreas: YmsWaitingArea[];
     deliveries: YmsDelivery[];
+    priorityQueue: YmsDelivery[];
     dockOverrides: YmsDockOverride[];
     alerts: YmsAlert[];
   };
@@ -168,6 +169,7 @@ export interface YmsDock {
   isFastLane?: boolean;
   isOutboundOnly?: boolean; // Keep for compatibility, but prefer direction_capability
   direction_capability: 'INBOUND' | 'OUTBOUND' | 'BOTH';
+  adminStatus?: 'Active' | 'Inactive';
 }
 
 export type YmsWaitingAreaStatus = 'Active' | 'Deactivated' | 'Blocked';
@@ -178,6 +180,7 @@ export interface YmsWaitingArea {
   name: string;
   status: 'Available' | 'Occupied' | YmsWaitingAreaStatus;
   currentDeliveryId?: string;
+  adminStatus?: 'Active' | 'Inactive';
 }
 
 export interface YmsDelivery {
@@ -213,7 +216,7 @@ export interface YmsAlert {
   id: string;
   deliveryId?: string;
   warehouseId: string;
-  type: 'WAIT_TIME' | 'TEMP_RISK' | 'DELAY';
+  type: 'WAIT_TIME' | 'TEMP_RISK' | 'DELAY' | 'DIRECTION_MISMATCH' | 'DWELL_TIME';
   severity: 'low' | 'medium' | 'high';
   timestamp: string;
   message: string;

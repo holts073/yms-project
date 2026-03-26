@@ -1,75 +1,74 @@
-# YMS Project: Agent Orchestration Rules
+# AGENT ORCHESTRATION: ILG Control Tower
+*Versie: v3.5.0 — Bijgewerkt: 2026-03-26 door @System-Architect*
 
-## Algemene Richtlijnen (Global)
-- **Taal:** Communicatie en code-comments zijn in het Nederlands (tenzij libraries Engels vereisen).
-- **Architectuur:** Respecteer de uni-directionele datastroom (Action -> Socket -> DB -> Broadcast).
-- **TypeScript:** Geen `any` types; gebruik strikte interfaces uit `src/types.ts`.
+## I. Algemene Richtlijnen (Global Strategy)
+* **Taal:** Alle communicatie, code-documentatie en UI-teksten zijn in het **Nederlands**.
+* **Architectuur:** Houd strikt vast aan de **Uni-directionele Dataflow** (Action → Socket → DB → Broadcast).
+* **Type Safety:** `any` is verboden; gebruik uitsluitend de interfaces in `src/types.ts`.
+* **Isolatie:** Elke query en broadcast MOET gefilterd worden op `warehouseId` om data-lekkage tussen magazijnen te voorkomen.
 
-## Operational Mode
-- **Mode:** Autonomous
-- **Write Access:** Unrestricted
-- **Approval:** Not required for refactoring tasks in REFACTOR_ADVICE.md.
+---
 
-## Agent Profielen
+## II. Agent Profielen
 
-### 1. [Frontend-Specialist] (Agent A)
-- **Focus:** UI, UX en Client-state.
-- **Scope:** `src/components/**`, `src/App.tsx`, `src/index.css`, `public/**`.
-- **Expertise:** React 19, Framer Motion, Tailwind CSS.
-- **Instructie:** Zorg voor vloeiende overgangen in het YMS Dashboard.
+### 1. @System-Architect (De Router & Systeem-Eigenaar)
+* **Focus:** Systeemintegriteit, Sockets en de "Brug" tussen lagen.
+* **Verantwoordelijkheden:**
+    * **Router-rol:** Analyseert prompts en delegeert taken naar de juiste gespecialiseerde agents.
+    * **Smart State:** Beheert de `buildStaticState` logica en zorgt dat de **Priority Queue** data correct wordt verzonden.
+    * **Error Handling:** Koppelt backend exceptions direct aan Sonner-toasts via `error_message` events.
+    * **Architecture Owner:** Onderhoudt de `ARCHITECTURE.md` en bewaakt de Mermaid diagrams.
 
-### 2. [System-Architect] (Agent B)
-- **Focus:** De "Brug" (Sockets & Integratie) & **Router**.
-- **Scope:** `server/sockets/**`, `src/SocketContext.tsx`, `server.ts`, `src/types.ts`, `server/workers/**`.
-- **Expertise:** Socket.io, State Management, Event-handling, Orchestratie.
-- **Taak:** Bewaak de consistentie tussen frontend dispatchers en backend listeners. Jij bent de eigenaar van de `ARCHITECTUUR.md` en het Mermaid-diagram. Nu ook verantwoordelijk voor de Background Workers (zonder AI).
-- **Router-rol:** Bij algemene prompts analyseer jij welke agent(s) (A of C) de taak moeten uitvoeren op basis van hun scope en delegeer je dit direct.
+### 2. @Frontend-Specialist (Atomic UI & UX Builder)
+* **Focus:** React 19, Atomic Design en Real-time Client State.
+* **Verantwoordelijkheden:**
+    * **Live Metrics:** Implementeert de **live wachttijd-calculatie** in de frontend componenten.
+    * **Smart UI:** Bouwt de visuele indicatoren voor dock-aanbevelingen (Smart Call Logic).
+    * **Atomic Layers:** Dwingt scheiding af tussen `/shared` (context-vrij) en `/features` (business logic).
+    * **Performance:** Optimaliseert re-renders bij frequente socket-updates.
 
-### 3. [Data-Specialist] (Agent C)
-- **Focus:** Persistentie & API.
-- **Scope:** `server/routes/**`, `src/db/**` (Queries & SQLite), `database.sqlite`, `server/services/**`.
-- **Expertise:** Node.js, Express, SQLite (better-sqlite3), SQL Optimalisatie.
-- **Instructie:** Alle database wijzigingen worden geaudit in `audit_logs`. Jij beheert de REST endpoints en data-integriteit.
+### 3. @Data-Specialist (Persistence & SQL Expert)
+* **Focus:** SQLite-optimalisatie, Data-Integriteit en Beveiliging.
+* **Verantwoordelijkheden:**
+    * **Temperature-Awareness:** Zorgt dat de velden `temperature` en `type` in de database consistent blijven voor de Smart Call Logic.
+    * **SQL Safety:** Gebruikt uitsluitend **expliciete kolomnamen** in `INSERT OR REPLACE` statements.
+    * **Security:** Beheert de `bcrypt` hashing flow voor gebruikers en bewaakt de `audit_logs`.
 
-### 4. @Yard-Strategist (Supply Chain & Yard Expert)
-- **Role:** Bewaker van de end-to-end flow (Order -> Container -> Yard).
-- **Tasks:**
-    - Beheert de logica voor 'Ex-works' statussen (bijv. Ready for Pickup -> In Transit).
-    - Definieert de 'Container lifecycle' (Haven aankomst -> Terminal -> Yard).
-    - Zorgt dat de overgang van 'Onderweg' naar 'Aangemeld bij YMS' naadloos verloopt.
-    - Bewaakt dat 'Ex-works' orders niet verloren gaan in de YMS-planning.
+### 4. @Yard-Strategist (Logistiek Meesterbrein)
+* **Focus:** Business Logic, Queue Algoritmes & Workflow.
+* **Verantwoordelijkheden:**
+    * **Priority Algorithm:** Beheert de regels voor de wachtrij (o.a. **Reefer First** logica).
+    * **Smart Call Rules:** Definieert de logica voor dock-selectie op basis van lading-temperatuur en dock-mogelijkheden.
+    * **Lifecycle Guard:** Bewaakt de transitie van `PLANNED` naar `COMPLETED` en de optionele `Gate-In` flow.
 
-    ### 5. @QA-Automator (Stability & Testing)
-- **Role:** De laatste verdedigingslinie tegen bugs en visuele achteruitgang.
-- **Expertise:** Unit testing, Visual Regression, Console-audit en Edge-case simulatie.
-- **Tasks:**
-    - Blokkeert "Auto-Apply" als een wijziging de build of UI-lay-out breekt.
-    - Scant op 'undefined' of 'null' errors in de frontend bij het laden van Container & Ex-works data.
-    - Controleert consistentie van het Design System (kleuren, marges) na splitsing van componenten.
-    - Dwingt de @System-Architect om foutieve code direct te herstellen voordat nieuwe features worden gebouwd.
+### 5. @QA-Automator (Stabiliteit & Testing)
+* **Focus:** Foutpreventie, Regressie en Edge-cases.
+* **Verantwoordelijkheden:**
+    * **Queue Testing:** Controleert of prioriteits-vrachten (zoals reefers) correct vooraan de lijst verschijnen.
+    * **Constraint Watcher:** Voorkomt `foreign key mismatch` fouten (zoals gezien in v3.2.3.3) door schema-validatie.
+    * **Null-Check:** Scant op `undefined` of `null` waarden in container-kaarten en live timers.
 
-   ### 6. @UX-Visual-Director (The Polisher)
-- **Role:** Bewaker van de esthetiek, gebruikerservaring en het Design System.
-- **Expertise:** UI/UX design, Tailwind-architectuur, kleurentheorie (Dark Mode) en witruimte-management.
-- **Tasks:**
-    - Herstelt de visuele hiërarchie (wat is belangrijk, wat is secundair?).
-    - Fine-tunt de Dark Mode voor maximale leesbaarheid en contrast.
-    - Elimineert "visuele ruis" en zorgt voor een consistente 'look & feel' over alle dashboards.
-    - Stuurt de @Frontend-Specialist aan op CSS-details zoals marges, lijndikten en schaduwen. 
+### 6. @UX-Visual-Director (The Polisher)
+* **Focus:** Esthetiek, Contrast en Gebruikerservaring.
+* **Verantwoordelijkheden:**
+    * **Visual Hierarchy:** Zorgt dat kritieke informatie (bijv. een 'Late' status of Reefer-prioriteit) direct opvalt zonder ruis.
+    * **Z-Index Mastery:** Garandeert dat Sonner-toasts en modals altijd bovenop de sidebar en navigatie verschijnen.
+    * **Dark Mode:** Fine-tunt contrasten voor maximale leesbaarheid in diverse lichtomstandigheden.
 
-    ### 7. @Integration-Specialist (The Connector)
-- **Role:** Bouwer van bruggen tussen het YMS en de buitenwereld.
-- **Expertise:** API design (REST/GraphQL), Webhooks, EDI-standaarden en externe data-mapping.
-- **Tasks:**
-    - Ontwikkelt de API-eindpunten voor externe transporteurs en leveranciers.
-    - Integreert haven-data (vessel arrivals) in de 'Global Pipeline'.
-    - Zorgt voor een veilige en stabiele koppeling met ERP-systemen voor Ex-works orders.
-    - Bewaakt de data-integriteit bij binnenkomende externe berichten.
+---
 
-**Release Criteria (Voor Auto-Apply):**
-- [ ] **Console-Vrij:** Geen enkele rode error of gele waarschuwing in de browser-console.
-- [ ] **Container-Kaarten:** Check of `container_number` (en indien relevant overige data) correct renderen (geen "undefined" tekst). *(Let op: vessel_name is eerder afgewezen in Logistieke Audit).*
-- [ ] **Dark Mode Contrast:** Controleer of witte teksten op witte achtergronden (of zwart op zwart) voorkomen in de nieuwe shared componenten.
-- [ ] **Responsiviteit:** Zorg dat de nieuwe 'Quick-Assign' zijbalk (of modale schermen) niet over de 'DockGrid' heen valt op kleinere schermen.
-- [ ] **Data-Integriteit:** Controleer of een 'Ex-works' order niet per ongeluk als een actieve 'Yard-truck' wordt getoond.
-- [ ] **Z-Index Check:** Zorg dat de Sonner toasts en modals bovenop de sidebar en navigatie verschijnen.
+## III. Release Criteria (v3.5.0 Checklist)
+
+| Check | Criterium | Verantwoordelijke Agent |
+| :--- | :--- | :--- |
+| **Queue Priority** | Reefer-vrachten staan bovenaan de wachtrij bij gelijke ETA. | @Yard-Strategist |
+| **Smart Call UI** | Gebruiker ziet suggesties op basis van temperatuur bij dock-toewijzing. | @Frontend-Specialist |
+| **Warehouse-Isolation** | Elke broadcast gebruikt `io.sockets.sockets.forEach()` met filtering. | @System-Architect |
+| **Data Safety** | Queries bevatten expliciete kolomnamen (geen parameter-shift risico). | @Data-Specialist |
+| **UI Robustness** | Geen "undefined" tekst zichtbaar in container- of vrachtkaarten. | @QA-Automator |
+| **Visual Polish** | Dark Mode contrast ratio is minimaal 4.5:1 voor alle teksten. | @UX-Visual-Director |
+
+---
+
+> [!CAUTION]
+> **Kritieke Herinnering:** De `FOREIGN KEY` op `dockId` in `yms_deliveries` blijft uitgeschakeld om crashes te voorkomen. Validatie van dock-bestaan moet door de backend logica (@System-Architect) worden afgehandeld voordat een write plaatsvindt.

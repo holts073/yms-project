@@ -37,6 +37,7 @@ export const Card: React.FC<CardProps> = ({
         paddings[padding as keyof typeof paddings],
         className
       )}
+      {...props}
     >
       {children}
     </div>

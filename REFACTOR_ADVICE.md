@@ -17,6 +17,7 @@ Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moet
 - **Zwakke ID-generatie** ✅: `Math.random().toString(36)` vervangen door `crypto.randomUUID()` in YMS delivery ID-allocatie (sessie 2026-03-26).
 - **Wachtwoord bevestigingsveld** ✅: "Bevestig Wachtwoord" veld + client-side validatie toegevoegd aan `UserModal.tsx` (sessie 2026-03-26).
 - **Error Boundaries** ✅: `ErrorBoundary` gewrapped rondom `YmsDeliveryList` in `YmsDashboard.tsx` (sessie 2026-03-26).
+- **`any`-types in queries.ts** ✅: Alle functies in `queries.ts` zijn nu strikt getyped met interfaces uit `types.ts`. Raw database rows worden expliciet gemapped (sessie 2026-03-26).
 
 ## 🔴 Prioriteit 1: Beveiliging & Integriteit
 
@@ -26,8 +27,6 @@ Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moet
 - **Geen Cascade-Deletes meer**: Door het verwijderen van de compound FK zijn cascade-deletes op docks/wachtruimtes niet meer automatisch. Implementeer handmatige cleanup-logica in `deleteYmsDock` en `deleteYmsWaitingArea`.
 
 ## 🟡 Prioriteit 2: Code Kwaliteit
-
-- **`any`-types in queries.ts**: Vrijwel alle functies in `queries.ts` gebruiken `any` als parameter-type. Vervang door getyped interfaces uit `types.ts` (met name `YmsDelivery`, `YmsDock`).
 - **Prop-drilling in YmsDashboard**: `YmsDashboard.tsx` geeft nog teveel props door naar sub-componenten. Verplaats dock/waitingArea access naar de reeds bestaande `useYmsData` hook in leaf-componenten.
 - **Ongeoptimaliseerde real-time sync**: Elk `DELIVERY_UPDATED` event triggert een volledige herlaad voor alle clients. Overweeg delta-updates of per-delivery pub/sub.
 

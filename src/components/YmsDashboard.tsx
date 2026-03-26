@@ -10,11 +10,22 @@ import { YmsDockGrid } from './features/YmsDockGrid';
 import { YmsWaitingAreaGrid } from './features/YmsWaitingAreaGrid';
 import { YmsTimeline } from './features/YmsTimeline';
 import { YmsDeliveryList } from './features/YmsDeliveryList';
-import { YmsArrivalsList } from './features/YmsArrivalsList';
+import { YmsQueue } from './features/YmsQueue';
 import { YmsAssignmentModal } from './features/YmsAssignmentModal';
 import { YmsDeliveryModal } from './features/YmsDeliveryModal';
 import { YmsDelivery, YmsDeliveryStatus } from '../types';
 import { FullPageLoader } from './shared/LoadingSpinner';
+import { 
+  DndContext, 
+  DragOverlay, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  DragEndEvent,
+  DragStartEvent 
+} from '@dnd-kit/core';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
+import { Truck } from 'lucide-react';
 
 export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'arrivals' | 'planning', onBack?: () => void }) {
   const { state } = useSocket();
@@ -27,6 +38,15 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingDelivery, setEditingDelivery] = useState<Partial<YmsDelivery> | null>(null);
   const [assigningDelivery, setAssigningDelivery] = useState<YmsDelivery | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Derived state
   const filteredDeliveries = useMemo(() => {
@@ -46,10 +66,54 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
     alertsCount: state?.yms?.alerts?.length || 0
   }), [filteredDeliveries, yms.docks, state]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+      const deliveryId = active.id as string;
+      const overId = over.id as string;
+      
+      const delivery = yms.deliveries.find(d => d.id === deliveryId);
+      if (!delivery) return;
+
+      // Handle drop on a Dock in the timeline
+      if (overId.startsWith('dock-')) {
+        const dockIdStr = overId.replace('dock-', '');
+        const dockId = Number(dockIdStr);
+        
+        // If it's a new assignment or a move, update it
+        if (delivery.dockId !== dockId) {
+          // Calculate time based on horizontal position if available via data
+          const dropData = over.data.current;
+          let scheduledTime = delivery.scheduledTime;
+          
+          if (dropData?.type === 'dock-cell' && dropData.time) {
+            scheduledTime = dropData.time;
+          }
+
+          deliveryActions.assignDock(deliveryId, dockId, scheduledTime);
+        }
+      }
+    }
+  };
+
   if (!state) return <FullPageLoader />;
 
+  const activeDelivery = activeId ? yms.deliveries.find(d => d.id === activeId) : null;
+
   return (
-    <div className="min-h-screen bg-background p-4 lg:p-8 font-sans space-y-10">
+    <DndContext 
+      sensors={sensors} 
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      modifiers={[restrictToWindowEdges]}
+    >
+      <div className="min-h-screen bg-background p-4 lg:p-8 font-sans space-y-10">
       <YmsHeader 
         title="Yard Management"
         subtitle="Real-time overzicht van je logistieke yard"
@@ -86,12 +150,10 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
       <YmsStats stats={stats} />
 
       {view === 'arrivals' ? (
-        <YmsArrivalsList 
-          deliveries={filteredDeliveries}
-          docks={yms.docks}
-          waitingAreas={yms.waitingAreas}
-          onAssignClick={setAssigningDelivery}
-        />
+            <YmsQueue 
+              priorityQueue={yms.priorityQueue} 
+              onAssignClick={setAssigningDelivery} 
+            />
       ) : (
         <div className="flex flex-col gap-10">
           <section className="space-y-6 flex flex-col h-[600px]">
@@ -99,7 +161,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             <ErrorBoundary fallbackTitle="Timeline Fout">
               <YmsTimeline 
                 deliveries={filteredDeliveries}
-                onSaveDelivery={deliveryActions.updateDelivery as any}
+                onSaveDelivery={deliveryActions.updateDelivery}
                 getStatusLabel={(s) => s}
                 isToday={selectedDate === new Date().toISOString().split('T')[0]}
                 selectedDate={selectedDate}
@@ -166,6 +228,21 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         onAssignDock={(id, time) => { deliveryActions.assignDock(assigningDelivery!.id, id, time); setAssigningDelivery(null); }}
         onAssignWaitingArea={(id) => { deliveryActions.updateDelivery({ ...assigningDelivery!, waitingAreaId: id, status: 'IN_YARD' }); setAssigningDelivery(null); }}
       />
+
+      <DragOverlay>
+        {activeId && activeDelivery ? (
+          <div className="bg-card border-2 border-indigo-500 rounded-2xl p-4 shadow-2xl flex items-center gap-3 w-64 opacity-90 scale-105 pointer-events-none">
+            <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 border border-indigo-100">
+              <Truck size={20} />
+            </div>
+            <div>
+              <p className="font-bold text-foreground text-sm">{activeDelivery.reference}</p>
+              <p className="text-[10px] font-mono text-[var(--muted-foreground)] font-bold uppercase">{activeDelivery.licensePlate || 'NR ONBEKEND'}</p>
+            </div>
+          </div>
+        ) : null}
+      </DragOverlay>
     </div>
+    </DndContext>
   );
 }

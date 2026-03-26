@@ -4,11 +4,12 @@ import {
   saveAddressBookEntry, deleteAddressEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
   getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, saveYmsWarehouse, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
-  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, addLog, getYmsDocks, getYmsAlerts, savePalletTransaction
+  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, saveLog, getYmsDocks, getYmsAlerts, savePalletTransaction
 } from '../../src/db/queries';
 import { saveSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
 import { buildStaticState } from '../routes/deliveries';
+import { YmsDeliveryStatus, YmsDelivery, YmsTemperature } from '../../src/types';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
@@ -17,6 +18,12 @@ export interface YmsAssignmentModalProps {
   onAssignDock: (dockId: number, scheduledTime: string) => void;
   onAssignWaitingArea: (waId: number) => void;
 }
+
+const broadcastState = (io: any) => {
+  io.sockets.sockets.forEach((s: any) => {
+    s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
+  });
+};
 
 export const setupSocketHandlers = (io: Server) => {
   // Middleware to verify JWT on connection
@@ -41,6 +48,28 @@ export const setupSocketHandlers = (io: Server) => {
       console.log(`[YMS SOCKET] Transport upgrade naar ${socket.conn.transport.name} voor ${socket.id}`);
     });
 
+    const syncDockStatus = (deliveryId: string, dockId: number | null, status: string, warehouseId: string) => {
+      const docks = getYmsDocks(warehouseId);
+      
+      // If moving to a dock-active status
+      if (dockId && ['DOCKED', 'UNLOADING', 'LOADING'].includes(status)) {
+        const dock = docks.find(d => d.id === dockId);
+        // If dock is already occupied by SOMEONE ELSE, maybe clear them?
+        // For now, just force overwrite occupancy
+        if (dock) {
+          saveYmsDock({ ...dock, status: 'Occupied', currentDeliveryId: deliveryId });
+        }
+      } 
+      // If moving to a non-dock status or unassigning
+      else {
+        // Find if this delivery was occupying any dock and free it
+        const dockTrapped = docks.find(d => d.currentDeliveryId === deliveryId);
+        if (dockTrapped) {
+          saveYmsDock({ ...dockTrapped, status: 'Available', currentDeliveryId: null });
+        }
+      }
+    };
+
     socket.emit("init", buildStaticState(io, socket.data.selectedWarehouseId));
 
     socket.on("action", (data) => {
@@ -60,7 +89,8 @@ export const setupSocketHandlers = (io: Server) => {
 
       const isAdmin = user.role === 'admin';
 
-      let logEntry = {
+      const logEntry: any = {
+        id: "",
         timestamp,
         user: user.name,
         action: "",
@@ -86,7 +116,7 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.action = "Created Delivery";
             logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
             logEntry.reference = payload.reference;
-            io.emit("DELIVERY_UPDATED");
+            broadcastState(io);
             break;
           }
           case "UPDATE_DELIVERY": {
@@ -140,7 +170,7 @@ export const setupSocketHandlers = (io: Server) => {
 
             insertDelivery(newPayload);
             logEntry.reference = newPayload.reference;
-            io.emit("DELIVERY_UPDATED");
+            broadcastState(io);
 
             // Auto-YMS Creation Logic
             const isAtLastStep = (newPayload.type === 'container' && newPayload.status >= 75 && newPayload.status < 100) ||
@@ -162,6 +192,12 @@ export const setupSocketHandlers = (io: Server) => {
                   scheduledTime += 'T09:00:00.000Z';
                 }
                 
+                const tempMap: Record<string, string> = {
+                  'Dry': 'Droog',
+                  'Cool': 'Koel',
+                  'Frozen': 'Vries'
+                };
+                
                 const newYmsDelivery = {
                   id: Math.random().toString(36).substr(2, 9),
                   mainDeliveryId: newPayload.id,
@@ -169,18 +205,15 @@ export const setupSocketHandlers = (io: Server) => {
                   reference: newPayload.reference,
                   licensePlate: newPayload.containerNumber || 'NR ONBEKEND',
                   supplier: supplier?.name || 'Onbekend',
-                  temperature: newPayload.cargoType || 'Droog',
-                  isReefer: newPayload.type === 'container' ? 1 : 0,
+                  temperature: (tempMap[newPayload.cargoType] || 'Droog') as YmsTemperature,
+                  isReefer: newPayload.type === 'container',
                   scheduledTime,
-                  status: 'PLANNED',
+                  status: 'PLANNED' as YmsDeliveryStatus,
                   transporterId: newPayload.transporterId,
                   statusTimestamps: { 'PLANNED': timestamp }
                 };
                 saveYmsDelivery(newYmsDelivery);
-                
-                io.sockets.sockets.forEach((s) => {
-                  s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
-                });
+                broadcastState(io);
               }
             }
             break;
@@ -211,11 +244,9 @@ export const setupSocketHandlers = (io: Server) => {
               }
             }
             saveYmsDelivery(current);
+            syncDockStatus(current.id, current.dockId || null, current.status, current.warehouseId);
             
-            // Broadcast specific state to each user based on their warehouse
-            io.sockets.sockets.forEach((s) => {
-              s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
-            });
+            broadcastState(io);
             break;
           }
           
@@ -250,7 +281,7 @@ export const setupSocketHandlers = (io: Server) => {
             const updated = {
               ...delivery,
               dockId,
-              status: newStatus,
+              status: newStatus as YmsDeliveryStatus,
               registrationTime: regTime,
               scheduledTime: finalScheduledTime,
               statusTimestamps: {
@@ -262,14 +293,12 @@ export const setupSocketHandlers = (io: Server) => {
             
             console.log(`[YMS_ASSIGN_DOCK] Saving updated delivery:`, { id: updated.id, dockId: updated.dockId, status: updated.status });
             saveYmsDelivery(updated);
+            syncDockStatus(updated.id, updated.dockId, updated.status, updated.warehouseId);
             
             logEntry.action = `Planning: Dock ${dockId} Toegewezen`;
             logEntry.details = `Levering ${delivery.reference} toegewezen aan Dock ${dockId} (Status: ${newStatus})`;
             
-            // Broadcast specific state to each user based on their warehouse
-            io.sockets.sockets.forEach((s) => {
-              s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
-            });
+            broadcastState(io);
             break;
           }
 
@@ -281,7 +310,7 @@ export const setupSocketHandlers = (io: Server) => {
             
             const updated = {
               ...delivery,
-              status: 'GATE_IN',
+              status: 'GATE_IN' as YmsDeliveryStatus,
               registrationTime: timestamp,
               arrivalTime: timestamp,
               statusTimestamps: {
@@ -292,7 +321,7 @@ export const setupSocketHandlers = (io: Server) => {
             saveYmsDelivery(updated);
             logEntry.action = "Aankomst Geregistreerd";
             logEntry.details = `Levering ${delivery.reference} is aangemeld bij de gate.`;
-            io.emit("state_update", buildStaticState(io, socket.data.selectedWarehouseId));
+            broadcastState(io);
             break;
           }
           case "SELECT_WAREHOUSE": {
@@ -308,7 +337,7 @@ export const setupSocketHandlers = (io: Server) => {
             deleteDelivery(payload);
             logEntry.action = "Deleted Delivery";
             logEntry.details = `Removed delivery ID: ${payload}`;
-            io.emit("DELIVERY_UPDATED");
+            broadcastState(io);
             break;
 
           case "ADD_ADDRESS":
@@ -317,9 +346,7 @@ export const setupSocketHandlers = (io: Server) => {
             saveAddressBookEntry(payload.entry);
             logEntry.action = type === "ADD_ADDRESS" ? "Toegevoegd Adres" : "Gewijzigd Adres";
             logEntry.details = `Adres ${payload.entry.name} succesvol ${type === "ADD_ADDRESS" ? "toegevoegd" : "gewijzigd"} in ${payload.category}.`;
-            io.sockets.sockets.forEach((s) => {
-              s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
-            });
+            broadcastState(io);
             break;
 
           case "DELETE_ADDRESS":
@@ -333,9 +360,7 @@ export const setupSocketHandlers = (io: Server) => {
             deleteAddressEntry(payload.id);
             logEntry.action = "Verwijderd Adres";
             logEntry.details = `Adres verwijderd uit ${payload.category}.`;
-            io.sockets.sockets.forEach((s) => {
-              s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
-            });
+            broadcastState(io);
             break;
 
           case "BULK_UPDATE_DELIVERIES":
@@ -347,7 +372,7 @@ export const setupSocketHandlers = (io: Server) => {
             }
             logEntry.action = "Bulk Updated Deliveries";
             logEntry.details = `Updated ${payload.ids.length} deliveries`;
-            io.emit("DELIVERY_UPDATED");
+            broadcastState(io);
             break;
 
 
@@ -363,9 +388,7 @@ export const setupSocketHandlers = (io: Server) => {
                 case "dockoverride": saveYmsDockOverride(payload); logEntry.details = `Dock override opgeslagen`; break;
                 case "alert": saveYmsAlert(payload); logEntry.details = `Systeemwaarschuwing opgeslagen`; break;
               }
-              io.sockets.sockets.forEach((s) => {
-                s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
-              });
+              broadcastState(io);
               logEntry.action = `Systeemconfiguratie: ${table} opgeslagen`;
             } else if (type.startsWith("YMS_DELETE_")) {
               if (!isAdmin) throw new Error("Alleen admins kunnen gegevens verwijderen");
@@ -376,20 +399,18 @@ export const setupSocketHandlers = (io: Server) => {
                 case "dockoverride": deleteYmsDockOverride(payload); logEntry.details = `Dock override ${payload} verwijderd`; break;
                 case "alert": deleteYmsAlert(payload); logEntry.details = `Waarschuwing ${payload} verwijderd`; break;
               }
-              io.sockets.sockets.forEach((s) => {
-                s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
-              });
+              broadcastState(io);
               logEntry.action = `Systeemconfiguratie: ${table} verwijderd`;
             } else if (type === "YMS_RESOLVE_ALERT") {
                resolveYmsAlert(payload);
-               io.emit("state_update", buildStaticState(io, socket.data.selectedWarehouseId));
+               broadcastState(io);
                break;
              }
              case "YMS_INITIALIZE_INFRASTRUCTURE": {
                if (!isAdmin) throw new Error("Alleen admins kunnen infrastructuur herstellen");
                const { initializeWarehouseInfrastructure } = require('../../src/db/queries');
                initializeWarehouseInfrastructure(payload);
-               io.emit("state_update", buildStaticState(io, socket.data.selectedWarehouseId));
+               broadcastState(io);
                logEntry.action = "Infrastructuur Hersteld";
                logEntry.details = `Standaard docks/wachtruimtes aangemaakt voor magazijn ${payload}`;
                break;
@@ -397,7 +418,8 @@ export const setupSocketHandlers = (io: Server) => {
          }
 
         if (logEntry.action) {
-          addLog(logEntry);
+          if (!logEntry.id) logEntry.id = Math.random().toString(36).substr(2, 9);
+          saveLog(logEntry);
         }
       } catch (error: any) {
         console.error("Action error:", error);

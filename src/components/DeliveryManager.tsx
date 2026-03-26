@@ -52,15 +52,23 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     }
 
     const registrationTime = new Date().toISOString();
+    const ymsId = Math.random().toString(36).substring(2, 11);
+
+    const tempMap: Record<string, string> = {
+      'Dry': 'Droog',
+      'Cool': 'Koel',
+      'Frozen': 'Vries'
+    };
+
     dispatch('YMS_SAVE_DELIVERY', {
-      id: crypto.randomUUID(),
+      id: ymsId,
       mainDeliveryId: delivery.id,
       warehouseId: 'W01',
       reference: delivery.reference,
       licensePlate: delivery.containerNumber || 'NR ONBEKEND',
       supplier: state?.addressBook?.suppliers.find((s:any) => s.id === delivery.supplierId)?.name || 'Onbekend',
-      temperature: delivery.cargoType || 'Droog',
-      isReefer: delivery.type === 'container' ? 1 : 0,
+      temperature: (tempMap[delivery.cargoType] || 'Droog') as any,
+      isReefer: delivery.type === 'container',
       scheduledTime: delivery.etaWarehouse || delivery.eta || registrationTime,
       registrationTime: registrationTime,
       status: 'GATE_IN',

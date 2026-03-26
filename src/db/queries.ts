@@ -1,5 +1,18 @@
 import { db } from './sqlite';
-import { Delivery, Document, AuditEntry, AddressEntry, User } from '../types';
+import { 
+  Delivery, 
+  Document, 
+  AuditEntry, 
+  AddressEntry, 
+  User, 
+  YmsDock, 
+  YmsWaitingArea, 
+  YmsDelivery, 
+  YmsWarehouse, 
+  YmsDockOverride, 
+  YmsAlert,
+  LogEntry 
+} from '../types';
 
 // Cached Prepared Statements
 const stmts = {
@@ -111,7 +124,7 @@ export function getDeliveries(page: number = 1, limit: number = 15, search: stri
   query += ' LIMIT ? OFFSET ?';
   params.push(limit, offset);
 
-  const rows = db.prepare(query).all(...params) as any[];
+  const rows = db.prepare(query).all(...params) as Record<string, any>[];
 
   if (rows.length === 0) {
     return { deliveries: [], total: totalRow.count, totalPages: Math.ceil(totalRow.count / limit), currentPage: page };
@@ -119,28 +132,40 @@ export function getDeliveries(page: number = 1, limit: number = 15, search: stri
 
   // Optimized Fetch: Batch documents and audit logs for all rows on the page
   const ids = rows.map(r => r.id);
-  const allDocs = stmts.getDocsBatch(ids).all(...ids) as any[];
-  const allAudit = stmts.getAuditBatch(ids).all(...ids) as any[];
+  const allDocs = stmts.getDocsBatch(ids).all(...ids) as Record<string, any>[];
+  const allAudit = stmts.getAuditBatch(ids).all(...ids) as Record<string, any>[];
 
   const docsMap = allDocs.reduce((acc, d) => {
     if (!acc[d.deliveryId]) acc[d.deliveryId] = [];
-    acc[d.deliveryId].push({ ...d, required: d.required === 1 });
+    acc[d.deliveryId].push({ 
+      id: d.id,
+      name: d.name,
+      status: d.status,
+      required: d.required === 1 
+    });
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, Document[]>);
 
   const auditMap = allAudit.reduce((acc, a) => {
     if (!acc[a.deliveryId]) acc[a.deliveryId] = [];
-    acc[a.deliveryId].push(a);
+    acc[a.deliveryId].push({
+      timestamp: a.timestamp,
+      user: a.user,
+      action: a.action,
+      details: a.details
+    });
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, AuditEntry[]>);
 
   const deliveries: Delivery[] = rows.map(r => ({
     ...r,
+    type: r.type as 'container' | 'exworks',
+    status: r.status as number,
     palletExchange: r.palletExchange === 1,
     statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
     documents: docsMap[r.id] || [],
     auditTrail: auditMap[r.id] || []
-  }));
+  } as Delivery));
 
   return {
     deliveries,
@@ -150,33 +175,45 @@ export function getDeliveries(page: number = 1, limit: number = 15, search: stri
   };
 }
 
-export function getAllDeliveries() {
-  const rows = db.prepare('SELECT * FROM deliveries').all() as any[];
+export function getAllDeliveries(): Delivery[] {
+  const rows = db.prepare('SELECT * FROM deliveries').all() as Record<string, any>[];
   if (rows.length === 0) return [];
 
   const ids = rows.map(r => r.id);
-  const allDocs = stmts.getDocsBatch(ids).all(...ids) as any[];
-  const allAudit = stmts.getAuditBatch(ids).all(...ids) as any[];
+  const allDocs = stmts.getDocsBatch(ids).all(...ids) as Record<string, any>[];
+  const allAudit = stmts.getAuditBatch(ids).all(...ids) as Record<string, any>[];
 
   const docsMap = allDocs.reduce((acc, d) => {
     if (!acc[d.deliveryId]) acc[d.deliveryId] = [];
-    acc[d.deliveryId].push({ ...d, required: d.required === 1 });
+    acc[d.deliveryId].push({ 
+      id: d.id,
+      name: d.name,
+      status: d.status,
+      required: d.required === 1 
+    });
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, Document[]>);
 
   const auditMap = allAudit.reduce((acc, a) => {
     if (!acc[a.deliveryId]) acc[a.deliveryId] = [];
-    acc[a.deliveryId].push(a);
+    acc[a.deliveryId].push({
+      timestamp: a.timestamp,
+      user: a.user,
+      action: a.action,
+      details: a.details
+    });
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, AuditEntry[]>);
 
   return rows.map(r => ({
     ...r,
+    type: r.type as 'container' | 'exworks',
+    status: r.status as number,
     palletExchange: r.palletExchange === 1,
     statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
     documents: docsMap[r.id] || [],
     auditTrail: auditMap[r.id] || []
-  }));
+  } as Delivery));
 }
 
 export function insertDelivery(d: Delivery) {
@@ -201,7 +238,7 @@ export function insertDelivery(d: Delivery) {
     stmts.deleteAudit.run(d.id);
     if (d.auditTrail) {
       for (const a of d.auditTrail) {
-        stmts.insertAudit.run((a as any).id || Math.random().toString(36).substr(2, 9), d.id, a.timestamp, a.user, a.action, a.details);
+        stmts.insertAudit.run(Math.random().toString(36).substr(2, 9), d.id, a.timestamp, a.user, a.action, a.details);
       }
     }
   })();
@@ -213,11 +250,11 @@ export function deleteDelivery(id: string) {
 
 // Helpers for other entities...
 export function getUsers(): User[] {
-  const users = stmts.getUsers.all() as any[];
+  const users = stmts.getUsers.all() as Record<string, any>[];
   return users.map(u => ({
     ...u,
     permissions: u.permissions ? JSON.parse(u.permissions) : undefined
-  }));
+  } as User));
 }
 
 export function saveUser(u: User) {
@@ -246,11 +283,11 @@ export function saveAddressBookEntry(entry: AddressEntry) {
     entry.contact, 
     entry.email, 
     entry.address, 
-    entry.pickupAddress, 
-    entry.otif, 
-    entry.remarks,
-    (entry as any).supplier_number || null,
-    (entry as any).customer_number || null
+    entry.pickupAddress || null, 
+    entry.otif || null, 
+    entry.remarks || null,
+    entry.supplier_number || null,
+    entry.customer_number || null
   );
 }
 
@@ -270,8 +307,8 @@ export function getPalletBalances() {
   }, {} as Record<string, number>);
 }
 
-export function getPalletTransactions(entityId: string) {
-  return stmts.getPalletTransactionsByEntity.all(entityId) as any[];
+export function getPalletTransactions(entityId: string): (AuditEntry & { balanceChange: number })[] {
+  return stmts.getPalletTransactionsByEntity.all(entityId) as (AuditEntry & { balanceChange: number })[];
 }
 
 export function getLogs() {
@@ -279,14 +316,16 @@ export function getLogs() {
 }
 
 
-export function addLog(log: any) {
+export function saveLog(log: Omit<LogEntry, 'id'>) {
   stmts.insertLog.run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details, log.reference || null);
 }
 
+export const addLog = (log: Omit<LogEntry, 'id'>) => saveLog(log);
+
 // YMS Queries
-export function getYmsDocks(warehouseId?: string, includeAll: boolean = false): any[] {
+export function getYmsDocks(warehouseId?: string, includeAll: boolean = false): (YmsDock & { isOverridden: boolean })[] {
   let query = "SELECT * FROM yms_docks";
-  const params: any[] = [];
+  const params: (string | number)[] = [];
   
   if (warehouseId) {
     query += " WHERE warehouseId = ?";
@@ -297,11 +336,11 @@ export function getYmsDocks(warehouseId?: string, includeAll: boolean = false): 
     query += warehouseId ? " AND adminStatus = 'Active'" : " WHERE adminStatus = 'Active'";
   }
 
-  const docks = db.prepare(query).all(...params) as any[];
+  const docks = db.prepare(query).all(...params) as Record<string, any>[];
   const overrides = getYmsDockOverrides(warehouseId);
   const now = new Date().toISOString().split('T')[0];
 
-  return docks.map(d => {
+  return (docks as Record<string, any>[]).map(d => {
     // Process overrides for today
     const activeOverride = overrides.find(o => o.dockId === d.id && o.startDate <= now && o.endDate >= now);
     if (activeOverride) {
@@ -310,21 +349,21 @@ export function getYmsDocks(warehouseId?: string, includeAll: boolean = false): 
         allowedTemperatures: activeOverride.allowedTemperatures,
         status: activeOverride.status === 'Blocked' ? 'Blocked' : d.status,
         isOverridden: true
-      };
+      } as YmsDock & { isOverridden: boolean };
     }
     return {
       ...d,
       allowedTemperatures: JSON.parse(d.allowedTemperatures),
       isOverridden: false
-    };
+    } as YmsDock & { isOverridden: boolean };
   });
 }
 
-export function saveYmsDock(dock: any) {
+export function saveYmsDock(dock: YmsDock) {
   stmts.saveYmsDock.run(dock.name, JSON.stringify(dock.allowedTemperatures), dock.status, dock.adminStatus || 'Active', dock.currentDeliveryId || null, dock.isFastLane ? 1 : 0, dock.direction_capability || 'BOTH', dock.id, dock.warehouseId);
 }
 
-export function getYmsWaitingAreas(warehouseId?: string, includeAll: boolean = false): any[] {
+export function getYmsWaitingAreas(warehouseId?: string, includeAll: boolean = false): YmsWaitingArea[] {
   let query = "SELECT * FROM yms_waiting_areas";
   const params: any[] = [];
   
@@ -337,15 +376,15 @@ export function getYmsWaitingAreas(warehouseId?: string, includeAll: boolean = f
     query += warehouseId ? " AND adminStatus = 'Active'" : " WHERE adminStatus = 'Active'";
   }
 
-  return db.prepare(query).all(...params) as any[];
+  return db.prepare(query).all(...params) as YmsWaitingArea[];
 }
 
-export function saveYmsWaitingArea(wa: any) {
+export function saveYmsWaitingArea(wa: YmsWaitingArea) {
   stmts.saveYmsWaitingArea.run(wa.name, wa.status, wa.adminStatus || 'Active', wa.currentDeliveryId || null, wa.id, wa.warehouseId);
 }
 
-export function getYmsDeliveries(warehouseId?: string): any[] {
-  const rows = warehouseId ? stmts.getYmsDeliveriesByWarehouse.all(warehouseId) : stmts.getYmsDeliveries.all() as any[];
+export function getYmsDeliveries(warehouseId?: string): YmsDelivery[] {
+  const rows = (warehouseId ? stmts.getYmsDeliveriesByWarehouse.all(warehouseId) : stmts.getYmsDeliveries.all()) as Record<string, any>[];
   return rows.map(r => ({
     ...r,
     isReefer: r.isReefer === 1,
@@ -353,10 +392,10 @@ export function getYmsDeliveries(warehouseId?: string): any[] {
     statusTimestamps: r.statusTimestamps ? JSON.parse(r.statusTimestamps) : {},
     direction: r.direction || 'INBOUND',
     palletCount: r.palletCount || 0
-  }));
+  } as YmsDelivery));
 }
 
-export function saveYmsDelivery(d: any) {
+export function saveYmsDelivery(d: YmsDelivery) {
   stmts.insertYmsDelivery.run(
     d.id,
     d.warehouseId || 'W01',
@@ -388,15 +427,15 @@ export function deleteYmsDelivery(id: string) {
   stmts.deleteYmsDelivery.run(id);
 }
 
-export function getYmsWarehouses(): any[] {
-  const rows = stmts.getYmsWarehouses.all() as any[];
+export function getYmsWarehouses(): YmsWarehouse[] {
+  const rows = stmts.getYmsWarehouses.all() as Record<string, any>[];
   return rows.map(r => ({
     ...r,
     hasGate: r.hasGate === 1
-  }));
+  } as YmsWarehouse));
 }
 
-export function saveYmsWarehouse(w: any) {
+export function saveYmsWarehouse(w: YmsWarehouse) {
   const isNew = !db.prepare('SELECT id FROM yms_warehouses WHERE id = ?').get(w.id);
   stmts.insertYmsWarehouse.run(w.id, w.name, w.description || null, w.address || null, w.hasGate ? 1 : 0);
   
@@ -431,15 +470,15 @@ export function deleteYmsWarehouse(id: string) {
   })();
 }
 
-export function getYmsDockOverrides(warehouseId?: string): any[] {
-  const rows = warehouseId ? stmts.getYmsDockOverridesByWarehouse.all(warehouseId) : stmts.getYmsDockOverrides.all() as any[];
+export function getYmsDockOverrides(warehouseId?: string): YmsDockOverride[] {
+  const rows = (warehouseId ? stmts.getYmsDockOverridesByWarehouse.all(warehouseId) : stmts.getYmsDockOverrides.all()) as Record<string, any>[];
   return rows.map(r => ({
     ...r,
     allowedTemperatures: JSON.parse(r.allowedTemperatures)
-  }));
+  } as YmsDockOverride));
 }
 
-export function saveYmsDockOverride(o: any) {
+export function saveYmsDockOverride(o: YmsDockOverride) {
   stmts.insertYmsDockOverride.run(o.id, o.warehouseId, o.dockId, o.startDate, o.endDate, o.status, JSON.stringify(o.allowedTemperatures));
 }
 
@@ -447,15 +486,15 @@ export function deleteYmsDockOverride(id: string) {
   stmts.deleteYmsDockOverride.run(id);
 }
 
-export function getYmsAlerts(warehouseId?: string): any[] {
-  const rows = warehouseId ? stmts.getYmsAlertsByWarehouse.all(warehouseId) : stmts.getYmsAlerts.all() as any[];
+export function getYmsAlerts(warehouseId?: string): YmsAlert[] {
+  const rows = (warehouseId ? stmts.getYmsAlertsByWarehouse.all(warehouseId) : stmts.getYmsAlerts.all()) as Record<string, any>[];
   return rows.map(r => ({
     ...r,
     resolved: r.resolved === 1
-  }));
+  } as YmsAlert));
 }
 
-export function saveYmsAlert(a: any) {
+export function saveYmsAlert(a: YmsAlert) {
   stmts.insertYmsAlert.run(a.id, a.deliveryId || null, a.warehouseId, a.type, a.severity, a.timestamp, a.message, a.resolved ? 1 : 0);
 }
 

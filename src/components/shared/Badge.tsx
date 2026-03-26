@@ -36,6 +36,7 @@ export const Badge: React.FC<BadgeProps> = ({
         sizes[size as keyof typeof sizes],
         className
       )}
+      {...props}
     >
       {children}
     </span>
