@@ -1,8 +1,8 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.7.0 — Bijgewerkt: 2026-03-27 door @System-Architect*
+*Versie: v3.7.4 — Bijgewerkt: 2026-03-27 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na v3.7.0 release: Real-time Notificaties, Compact Archief en Infrastructuur Beheer.
+> Bijgewerkt na v3.7.4 release: High-Density Table layouts, Multi-Theme Synchronization en Verbeterde Yard Flow.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
@@ -13,8 +13,8 @@ We hanteren een **Atomic Design** methodiek voor maximale herbruikbaarheid en lo
 | Laag | Pad | Inhoud |
 |---|---|---|
 | Atoms & Molecules | `/src/components/shared` | Button, Modal, Badge, Card — volledig context-vrij |
-| Organisms | `/src/components/features` | YmsTimeline, DockGrid, DeliveryTable — bevatten bedrijfslogica |
-| Templates & Pages | `/src/components/` | YmsDashboard, Settings — brengen features samen |
+| Organisms | `/src/components/features` | YmsTimeline, YmsDockGrid (Table), YmsDeliveryList (Table) — bevatten bedrijfslogica |
+| Templates & Pages | `/src/components/` | YmsDashboard (4rd-cols), Settings — brengen features samen |
 | Hooks | `/src/hooks/` | `useYmsData`, `useDeliveries` — isoleren state-access |
 
 ## 2. Logistieke State Machine

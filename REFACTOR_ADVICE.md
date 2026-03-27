@@ -1,5 +1,5 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.7.0 — Bijgewerkt: 2026-03-27*
+*Versie: v3.7.4 — Bijgewerkt: 2026-03-27*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
 
@@ -8,6 +8,8 @@ Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moet
 - **Infrastructuur Beheer** ✅: Docks en Wachtplaatsen kunnen nu door Admins worden verwijderd. Dit voorkomt vervuiling van de UI bij wijzigingen in het magazijn.
 - **Real-time Feedback** ✅: Introductie van het `notification` event om gebruikers direct op de hoogte te stellen van kritieke events (zonder full state diffs).
 - **Zwak standaardwachtwoord Flow** ✅: `requiresReset` logic dwingt gebruikers tot een veilig wachtwoord.
+- **High-Density Table Design (v3.7.4)** ✅: Alle core YMS lijsten (Leveringen, Docks, Wachtruimtes) zijn omgezet van kaarten naar compacte tabellen voor maximaal overzicht.
+- **Full Theme Synchronization (v3.7.4)** ✅: Hardcoded CSS tokens zijn gesaneerd; de UI is nu 100% theme-aware voor alle brand-thema's (ILG, Meledi).
 
 ## ✅ Opgelost in v3.6.0 / v3.6.1
 - **Partial Update Crash (v3.5.4)** ✅: `socketHandlers.ts` implementeert nu server-side merging van data.
@@ -20,7 +22,7 @@ Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moet
 
 ## 🟡 Prioriteit 1: Code Kwaliteit & Resilience
 - **Delta-Updates**: Elk `DELIVERY_UPDATED` event triggert een volledige herlaad voor alle clients. Implementeer delta-updates voor betere schaalbaarheid bij >100 actieve zendingen.
-- **CSS Token Audit**: Enkele componenten gebruiken nog hardcoded kleuren in plaats van CSS variabelen (`--muted`, etc.).
+- **Audit Trail Coverage**: Zorg dat alle `UPDATE` acties in de database een overeenkomstige regel in `audit_logs` schrijven (niet alleen via socket-events).
 
 ## 🟢 Prioriteit 2: Operationele Configuratie
 - **SMTP Setup**: Geef een duidelijke foutmelding in de UI als credentials ontbreken.
