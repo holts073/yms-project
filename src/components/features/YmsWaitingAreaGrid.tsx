@@ -1,51 +1,88 @@
 import React from 'react';
-import { Zap, AlertCircle } from 'lucide-react';
-import { Card } from '../shared/Card';
+import { Zap, AlertCircle, Trash2, Lock, Unlock } from 'lucide-react';
+import { useSocket } from '../../SocketContext';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
+import { Table } from '../shared/Table';
 import { useYmsData } from '../../hooks/useYmsData';
 import { YmsWaitingArea } from '../../types';
 import { cn } from '../../lib/utils';
 
 export const YmsWaitingAreaGrid: React.FC = () => {
   const { waitingAreas, actions } = useYmsData();
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-      {waitingAreas.map((wa) => (
-        <Card key={wa.id} padding="sm" className={cn(
-          "hover:shadow-md transition-all group",
-          wa.adminStatus === 'Blocked' && 'grayscale opacity-70'
+  const { currentUser } = useSocket();
+  const isAdmin = currentUser?.role === 'admin';
+  const sortedWaitingAreas = React.useMemo(() => [...waitingAreas].sort((a, b) => a.name.localeCompare(b.name)), [waitingAreas]);
+
+  const columns = [
+    {
+      header: 'Status',
+      accessor: (wa: YmsWaitingArea) => (
+        <Badge size="xs" variant={wa.adminStatus === 'Inactive' ? 'danger' : 'success'}>
+          {wa.adminStatus || 'Actief'}
+        </Badge>
+      )
+    },
+    {
+      header: 'Naam',
+      accessor: (wa: YmsWaitingArea) => (
+        <div className="flex items-center gap-2">
+          <Zap size={14} className={wa.status === 'Available' ? "text-emerald-500" : "text-amber-500"} />
+          <span className="font-bold text-foreground text-sm">Plaats {wa.name}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Bezetting',
+      accessor: (wa: YmsWaitingArea) => (
+        <span className={cn(
+          "text-[10px] font-black uppercase tracking-widest",
+          wa.status === 'Available' ? "text-emerald-600" : "text-amber-600"
         )}>
-          <div className="flex justify-between items-start mb-2">
-            <div className={cn(
-              "p-2 rounded-xl",
-              wa.status === 'Available' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-            )}>
-              <Zap size={16} />
-            </div>
-            <Badge size="xs" variant={wa.adminStatus === 'Blocked' ? 'danger' : wa.adminStatus === 'Deactivated' ? 'default' : 'success'}>
-              {wa.adminStatus || 'Actief'}
-            </Badge>
-          </div>
-          
-          <h5 className="font-bold text-foreground text-sm">Plaats {wa.name}</h5>
-          <p className="text-[10px] text-[var(--muted-foreground)] uppercase font-medium mt-1">
-            {wa.status === 'Available' ? 'Vrij' : 'Bezet'}
-          </p>
-          
-          <div className="mt-3 pt-3 border-t border-border flex gap-2">
-             <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6" 
-                title="Blokkeren/Deblokkeren"
-                onClick={() => actions.updateWaitingArea({ ...wa, adminStatus: wa.adminStatus === 'Blocked' ? 'Active' : 'Blocked' })}
-             >
-                <AlertCircle size={12} />
-             </Button>
-          </div>
-        </Card>
-      ))}
-    </div>
+          {wa.status === 'Available' ? 'Vrij' : 'Bezet'}
+        </span>
+      )
+    },
+    {
+      header: 'Acties',
+      className: 'text-right',
+      accessor: (wa: YmsWaitingArea) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" 
+            title="Blokkeren/Deblokkeren"
+            onClick={() => actions.updateWaitingArea({ ...wa, adminStatus: wa.adminStatus === 'Inactive' ? 'Active' : 'Inactive' })}
+          >
+            {wa.adminStatus === 'Inactive' ? <Unlock size={14} /> : <Lock size={14} />}
+          </Button>
+
+          {isAdmin && (
+            <button 
+              onClick={() => {
+                if (confirm(`Weet je zeker dat je wachtplaats ${wa.name} wilt verwijderen?`)) {
+                  actions.deleteWaitingArea(wa.id, wa.warehouseId);
+                }
+              }}
+              className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+              title="Verwijderen"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <Table 
+      data={sortedWaitingAreas} 
+      columns={columns} 
+      emptyMessage="Geen wachtplaatsen geconfigureerd."
+      borderless
+      rowClassName="bg-card/30"
+    />
   );
 };

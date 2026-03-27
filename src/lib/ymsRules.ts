@@ -65,3 +65,10 @@ export function calculateKPIs(statusTimestamps: Record<string, string>) {
 
   return results;
 }
+
+export function isWithinOpeningHours(timeStr: string, opening: string = '07:00', closing: string = '15:00'): boolean {
+  if (!timeStr) return true;
+  // Handle full ISO strings or just time strings
+  const time = timeStr.includes('T') ? timeStr.split('T')[1].substring(0, 5) : timeStr.substring(0, 5);
+  return time >= opening && time <= closing;
+}

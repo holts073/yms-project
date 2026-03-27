@@ -157,20 +157,30 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
              </button>
            ))}
         </div>
-        <div className="flex items-center gap-1 bg-[var(--muted)] p-1 rounded-xl ml-auto">
+        <div className="flex items-center gap-1 bg-[var(--muted)] p-1 rounded-xl ml-auto border border-border">
            <button 
              onClick={() => setViewMode('grid')}
-             className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-card text-indigo-600 shadow-sm" : "text-[var(--muted-foreground)] hover:text-foreground")}
-             title="Rooster weergave"
+             className={cn(
+               "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-medium",
+               viewMode === 'grid' 
+                 ? "bg-card text-indigo-600 dark:text-white shadow-sm ring-1 ring-border" 
+                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-400"
+             )}
            >
-             <LayoutDashboard size={18} />
+             <LayoutDashboard size={14} />
+             <span>Kaarten</span>
            </button>
            <button 
              onClick={() => setViewMode('list')}
-             className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-card text-indigo-600 shadow-sm" : "text-[var(--muted-foreground)] hover:text-foreground")}
-             title="Lijst weergave"
+             className={cn(
+               "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-medium",
+               viewMode === 'list' 
+                 ? "bg-card text-indigo-600 dark:text-white shadow-sm ring-1 ring-border" 
+                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-400"
+             )}
            >
-             <List size={18} />
+             <List size={14} />
+             <span>Tabel</span>
            </button>
         </div>
       </Card>

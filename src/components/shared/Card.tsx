@@ -5,6 +5,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   variant?: 'default' | 'muted' | 'outline' | 'glass';
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  noPadding?: boolean;
 }
 
 export const Card: React.FC<CardProps> = ({ 

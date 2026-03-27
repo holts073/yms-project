@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDeliveries, getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts, getPalletBalances } from '../../src/db/queries';
+import { getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts, getPalletBalances } from '../../src/db/queries';
 import { getSetting } from '../../src/db/sqlite';
 import nodemailer from 'nodemailer';
 import { generateTransportOrderPDF } from '../services/pdfService';
@@ -16,7 +16,7 @@ export const buildStaticState = (io?: Server, selectedWarehouseId?: string) => {
   const ymsDeliveries = getYmsDeliveries(selectedWarehouseId);
   
   return {
-    deliveries: getAllDeliveries(),
+    deliveries: getAllDeliveries().deliveries,
     addressBook: getAddressBook(),
     palletBalances: getPalletBalances(),
     logs: getLogs(),
@@ -58,18 +58,18 @@ router.get("/deliveries", (req, res) => {
   const sort = req.query.sort as string || 'eta';
   const activeOnly = req.query.activeOnly === 'true';
 
-  const data = getDeliveries(page, limit, search, type, sort, activeOnly);
+  const data = getAllDeliveries(page, limit, search, type, sort, activeOnly);
   res.json(data);
 });
 
 router.get("/deliveries/all", (req, res) => {
-  const data = getAllDeliveries();
+  const data = getAllDeliveries().deliveries;
   res.json(data);
 });
 
 router.post("/deliveries/:id/send-transport-order", async (req, res) => {
   const { id } = req.params;
-  const deliveries = getAllDeliveries();
+  const { deliveries } = getAllDeliveries();
   const delivery = deliveries.find(d => d.id === id);
 
   if (!delivery) {

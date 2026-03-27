@@ -113,6 +113,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             onMailTransport={(d) => setMailDelivery(d)}
             onUpdateStatus={(d, s) => dispatch('UPDATE_DELIVERY', { ...d, status: s })}
             canEdit={canEdit}
+            borderless
           />
         </Card>
       </section>

@@ -113,7 +113,9 @@ db.exec(`
     name TEXT NOT NULL,
     description TEXT,
     address TEXT,
-    hasGate INTEGER DEFAULT 0 -- 0 = No Gate, 1 = Has Gate
+    hasGate INTEGER DEFAULT 0, -- 0 = No Gate, 1 = Has Gate
+    openingTime TEXT DEFAULT '07:00',
+    closingTime TEXT DEFAULT '15:00'
   );
 
   CREATE TABLE IF NOT EXISTS pallet_transactions (
@@ -131,7 +133,11 @@ try {
 } catch (e) {}
 
 try {
-  db.prepare('ALTER TABLE yms_warehouses ADD COLUMN hasGate INTEGER DEFAULT 0').run();
+  db.prepare('ALTER TABLE yms_warehouses ADD COLUMN openingTime TEXT DEFAULT "07:00"').run();
+} catch (e) {}
+
+try {
+  db.prepare('ALTER TABLE yms_warehouses ADD COLUMN closingTime TEXT DEFAULT "15:00"').run();
 } catch (e) {}
 
 db.exec(`
@@ -341,4 +347,12 @@ if (!existingShipmentSettings) {
     ]
   };
   db.prepare("INSERT INTO settings (key, value) VALUES ('shipment_settings', ?)").run(JSON.stringify(initialShipmentSettings));
+} else {
+  // Update existing settings to match new logic (NOA -> 50)
+  const settings = JSON.parse((existingShipmentSettings as any).value);
+  const noaRule = settings.container.find((r: any) => r.name.toLowerCase().includes('noa'));
+  if (noaRule && noaRule.triggers_status_value !== 50) {
+    noaRule.triggers_status_value = 50;
+    db.prepare("UPDATE settings SET value = ? WHERE key = 'shipment_settings'").run(JSON.stringify(settings));
+  }
 }

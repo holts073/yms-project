@@ -68,6 +68,8 @@ const stmts = {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteYmsDelivery: db.prepare('DELETE FROM yms_deliveries WHERE id = ?'),
+  deleteYmsDock: db.prepare('DELETE FROM yms_docks WHERE id = ? AND warehouseId = ?'),
+  deleteYmsWaitingArea: db.prepare('DELETE FROM yms_waiting_areas WHERE id = ? AND warehouseId = ?'),
   getYmsWarehouses: db.prepare('SELECT * FROM yms_warehouses'),
   insertYmsWarehouse: db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address, hasGate) VALUES (?, ?, ?, ?, ?)'),
   saveAddressBookEntry: db.prepare('INSERT OR REPLACE INTO address_book (id, type, name, contact, email, address, pickupAddress, otif, remarks, supplier_number, customer_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
@@ -90,7 +92,7 @@ const stmts = {
   insertPalletTransaction: db.prepare('INSERT OR REPLACE INTO pallet_transactions (id, entityId, entityType, deliveryId, balanceChange, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
 };
 
-export function getDeliveries(page: number = 1, limit: number = 15, search: string = '', typeFilter: string = 'all', sort: string = 'eta', statusLess100: boolean = false) {
+export function getAllDeliveries(page: number = 1, limit: number = 1000, search: string = '', typeFilter: string = 'all', sort: string = 'eta', statusLess100: boolean = false) {
   const offset = (page - 1) * limit;
 
   let query = 'SELECT * FROM deliveries WHERE 1=1';
@@ -173,47 +175,6 @@ export function getDeliveries(page: number = 1, limit: number = 15, search: stri
     totalPages: Math.ceil(totalRow.count / limit),
     currentPage: page
   };
-}
-
-export function getAllDeliveries(): Delivery[] {
-  const rows = db.prepare('SELECT * FROM deliveries').all() as Record<string, any>[];
-  if (rows.length === 0) return [];
-
-  const ids = rows.map(r => r.id);
-  const allDocs = stmts.getDocsBatch(ids).all(...ids) as Record<string, any>[];
-  const allAudit = stmts.getAuditBatch(ids).all(...ids) as Record<string, any>[];
-
-  const docsMap = allDocs.reduce((acc, d) => {
-    if (!acc[d.deliveryId]) acc[d.deliveryId] = [];
-    acc[d.deliveryId].push({ 
-      id: d.id,
-      name: d.name,
-      status: d.status,
-      required: d.required === 1 
-    });
-    return acc;
-  }, {} as Record<string, Document[]>);
-
-  const auditMap = allAudit.reduce((acc, a) => {
-    if (!acc[a.deliveryId]) acc[a.deliveryId] = [];
-    acc[a.deliveryId].push({
-      timestamp: a.timestamp,
-      user: a.user,
-      action: a.action,
-      details: a.details
-    });
-    return acc;
-  }, {} as Record<string, AuditEntry[]>);
-
-  return rows.map(r => ({
-    ...r,
-    type: r.type as 'container' | 'exworks',
-    status: r.status as number,
-    palletExchange: r.palletExchange === 1,
-    statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
-    documents: docsMap[r.id] || [],
-    auditTrail: auditMap[r.id] || []
-  } as Delivery));
 }
 
 export function insertDelivery(d: Delivery) {
@@ -427,6 +388,14 @@ export function saveYmsDelivery(d: YmsDelivery) {
 
 export function deleteYmsDelivery(id: string) {
   stmts.deleteYmsDelivery.run(id);
+}
+
+export function deleteYmsDock(id: number, warehouseId: string) {
+  stmts.deleteYmsDock.run(id, warehouseId);
+}
+
+export function deleteYmsWaitingArea(id: number, warehouseId: string) {
+  stmts.deleteYmsWaitingArea.run(id, warehouseId);
 }
 
 export function getYmsWarehouses(): YmsWarehouse[] {

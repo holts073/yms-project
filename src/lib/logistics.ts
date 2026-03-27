@@ -9,9 +9,10 @@ export interface Milestone {
 export const CONTAINER_MILESTONES: Milestone[] = [
   { key: 'order', label: 'Order', status: 0 },
   { key: 'in_transit', label: 'In Transit', status: 25 },
-  { key: 'customs', label: 'DOUANE', status: 50 },
-  { key: 'on_route', label: 'Onderweg naar Magazijn', status: 75 },
-  { key: 'warehouse', label: 'Warehouse Arrival', status: 100 },
+  { key: 'customs', label: 'DOUANE', status: 40 },
+  { key: 'on_route', label: 'Onderweg naar Magazijn', status: 50 },
+  { key: 'warehouse', label: 'Warehouse Arrival', status: 75 },
+  { key: 'checkin', label: 'Ingecheckt', status: 100 },
 ];
 
 export const EXWORKS_MILESTONES: Milestone[] = [
@@ -46,24 +47,27 @@ export function gatekeeperCheck(delivery: Delivery, targetStatus: number): strin
   // 2. Container: Milestone Specific Checks
   if (delivery.type === 'container') {
     // To move to DOUANE (50)
-    if (targetStatus >= 50 && targetStatus < 75) {
+    // To move to DOUANE (40)
+    if (targetStatus >= 40 && targetStatus < 50) {
       if (!isDocReceived(['swb', 'bill of lading', 'bol', 'b/l'])) {
         return 'Een verplicht vervoersdocument (SWB of Bill of Lading) is vereist om naar de DOUANE stap te gaan.';
       }
     }
 
-    // To move to Onderweg naar Magazijn (75)
-    if (targetStatus >= 75 && targetStatus < 100) {
+    // To move to Onderweg naar Magazijn (50)
+    if (targetStatus >= 50 && targetStatus < 75) {
       // Check for NOA
       if (!isDocReceived(['noa', 'notification of arrival'])) {
         return 'De NOA (Notification of Arrival) is verplicht om de container vrij te geven voor transport naar het magazijn.';
       }
-      
+    }
+
+    // To move to Warehouse Arrival (75)
+    if (targetStatus >= 75 && targetStatus < 100) {
       // NEW: Scan Logic check
-      // We'll check if any document contains "Scan" and is required but not received
       const scanDoc = docs.find(d => d.name.toLowerCase().includes('scan') && d.required);
       if (scanDoc && scanDoc.status !== 'received') {
-        return 'Deze container staat gemarkeerd voor een scan. "Scan Release" documentatie is verplicht voor vertrek naar het magazijn.';
+        return 'Deze container staat gemarkeerd voor een scan. "Scan Release" documentatie is verplicht voor aankomst bij het magazijn.';
       }
     }
   }

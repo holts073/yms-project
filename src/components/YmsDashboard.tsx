@@ -73,14 +73,20 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
   const filteredDeliveries = useMemo(() => {
     return yms.deliveries.filter((d: YmsDelivery) => 
       d.warehouseId === yms.selectedWarehouseId && 
-      (d.direction === directionFilter || view === 'planning') && // Show all directions in planning view to be safe
-      ((d.scheduledTime && d.scheduledTime.startsWith(selectedDate)) || ['GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING'].includes(d.status)) &&
+      (d.direction === directionFilter || view === 'planning') && 
+      // Planning view shows everything for that date. 
+      // Arrivals view (yard) only shows non-terminal statuses OR today's completed items.
+      (view === 'planning' 
+        ? (d.scheduledTime && d.scheduledTime.startsWith(selectedDate))
+        : (['GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING', 'COMPLETED'].includes(d.status) || 
+           (d.status === 'GATE_OUT' && d.statusTimestamps?.GATE_OUT?.startsWith(new Date().toISOString().split('T')[0])))
+      ) &&
       (d.reference?.toLowerCase().includes(searchTerm.toLowerCase()) || d.supplier?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [yms.deliveries, yms.selectedWarehouseId, selectedDate, searchTerm, directionFilter, view]);
 
   const stats = useMemo(() => ({
-    totalDeliveries: filteredDeliveries.length,
+    totalDeliveries: filteredDeliveries.filter(d => !['COMPLETED', 'GATE_OUT'].includes(d.status)).length,
     activeDocks: yms.docks.filter(d => d.status === 'Occupied').length,
     totalDocks: yms.docks.length,
     waitingVehicles: filteredDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId).length,
@@ -140,7 +146,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
            <div className="xl:col-span-2 space-y-6">
               <h3 className="text-2xl font-black text-foreground">Aankomst Wachtrij</h3>
               <ErrorBoundary fallbackTitle="Wachtrij Fout">
-                <YmsQueue />
+                <YmsQueue onAssignClick={setAssigningDelivery} />
               </ErrorBoundary>
            </div>
            <div className="space-y-10">
@@ -218,16 +224,16 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             </ErrorBoundary>
           </section>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-            <div className="xl:col-span-2 space-y-6">
-              <h3 className="text-2xl font-black text-foreground">Actieve Leveringen</h3>
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <div className="xl:col-span-2 space-y-4">
+              <h3 className="text-xl font-black text-foreground tracking-tight">Actieve Leveringen</h3>
               <ErrorBoundary fallbackTitle="Leveringenlijst Fout">
                 <YmsDeliveryList 
                   deliveries={filteredDeliveries}
                   getStatusLabel={(s) => s}
                   onUpdateStatus={handleYmsStatusUpdate}
-                  onAssignDock={(d, id) => deliveryActions.assignDock(d.id, id)}
-                  onAssignWaitingArea={(d, id) => deliveryActions.updateDelivery({ ...d, waitingAreaId: id, status: 'IN_YARD' })}
+                  onAssignDock={(d, id) => deliveryActions.assignDock(d.id, Number(id))}
+                  onAssignWaitingArea={(d, id) => yms.actions.updateDelivery({ ...d, waitingAreaId: Number(id), status: 'IN_YARD' })}
                   onRegisterExpected={(d) => {
                     if (yms.currentWarehouse && !yms.currentWarehouse.hasGate) {
                       setAssigningDelivery(d);
@@ -240,16 +246,19 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
                 />
               </ErrorBoundary>
             </div>
-            <div className="space-y-10">
-              <div className="space-y-6">
-                <h3 className="text-2xl font-black text-foreground">Dock Status</h3>
+            
+            <div className="space-y-4">
+              <h3 className="text-xl font-black text-foreground tracking-tight">Dock Status</h3>
+              <ErrorBoundary fallbackTitle="Dock Fout">
                 <YmsDockGrid />
-              </div>
-              
-              <div className="space-y-6">
-                <h3 className="text-2xl font-black text-foreground">Wachtruimtes</h3>
+              </ErrorBoundary>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl font-black text-foreground tracking-tight">Wachtruimtes</h3>
+              <ErrorBoundary fallbackTitle="Wachtruimte Fout">
                 <YmsWaitingAreaGrid />
-              </div>
+              </ErrorBoundary>
             </div>
           </div>
         </div>
@@ -259,7 +268,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         isOpen={!!editingDelivery}
         onClose={() => setEditingDelivery(null)}
         delivery={editingDelivery}
-        onSave={(d) => { deliveryActions.addDelivery(d); setEditingDelivery(null); }}
+        onSave={(d) => { yms.actions.updateDelivery(d); setEditingDelivery(null); }}
         onUpdateEditing={setEditingDelivery}
         suppliers={state.addressBook?.suppliers || []}
         transporters={state.addressBook?.transporters || []}
@@ -275,7 +284,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         docks={yms.docks}
         waitingAreas={yms.waitingAreas}
         onAssignDock={(id, time) => { deliveryActions.assignDock(assigningDelivery!.id, id, time); setAssigningDelivery(null); }}
-        onAssignWaitingArea={(id) => { deliveryActions.updateDelivery({ ...assigningDelivery!, waitingAreaId: id, status: 'IN_YARD' }); setAssigningDelivery(null); }}
+        onAssignWaitingArea={(id) => { yms.actions.updateDelivery({ ...assigningDelivery!, waitingAreaId: id, status: 'IN_YARD' }); setAssigningDelivery(null); }}
       />
 
       <DragOverlay>

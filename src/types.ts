@@ -107,6 +107,11 @@ export interface AppSettings {
     delivered: string;
     [key: string]: string;
   };
+  shipment_settings?: {
+    default_carrier?: string;
+    notification_email?: string;
+    auto_archive_days?: number;
+  };
 }
 
 export interface CompanySettings {
@@ -160,6 +165,8 @@ export interface YmsWarehouse {
   description?: string;
   address?: string;
   hasGate: boolean;
+  openingTime?: string;
+  closingTime?: string;
 }
 
 export interface YmsDock {

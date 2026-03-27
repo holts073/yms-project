@@ -7,6 +7,9 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLTe
   leftIcon?: React.ReactNode;
   as?: 'input' | 'textarea' | 'select';
   containerClassName?: string;
+  noMargin?: boolean;
+  rows?: number;
+  helpText?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -18,6 +21,7 @@ export const Input: React.FC<InputProps> = ({
   as = 'input',
   children, // for select options
   noMargin, // Destructure to avoid leaking to DOM
+  helpText,
   ...props
 }) => {
   const baseClasses = 'w-full px-6 py-4 bg-[var(--muted)]/50 border border-border/50 rounded-full focus:ring-2 focus:ring-indigo-500 text-foreground font-medium outline-none transition-all placeholder:text-[var(--muted-foreground)]/50';
@@ -66,6 +70,12 @@ export const Input: React.FC<InputProps> = ({
       {error && (
         <p className="text-xs font-bold text-rose-500 ml-4 animate-in fade-in slide-in-from-top-1">
           {error}
+        </p>
+      )}
+
+      {helpText && !error && (
+        <p className="text-xs font-bold text-amber-500 ml-4 animate-in fade-in slide-in-from-top-1">
+          {helpText}
         </p>
       )}
     </div>

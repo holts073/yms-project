@@ -50,7 +50,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: any) => (
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
+        "flex items-center gap-4 px-6 py-2.5 w-full transition-all duration-300 rounded-full",
         active 
           ? "bg-[var(--accent)] text-[var(--accent-foreground)] font-semibold shadow-sm" 
           : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]"
@@ -67,7 +67,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       <button
         onClick={onToggle}
         className={cn(
-          "flex items-center justify-between gap-4 px-6 py-4 w-full transition-all duration-300 rounded-full",
+          "flex items-center justify-between gap-4 px-6 py-2.5 w-full transition-all duration-300 rounded-full",
           active 
             ? "bg-[var(--accent)] text-[var(--accent-foreground)] font-semibold shadow-sm" 
             : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]"
@@ -238,20 +238,20 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans transition-colors duration-300">
       {/* Sidebar */}
       <aside className={cn(
-        "bg-card border-r border-border flex flex-col p-6 transition-all duration-300",
+        "bg-card border-r border-border flex flex-col p-4 transition-all duration-300",
         activeTab === 'yms-planning' ? "w-0 p-0 overflow-hidden border-none hidden md:hidden" : "w-72"
       )}>
-        <div className="flex items-center gap-3 mb-10 px-4">
+        <div className="flex items-center gap-3 mb-6 px-4">
           <img 
             src="/logo.jfif" 
             alt="ILG Logo" 
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600">SCV / YMS v3.6.1</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600 font-black tracking-widest">YMS v3.7.3</span></h1>
         </div>
 
-        <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+        <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
           <SidebarItem 
             icon={LayoutDashboard} 
             label="Dashboard" 

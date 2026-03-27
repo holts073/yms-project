@@ -8,9 +8,10 @@ import { cn } from '../../lib/utils';
 interface MilestoneStepperProps {
   delivery: Delivery;
   className?: string;
+  onUpdateStatus?: (status: number) => void;
 }
 
-export const MilestoneStepper: React.FC<MilestoneStepperProps> = ({ delivery, className }) => {
+export const MilestoneStepper: React.FC<MilestoneStepperProps> = ({ delivery, className, onUpdateStatus }) => {
   const milestones = delivery.type === 'container' ? CONTAINER_MILESTONES : EXWORKS_MILESTONES;
   const currentStatus = delivery.status;
   const anomaly = isAnomaly(delivery);
@@ -27,7 +28,7 @@ export const MilestoneStepper: React.FC<MilestoneStepperProps> = ({ delivery, cl
   };
 
   return (
-    <div className={cn("relative w-full py-4", className)}>
+    <div className={cn("relative w-full py-4 min-w-[140px]", className)}>
       {/* Progress Line */}
       <div className="absolute top-[26px] left-0 w-full h-0.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
         <motion.div 
@@ -47,7 +48,19 @@ export const MilestoneStepper: React.FC<MilestoneStepperProps> = ({ delivery, cl
           const isActive = currentStatus >= m.status;
           
           return (
-            <div key={m.key} className="flex flex-col items-center gap-2 group">
+            <div 
+              key={m.key} 
+              className={cn(
+                "flex flex-col items-center gap-2 group",
+                onUpdateStatus && "cursor-pointer"
+              )}
+              onClick={(e) => {
+                if (onUpdateStatus) {
+                  e.stopPropagation();
+                  onUpdateStatus(m.status);
+                }
+              }}
+            >
               <motion.div 
                 initial={false}
                 animate={{ 
@@ -68,7 +81,7 @@ export const MilestoneStepper: React.FC<MilestoneStepperProps> = ({ delivery, cl
                 )}
               </motion.div>
               
-              <div className="flex flex-col items-center max-w-[80px]">
+              <div className="flex flex-col items-center max-w-[100px] sm:max-w-none">
                 <span className={cn(
                   "text-[10px] font-black uppercase tracking-tighter text-center transition-colors duration-300",
                   isActive ? "text-foreground" : "text-slate-400 dark:text-slate-600"

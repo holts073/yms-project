@@ -1,5 +1,5 @@
-# ILG Foodgroup — Supply Chain# YMS Control Tower v3.6.1
-*Versie: v3.6.1 — Bijgewerkt: 2026-03-26*
+# ILG Foodgroup — Supply Chain# YMS Control Tower v3.7.4
+*Versie: v3.7.4 — Bijgewerkt: 2026-03-27*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat.
 
@@ -49,20 +49,61 @@ UI Action → socket.emit('action') → Server validatie → SQLite write
 
 Zie `ARCHITECTURE.md` voor de volledige blauwdruk.
 
+## 🆕 Changelog v3.7.4 (Layout Consolidation & Density)
+
+### UI & UX (Snelheid & Overzicht)
+- **✅ Table-First Design**: De kaarten in "Actieve Leveringen", "Dock Status" en "Wachtruimtes" zijn vervangen door compacte, professionele tabellen.
+- **✅ Vertical Dock List**: Docks worden nu in een verticale lijst onder elkaar weergegeven, waardoor het volledige yard-overzicht in één oogopslag zichtbaar is zonder horizontaal te scrollen.
+- **✅ Stuck Delivery Fix**: Statusovergangen voor `IN_YARD` en manual progressions zijn toegevoegd, inclusief een directe verwijder-optie voor beheer.
+- **✅ High Density**: De grid-indeling (xl:grid-cols-4) zorgt voor een optimale benutting van moderne breedbeeldmonitoren.
+
+## 🆕 Changelog v3.7.3 (Theme & UI Polish)
+
+### UI & UX (Styling & Consistentie)
+- **✅ Sidebar Optimalisatie**: Sidebar is compacter gemaakt (py-2.5) en spacing tussen items is verfijnd.
+- **✅ Versie Sync**: App versie in de sidebar bijgewerkt naar `v3.7.3`.
+- **✅ Theme-Aware Toggles**: De Tabel/Kaarten schakelaar en andere UI-toggles respecteren nu alle thema's (Light, Dark, ILG, Meledi).
+- **✅ YMS Theme Integration**: Yard Management pagina's maken nu volledig gebruik van CSS variabelen (`--background`, `--muted`), waardoor ze correct meekleuren met de geselecteerde brand-thema's.
+
+## 🆕 Changelog v3.7.2 (UI Flow & Responsiviteit)
+
+### UI & UX (Brede Schermen)
+- **✅ Responsive Milestones**: De MilestoneStepper is nu dynamisch breder op grote schermen, waardoor labels en stappen niet meer krap ("cramped") overkomen.
+- **✅ Verhoogde Breedte in Lijstweergave**: De kolombreedte voor mijlpalen in de tabel-weergave is verdubbeld om overlapping te voorkomen.
+
+### Operational Flow (Logistiek Lifecycle)
+- **✅ Schoon Dashboard**: Geloste leveringen (`COMPLETED` / `GATE_OUT`) worden nu direct uit de "Actieve Leveringen" telling en lijst gefilterd voor een actueel operationeel overzicht.
+- **✅ updatedAt Sync**: Elke statuswijziging ververst nu de `updatedAt` timestamp, waardoor het archief altijd de meest recente en accurate data toont per datum.
+- **✅ Terminale Status**: Verbeterde afhandeling van de volledige lifecycle (van Inbound tot Gate-Out) voor alle vrachttypes.
+
+## 🆕 Changelog v3.7.1 (Optimalisatie & Stabiliteit)
+
+### UI & UX (Dichtheid & Contrast)
+- **✅ Compacte Tabellen**: Padding en lettergroottes in alle overzichten verkleind voor maximale informatiedichtheid zonder verlies van leesbaarheid. High-Density mode is nu de standaard.
+- **✅ Toggle Refinement**: De Grid/Lijst toggle knop in de Pipeline heeft nu een verbeterd contrast en premium 'glassmorphism' effect in Dark Mode.
+- **✅ Verfijnde Container Milestones**: De flow is uitgebreid naar 6 stappen (Order -> In Transit [SWB] -> Douane -> Onderweg [NOA] -> Arrival -> Ingecheckt).
+
+### Operationele Controle
+- **✅ Magazijn Openingstijden**: Configuratie van openingstijden (standaard 07:00 - 15:00) per magazijn.
+- **✅ Timeline Validatie**: Visuele "OUTSIDE HOURS" waarschuwingen op de timeline wanneer zendingen buiten operationele uren worden gepland.
+- **✅ Kritieke Bug Fix**: "Lossen" en "Gereed" acties in de leverlijst hersteld (fix voor de `undefined` validation error).
+
+## 🆕 Changelog v3.7.0 (UX & Infrastructure Polish)
+
+### Gebruikerservaring & UI
+- **✅ Interactieve Milestones**: Handmatige overrides voor container-milestones direct vanuit de tabel.
+- **✅ Auto-Milestone Progression**: Automatische status-sprongen op basis van document-ontvangst (SWB/NOA/NOE/NOI).
+- **✅ Compact Archief**: Geoptimaliseerde weergave in het archief met minder witruimte en krachtigere filters (Type & Leverancier).
+- **✅ Real-time Notificaties**: Visuele toasts voor nieuwe zendingen, aankomsten bij de gate en statuswijzigingen.
+
+### Infrastructuur Beheer
+- **✅ Dock & Wachtplaats Beheer**: Admins kunnen nu docks en wachtplaatsen verwijderen en wijzigen.
+- **✅ Stabiele Sortering**: Docks en wachtruimtes verspringen niet meer bij status-updates dankzij stabiele `useMemo` sortering.
+- **✅ Data Cleanup**: Verwijdering van legacy demo-data voor een schone productie-omgeving.
+
+---
+
 ## 🆕 Changelog v3.6.1 (Stabiliteits Sprint)
-
-### Security & Integriteit
-- **✅ Forced Password Reset**: Gebruikers met default wachtwoorden worden nu gemarkeerd voor een verplichte reset (`requiresReset`).
-- **✅ Bcrypt Resilience**: Verbeterde login-flow die crash-proof is bij incomplete of legacy wachtwoord-hashes.
-- **✅ Deep Cleanup Audit**: Volledige opschoning van test-data en weeskinderen in de database.
-
-### UI & Architectuur
-- **✅ Shell-First UX**: De app-shell laadt onmiddellijk; content verschijnt via skeletons zodra de data gesynchroniseerd is.
-- **✅ Prop-drilling Cleanup**: `YmsDashboard` is vereenvoudigd; alle sub-componenten gebruiken nu de gecentraliseerde `useYmsData` hook.
-- **✅ 100% Test Stability**: E2E suite is nu volledig betrouwbaar en geoptimaliseerd (~1.7s looptijd).
-
-## 🆕 Changelog v3.6.0
-
 ### UI & UX Enhancements
 - **✅ Directe Navigatie**: Dashboard-acties ("Lossen") navigeren nu direct naar de detail-modal van de zending.
 - **✅ Pipeline View Toggle**: Gebruikers kunnen nu schakelen tussen een **Grid** en **Lijst** weergave voor optimaal overzicht.

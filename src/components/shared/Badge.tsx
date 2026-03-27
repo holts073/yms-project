@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils';
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'outline';
   size?: 'xs' | 'sm' | 'md';
+  leftIcon?: React.ReactNode;
 }
 
 export const Badge: React.FC<BadgeProps> = ({

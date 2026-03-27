@@ -16,6 +16,7 @@ interface TableProps<T> {
   emptyIcon?: React.ReactNode;
   rowClassName?: string;
   onRowClick?: (item: T) => void;
+  borderless?: boolean;
 }
 
 export function Table<T extends { id: string | number }>({
@@ -25,11 +26,15 @@ export function Table<T extends { id: string | number }>({
   emptyMessage = "Geen gegevens gevonden.",
   emptyIcon,
   rowClassName,
-  onRowClick
+  onRowClick,
+  borderless = false
 }: TableProps<T>) {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 bg-card rounded-[2.5rem] border border-border shadow-sm">
+      <div className={cn(
+        "flex flex-col items-center justify-center py-20",
+        !borderless && "bg-card rounded-[2.5rem] border border-border shadow-sm"
+      )}>
         <LoadingSpinner size="lg" />
         <p className="mt-4 text-[var(--muted-foreground)] font-medium">Gegevens laden...</p>
       </div>
@@ -37,7 +42,10 @@ export function Table<T extends { id: string | number }>({
   }
 
   return (
-    <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm">
+    <div className={cn(
+      "overflow-hidden",
+      !borderless && "bg-card rounded-[2.5rem] border border-border shadow-sm"
+    )}>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -46,7 +54,7 @@ export function Table<T extends { id: string | number }>({
                 <th 
                   key={idx} 
                   className={cn(
-                    "px-8 py-5 text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider",
+                    "px-6 py-3 text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest",
                     col.className
                   )}
                 >
@@ -70,7 +78,7 @@ export function Table<T extends { id: string | number }>({
                   <td 
                     key={idx} 
                     className={cn(
-                      "px-8 py-6",
+                      "px-6 py-3.5",
                       col.className
                     )}
                   >

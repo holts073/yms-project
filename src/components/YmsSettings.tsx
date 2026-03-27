@@ -159,7 +159,11 @@ export default function YmsSettings() {
         <div className="space-y-6">
           <Input label="Naam" value={editingWarehouse?.name || ''} onChange={e => setEditingWarehouse({...editingWarehouse, name: e.target.value})} />
           <Input label="Adres" value={editingWarehouse?.address || ''} onChange={e => setEditingWarehouse({...editingWarehouse, address: e.target.value})} />
-          <Input as="textarea" label="Beschrijving" rows={3} value={editingWarehouse?.description || ''} onChange={e => setEditingWarehouse({...editingWarehouse, description: e.target.value})} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Openingstijd" type="time" value={editingWarehouse?.openingTime || '07:00'} onChange={e => setEditingWarehouse({...editingWarehouse, openingTime: e.target.value})} />
+            <Input label="Sluitingstijd" type="time" value={editingWarehouse?.closingTime || '15:00'} onChange={e => setEditingWarehouse({...editingWarehouse, closingTime: e.target.value})} />
+          </div>
+          <Input as="textarea" label="Beschrijving" rows={2} value={editingWarehouse?.description || ''} onChange={e => setEditingWarehouse({...editingWarehouse, description: e.target.value})} />
           
           <div className="flex items-center gap-3 p-4 bg-[var(--muted)]/50 rounded-2xl border border-border">
             <input 

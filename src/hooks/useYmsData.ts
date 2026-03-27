@@ -29,7 +29,10 @@ export const useYmsData = () => {
   const updateDock = (dock: any) => dispatch('YMS_SAVE_DOCK', dock);
   
   const updateWaitingArea = (wa: any) => dispatch('YMS_SAVE_WAITINGAREA', wa);
+  const deleteDock = (id: number, warehouseId: string) => dispatch('YMS_DELETE_DOCK', { id, warehouseId });
+  const deleteWaitingArea = (id: number, warehouseId: string) => dispatch('YMS_DELETE_WAITINGAREA', { id, warehouseId });
   const updateDelivery = (d: any) => dispatch('YMS_SAVE_DELIVERY', d);
+  const deleteDelivery = (id: string | number) => dispatch('YMS_DELETE_DELIVERY', id);
 
   const addWarehouse = (w: any) => dispatch('YMS_SAVE_WAREHOUSE', w);
   const updateWarehouse = (w: any) => dispatch('YMS_SAVE_WAREHOUSE', w);
@@ -57,6 +60,9 @@ export const useYmsData = () => {
       addWarehouse,
       updateWarehouse,
       deleteWarehouse,
+      deleteDock,
+      deleteWaitingArea,
+      deleteDelivery,
       addOverride,
       deleteOverride
     }

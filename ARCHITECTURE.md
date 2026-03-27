@@ -1,8 +1,8 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.6.1 — Bijgewerkt: 2026-03-26 door @System-Architect*
+*Versie: v3.7.0 — Bijgewerkt: 2026-03-27 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na v3.6.1 release: Shell-First UI, Forced Password Reset en Bcrypt Resilience.
+> Bijgewerkt na v3.7.0 release: Real-time Notificaties, Compact Archief en Infrastructuur Beheer.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
@@ -47,8 +47,12 @@ Het systeem hanteert een strikte uni-directionele dataflow om race-conditions en
     → [Database: queries.ts — INSERT OR REPLACE]
     → [buildStaticState(warehouseId)]
     → [io.sockets.forEach → s.emit('state_update', ...)]
+    → [Optioneel: io.emit('notification', {message, type})]
     → [SocketContext setState()] → [React re-render]
 ```
+
+**Real-time Notificaties (v3.7.0):**
+De server emit nu een `notification` event voor kritieke acties (`ADD_DELIVERY`, `YMS_REGISTER_ARRIVAL`, automatische milestone-sprongen). De `SocketContext` op de client vangt dit op en toont een `sonner` toast. Dit patroon voorkomt dat de volledige state gescand moet worden op wijzigingen voor visuele feedback.
 
 **Kritische bevindingen & v3.6.0 Feature Architecture:**
 - **Navigation Flow**: Het dashboard gebruikt `onNavigate` met een `initialSelectedId` om direct de detail-modal in de `DeliveryManager` te triggeren via een `useEffect` hook.

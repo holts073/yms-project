@@ -20,28 +20,28 @@ export const YmsStats: React.FC<YmsStatsProps> = ({ stats }) => {
       value: stats.totalDeliveries,
       icon: <Truck size={24} />,
       color: 'text-indigo-600 dark:text-indigo-400',
-      bgColor: 'bg-indigo-50 dark:bg-indigo-900/30',
+      bgColor: 'bg-indigo-500/10',
     },
     {
       label: 'Dock Bezetting',
       value: `${stats.activeDocks}/${stats.totalDocks}`,
       icon: <MapPin size={24} />,
       color: 'text-emerald-600 dark:text-emerald-400',
-      bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
+      bgColor: 'bg-emerald-500/10',
     },
     {
       label: 'In Wachtrij',
       value: stats.waitingVehicles,
       icon: <Zap size={24} />,
       color: 'text-amber-600 dark:text-amber-400',
-      bgColor: 'bg-amber-50 dark:bg-amber-900/30',
+      bgColor: 'bg-amber-500/10',
     },
     {
       label: 'Actieve Alerts',
       value: stats.alertsCount,
       icon: <AlertCircle size={24} />,
       color: 'text-rose-600 dark:text-rose-400',
-      bgColor: 'bg-rose-50 dark:bg-rose-900/30',
+      bgColor: 'bg-rose-500/10',
     },
   ];
 

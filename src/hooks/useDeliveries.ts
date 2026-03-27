@@ -26,7 +26,7 @@ export const useDeliveries = (
   if (search) {
     const s = search.toLowerCase();
     filtered = filtered.filter(d => 
-      d.reference?.toLowerCase().includes(s) || 
+      String(d.reference || '').toLowerCase().includes(s) || 
       state?.addressBook?.suppliers.find(sup => sup.id === d.supplierId)?.name.toLowerCase().includes(s)
     );
   }

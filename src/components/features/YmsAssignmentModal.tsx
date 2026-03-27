@@ -70,7 +70,7 @@ export const YmsAssignmentModal: React.FC<YmsAssignmentModalProps> = ({
             <MapPin size={18} className="text-indigo-600" /> Beschikbare Docks
           </h5>
           <div className="grid grid-cols-2 gap-3">
-            {docks.filter(d => d.status === 'Available' || d.status === 'Scheduled').map(dock => {
+            {docks.filter(d => d.status === 'Available').map(dock => {
               const isCompatible = !delivery.temperature || dock.allowedTemperatures.includes(delivery.temperature);
               return (
                 <button
@@ -120,10 +120,10 @@ export const YmsAssignmentModal: React.FC<YmsAssignmentModalProps> = ({
             <Zap size={18} className="text-amber-600" /> Beschikbare Wachtruimtes
           </h5>
           <div className="grid grid-cols-2 gap-3">
-            {waitingAreas.filter(wa => wa.status === 'Available' && wa.adminStatus !== 'Blocked' && wa.adminStatus !== 'Deactivated').map(wa => (
+            {waitingAreas.filter(wa => wa.status === 'Available' && wa.adminStatus !== 'Inactive').map(wa => (
               <button
                 key={wa.id}
-                onClick={() => onAssignWaitingArea(parseInt(wa.id))}
+                onClick={() => onAssignWaitingArea(wa.id)}
                 className="flex flex-col items-start p-4 bg-card border border-border rounded-2xl hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-left group"
               >
                 <span className="font-bold text-foreground group-hover:text-amber-600">Place {wa.name}</span>

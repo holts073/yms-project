@@ -2,11 +2,11 @@ import { Server, Socket } from "socket.io";
 import { 
   insertDelivery, getAllDeliveries, deleteDelivery, saveUser, getUsers, 
   saveAddressBookEntry, deleteAddressEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
-  getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, saveYmsWarehouse, 
+  getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, deleteYmsDock, deleteYmsWaitingArea, saveYmsWarehouse, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
   saveYmsAlert, deleteYmsAlert, resolveYmsAlert, saveLog, getYmsDocks, getYmsAlerts, savePalletTransaction
 } from '../../src/db/queries';
-import { saveSetting } from '../../src/db/sqlite';
+import { saveSetting, getSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
 import { buildStaticState } from '../routes/deliveries';
 import { YmsDeliveryStatus, YmsDelivery, YmsTemperature } from '../../src/types';
@@ -117,16 +117,47 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
             logEntry.reference = payload.reference;
             broadcastState(io);
+            io.emit('notification', { 
+              message: `Nieuwe vracht aangemaakt: ${payload.reference}`, 
+              type: 'info',
+              timestamp
+            });
             break;
           }
           case "UPDATE_DELIVERY": {
             if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
-            const allDels = getAllDeliveries();
+            const { deliveries: allDels } = getAllDeliveries();
             const existing = allDels.find(d => d.id === payload.id);
             
-            // CRITICAL: Merge payload with existing to prevent NOT NULL constraint failures (e.g. 'type')
-            // during INSERT OR REPLACE when the frontend only sends partial updates (like status).
-            let newPayload = { ...existing, ...payload };
+            let newPayload = { ...existing, ...payload, updatedAt: timestamp };
+
+            // AUTO-MILESTONE LOGIC: Check if received documents trigger a status jump
+            if (newPayload.status < 100) {
+              const settings = getSetting('shipment_settings');
+              if (settings && settings[newPayload.type]) {
+                const docRules = settings[newPayload.type];
+                const triggerDocs = docRules.filter((r: any) => r.triggers_status_jump);
+                
+                let highestJump = 0;
+                newPayload.documents?.forEach((doc: any) => {
+                   const rule = triggerDocs.find((r: any) => r.name.toLowerCase() === doc.name.toLowerCase() || doc.name.toLowerCase().includes(r.name.toLowerCase()));
+                   if (rule && doc.status === 'received') {
+                      highestJump = Math.max(highestJump, rule.triggers_status_value || 0);
+                   }
+                });
+
+                if (highestJump > newPayload.status) {
+                  newPayload.status = highestJump; // Use highestJump here
+                  if (!logEntry.details) logEntry.details = "";
+                  logEntry.details += ` | Auto-milestone jump to ${highestJump} based on received documents.`; // Use highestJump here
+                  io.emit('notification', { 
+                    message: `Status sprong voor ${newPayload.reference}: Milestone bereikt via documenten.`, 
+                    type: 'success',
+                    timestamp
+                  });
+                }
+              }
+            }
             
             if (!existing && (!payload.type || !payload.reference)) {
                throw new Error(`Validatiefout: Kan levering ${payload.id} niet bijwerken. Record bestaat niet en payload is incompleet (mis type/reference).`);
@@ -329,6 +360,11 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.action = "Aankomst Geregistreerd";
             logEntry.details = `Levering ${delivery.reference} is aangemeld bij de gate.`;
             broadcastState(io);
+            io.emit('notification', { 
+              message: `Chauffeur aangemeld bij de gate: ${delivery.reference}`, 
+              type: 'success',
+              timestamp
+            });
             break;
           }
           case "SELECT_WAREHOUSE": {
@@ -359,8 +395,8 @@ export const setupSocketHandlers = (io: Server) => {
           case "DELETE_ADDRESS":
             if (!isAdmin) throw new Error("Alleen admins kunnen adressen verwijderen");
             // Check for dependent deliveries
-            const allDelsForAddr = getAllDeliveries();
-            const hasDependents = allDelsForAddr.some(d => d.supplierId === payload.id || d.transporterId === payload.id);
+            const { deliveries: allDelsForAddr } = getAllDeliveries();
+            const hasDependents = allDelsForAddr.some(d => d.supplierId === payload.id || d.transporterId === payload.id || d.forwarderId === payload.id);
             if (hasDependents) {
               throw new Error("Kan adres niet verwijderen: er zijn nog actieve of gearchiveerde leveringen gekoppeld aan dit adres. Wis eerst de leveringen.");
             }
@@ -372,7 +408,8 @@ export const setupSocketHandlers = (io: Server) => {
 
           case "BULK_UPDATE_DELIVERIES":
             if (!isAdmin) throw new Error("Alleen admins kunnen bulk updates uitvoeren");
-            const allDelList = getAllDeliveries().filter(d => payload.ids.includes(d.id));
+            const { deliveries: allDelListRaw } = getAllDeliveries();
+            const allDelList = allDelListRaw.filter(d => payload.ids.includes(d.id));
             for (const d of allDelList) {
               const updated = { ...d, ...payload.updates, updatedAt: timestamp };
               insertDelivery(updated);
@@ -402,6 +439,8 @@ export const setupSocketHandlers = (io: Server) => {
               const table = type.replace("YMS_DELETE_", "").toLowerCase();
               switch (table) {
                 case "delivery": deleteYmsDelivery(payload); logEntry.details = `YMS Levering ${payload} verwijderd`; break;
+                case "dock": deleteYmsDock(payload.id, payload.warehouseId); logEntry.details = `Dock ${payload.id} verwijderd`; break;
+                case "waitingarea": deleteYmsWaitingArea(payload.id, payload.warehouseId); logEntry.details = `Wachtplaats ${payload.id} verwijderd`; break;
                 case "warehouse": deleteYmsWarehouse(payload); logEntry.details = `Magazijn ${payload} verwijderd`; break;
                 case "dockoverride": deleteYmsDockOverride(payload); logEntry.details = `Dock override ${payload} verwijderd`; break;
                 case "alert": deleteYmsAlert(payload); logEntry.details = `Waarschuwing ${payload} verwijderd`; break;

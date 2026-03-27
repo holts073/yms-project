@@ -82,6 +82,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setState(newState);
     });
 
+    newSocket.on('notification', (data: { message: string, type: 'info' | 'success' | 'warning' | 'error' }) => {
+      const { message, type } = data;
+      if (type === 'success') toast.success(message);
+      else if (type === 'warning') toast.warning(message, { duration: 5000 });
+      else if (type === 'error') toast.error(message, { duration: 6000 });
+      else toast.info(message);
+    });
+
     newSocket.on('error_message', (msg: string) => {
       toast.error(msg, {
         duration: 5000,

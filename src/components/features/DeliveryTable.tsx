@@ -54,11 +54,11 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                   className="w-4 h-4 rounded border-border text-indigo-600"
                 />
               </th>
-              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Referentie / B/L</th>
-              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</th>
-              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">ETA</th>
-              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Milestones</th>
-              <th className="p-4 text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)] text-right">Actie</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Referentie / B/L</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">ETA</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Milestones</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)] text-right">Actie</th>
             </tr>
           </thead>
           <tbody>
@@ -72,7 +72,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                   className="border-b border-border/50 hover:bg-[var(--muted)]/30 transition-colors cursor-pointer group"
                   onClick={() => onOpenModal(d)}
                 >
-                  <td className="p-4" onClick={e => e.stopPropagation()}>
+                  <td className="px-6 py-3" onClick={e => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
                       checked={selectedIds.includes(d.id)} 
@@ -80,7 +80,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                       className="w-4 h-4 rounded border-border text-indigo-600"
                     />
                   </td>
-                  <td className="p-4">
+                  <td className="px-6 py-3">
                     <div className="flex flex-col">
                       <span className="font-bold text-foreground group-hover:text-indigo-600 transition-colors">{d.reference}</span>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -91,18 +91,18 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 text-sm font-bold text-[var(--muted-foreground)]">{s?.name || 'Onbekend'}</td>
-                  <td className="p-4 text-sm font-bold text-foreground">
+                  <td className="px-6 py-3 text-xs font-bold text-[var(--muted-foreground)]">{s?.name || 'Onbekend'}</td>
+                  <td className="px-6 py-3 text-xs font-bold text-foreground">
                     {d.etaWarehouse ? new Date(d.etaWarehouse).toLocaleDateString('nl-NL') : '-'}
                   </td>
-                  <td className="p-4">
-                    <div className="max-w-[150px]">
+                  <td className="px-8 py-3">
+                    <div className="min-w-[180px] lg:min-w-[240px]">
                       <MilestoneStepper delivery={d} />
                     </div>
                   </td>
-                  <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
+                  <td className="px-6 py-3 text-right" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
-                       {missingDocs > 0 && <AlertTriangle size={14} className="text-rose-500" title={`${missingDocs} doc(s) missen`} />}
+                       {missingDocs > 0 && <AlertTriangle size={14} className="text-rose-500" />}
                        {d.notes && (
                          <div className="relative group/note">
                             <FileText size={14} className="text-indigo-500 opacity-60 hover:opacity-100" />
@@ -136,7 +136,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
         return (
           <div 
             key={d.id} 
-            className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all flex flex-col gap-6 cursor-pointer group"
+            className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all flex flex-col gap-4 cursor-pointer group"
             onClick={() => onOpenModal(d)}
           >
             {/* Header */}
@@ -184,7 +184,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-[var(--muted-foreground)] font-semibold">Douane</span>
-                    <Badge variant={d.customsStatus === 'Cleared' ? 'success' : d.customsStatus === 'Inspection' ? 'destructive' : 'warning'} size="xs">
+                    <Badge variant={d.customsStatus === 'Cleared' ? 'success' : d.customsStatus === 'Inspection' ? 'danger' : 'warning'} size="xs">
                        {d.customsStatus || 'Pending'}
                     </Badge>
                   </div>
@@ -211,7 +211,10 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
               )}
               
               <div className="pt-3">
-                 <MilestoneStepper delivery={d} />
+                 <MilestoneStepper 
+                   delivery={d} 
+                   onUpdateStatus={canEdit ? (s) => onUpdateStatus(d, s) : undefined} 
+                 />
               </div>
             </div>
 

@@ -3,9 +3,10 @@ import { motion } from 'motion/react';
 import { Clock, MoreVertical, AlertCircle, Snowflake, Thermometer, Flame } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useYmsData } from '../../hooks/useYmsData';
-import { YmsDock, YmsDelivery, YmsDeliveryStatus } from '../../types';
+import { YmsDock, YmsDelivery, YmsDeliveryStatus, YmsWarehouse } from '../../types';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { isWithinOpeningHours } from '../../lib/ymsRules';
 
 interface YmsTimelineProps {
   deliveries: YmsDelivery[];
@@ -69,6 +70,7 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
                 timelineWidth={timelineWidth}
                 getStatusLabel={getStatusLabel}
                 onSaveDelivery={onSaveDelivery}
+                warehouse={docks.find(d => d.warehouseId === dock.warehouseId) ? (useYmsData().warehouses.find(w => w.id === dock.warehouseId)) : undefined}
             />
           ))}
           
@@ -94,7 +96,8 @@ const YmsDockDroppableRow: React.FC<{
     hourWidth: number,
     timelineWidth: number,
     getStatusLabel: (s: string) => string,
-    onSaveDelivery: (d: YmsDelivery) => void
+    onSaveDelivery: (d: YmsDelivery) => void;
+    warehouse?: YmsWarehouse;
 }> = ({ 
     dock, 
     deliveries, 
@@ -104,7 +107,8 @@ const YmsDockDroppableRow: React.FC<{
     hourWidth, 
     timelineWidth,
     getStatusLabel,
-    onSaveDelivery
+    onSaveDelivery,
+    warehouse
 }) => {
     const { isOver, setNodeRef } = useDroppable({
         id: `dock-${dock.id}`,
@@ -168,6 +172,7 @@ const YmsDockDroppableRow: React.FC<{
                             hourWidth={hourWidth}
                             getStatusLabel={getStatusLabel}
                             onSaveDelivery={onSaveDelivery}
+                            warehouse={warehouse}
                         />
                     );
                 })}
@@ -181,13 +186,15 @@ const TimelineDraggableItem: React.FC<{
     startHour: number, 
     hourWidth: number,
     getStatusLabel: (s: string) => string,
-    onSaveDelivery: (d: YmsDelivery) => void
+    onSaveDelivery: (d: YmsDelivery) => void;
+    warehouse?: YmsWarehouse;
 }> = ({ 
     delivery, 
     startHour, 
     hourWidth,
     getStatusLabel,
-    onSaveDelivery
+    onSaveDelivery,
+    warehouse
 }) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: delivery.id,
@@ -203,6 +210,8 @@ const TimelineDraggableItem: React.FC<{
     const min = date.getMinutes();
     const leftPos = (hour - startHour) * hourWidth + (min / 60) * hourWidth;
     const width = (delivery.estimatedDuration || 90) / 60 * hourWidth;
+
+    const isOutsideHours = !isWithinOpeningHours(delivery.scheduledTime, warehouse?.openingTime, warehouse?.closingTime);
 
     const style = {
         left: leftPos,
@@ -221,7 +230,8 @@ const TimelineDraggableItem: React.FC<{
             className={cn(
                 "absolute top-2 bottom-2 bg-card border border-border rounded-xl shadow-md p-2 cursor-grab active:cursor-grabbing hover:border-indigo-500 transition-all group/card overflow-hidden",
                 isDragging && "shadow-2xl border-indigo-500 scale-105 z-50",
-                isReefer && "border-l-4 border-l-blue-500 shadow-[0_4px_10px_-4px_rgba(59,130,246,0.3)]"
+                isReefer && "border-l-4 border-l-blue-500 shadow-[0_4px_10px_-4px_rgba(59,130,246,0.3)]",
+                isOutsideHours && "border-2 border-dashed border-rose-500/50 bg-rose-50/10"
             )}
         >
             {/* Resize Handle */}
@@ -271,6 +281,12 @@ const TimelineDraggableItem: React.FC<{
                     {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
                 <div className="flex items-center gap-1">
+                  {isOutsideHours && (
+                    <div className="flex items-center gap-0.5 text-[8px] font-black text-rose-600 animate-pulse">
+                        <AlertCircle size={10} />
+                        OUTSIDE HOURS
+                    </div>
+                  )}
                   {isReefer && <Snowflake size={10} className="text-blue-500 animate-pulse" />}
                   {delivery.isLate && <AlertCircle size={10} className="text-rose-500 animate-pulse" />}
                 </div>

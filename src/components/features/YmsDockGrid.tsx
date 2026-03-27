@@ -1,64 +1,97 @@
 import React from 'react';
-import { MapPin, Thermometer } from 'lucide-react';
-import { Card } from '../shared/Card';
+import { MapPin, Thermometer, Trash2, Lock, Unlock } from 'lucide-react';
+import { useSocket } from '../../SocketContext';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
+import { Table } from '../shared/Table';
 import { useYmsData } from '../../hooks/useYmsData';
 import { YmsDock } from '../../types';
 import { cn } from '../../lib/utils';
 
 export const YmsDockGrid: React.FC = () => {
   const { docks, actions } = useYmsData();
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {docks.map((dock) => (
-        <Card key={dock.id} className="hover:shadow-lg hover:shadow-indigo-500/5 group">
-          <div className="flex items-start justify-between mb-4">
-            <div className={cn(
-              "p-3 rounded-2xl transition-colors",
-              dock.status === 'Available' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" :
-              dock.status === 'Occupied' ? "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" :
-              "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400"
-            )}>
-              <MapPin size={24} />
-            </div>
-            <Badge variant={
-              dock.status === 'Available' ? 'success' :
-              dock.status === 'Occupied' ? 'warning' : 'danger'
-            }>
-              {dock.status === 'Available' ? 'Vrij' : dock.status === 'Occupied' ? 'Bezet' : 'Blok'}
+  const { currentUser } = useSocket();
+  const isAdmin = currentUser?.role === 'admin';
+  const sortedDocks = React.useMemo(() => [...docks].sort((a, b) => a.name.localeCompare(b.name)), [docks]);
+  
+  const columns = [
+    {
+      header: 'Status',
+      accessor: (dock: YmsDock) => (
+        <Badge variant={
+          dock.status === 'Available' ? 'success' :
+          dock.status === 'Occupied' ? 'warning' : 'danger'
+        } size="xs">
+          {dock.status === 'Available' ? 'Vrij' : dock.status === 'Occupied' ? 'Bezet' : 'Blok'}
+        </Badge>
+      )
+    },
+    {
+      header: 'Dock Naam',
+      accessor: (dock: YmsDock) => (
+        <div className="flex items-center gap-2">
+          <MapPin size={14} className={cn(
+            dock.status === 'Available' ? "text-emerald-500" :
+            dock.status === 'Occupied' ? "text-amber-500" : "text-rose-500"
+          )} />
+          <span className="font-bold text-foreground">{dock.name}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Kenmerken',
+      accessor: (dock: YmsDock) => (
+        <div className="flex flex-wrap gap-1">
+          {dock.allowedTemperatures.map((temp) => (
+            <Badge key={temp} variant="outline" className="text-[9px] px-1 h-3.5 leading-none">
+               {temp}
             </Badge>
-          </div>
+          ))}
+          {dock.isFastLane && <Badge variant="info" className="text-[9px] px-1 h-3.5 leading-none bg-blue-500/10 text-blue-600 border-none">FL</Badge>}
+          {dock.isOutboundOnly && <Badge variant="info" className="text-[9px] px-1 h-3.5 leading-none bg-purple-500/10 text-purple-600 border-none">OUT</Badge>}
+        </div>
+      )
+    },
+    {
+      header: 'Acties',
+      className: 'text-right',
+      accessor: (dock: YmsDock) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+            onClick={() => actions.updateDock({ ...dock, status: dock.status === 'Blocked' ? 'Available' : 'Blocked' })}
+            title={dock.status === 'Blocked' ? 'Vrijgeven' : 'Blokkeren'}
+          >
+            {dock.status === 'Blocked' ? <Unlock size={14} /> : <Lock size={14} />}
+          </Button>
 
-          <h4 className="text-lg font-bold text-foreground mb-4">{dock.name}</h4>
+          {isAdmin && (
+            <button 
+              onClick={() => {
+                if (confirm(`Weet je zeker dat je ${dock.name} wilt verwijderen?`)) {
+                  actions.deleteDock(dock.id, dock.warehouseId);
+                }
+              }}
+              className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+              title="Verwijderen"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      )
+    }
+  ];
 
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {dock.allowedTemperatures.map((temp) => (
-                <Badge key={temp} variant="outline" size="xs" className="flex items-center gap-1">
-                  <Thermometer size={10} /> {temp}
-                </Badge>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {dock.isFastLane && <Badge variant="info" size="xs">Fast Lane</Badge>}
-              {dock.isOutboundOnly && <Badge variant="info" size="xs">Outbound Only</Badge>}
-            </div>
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
-             <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-xs text-indigo-600 dark:text-indigo-400 p-0 hover:bg-transparent"
-                onClick={() => actions.updateDock({ ...dock, status: dock.status === 'Blocked' ? 'Available' : 'Blocked' })}
-             >
-                {dock.status === 'Blocked' ? 'Deblokkeren' : 'Blokkeren'}
-             </Button>
-          </div>
-        </Card>
-      ))}
-    </div>
+  return (
+    <Table 
+      data={sortedDocks} 
+      columns={columns} 
+      emptyMessage="Geen docks geconfigureerd."
+      borderless
+      rowClassName="bg-card/30"
+    />
   );
 };

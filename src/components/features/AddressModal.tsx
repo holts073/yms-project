@@ -69,7 +69,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({
         <Input 
           as="textarea"
           label="Adres"
-          required
           rows={2}
           value={entry?.address || ''}
           onChange={e => onUpdateEditing({ ...entry, address: e.target.value })}

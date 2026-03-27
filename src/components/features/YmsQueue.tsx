@@ -116,7 +116,7 @@ const QueueItem: React.FC<QueueItemProps> = ({ delivery, onAssignClick, now }) =
         <div className="flex items-center gap-3">
           <div className={cn(
             "p-3 rounded-xl border border-border transition-colors",
-            isReefer ? "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800" : "bg-card text-[var(--muted-foreground)]"
+            isReefer ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" : "bg-[var(--muted)] text-[var(--muted-foreground)]"
           )}>
             {isReefer ? <Snowflake size={20} /> : <Truck size={20} />}
           </div>
@@ -124,7 +124,9 @@ const QueueItem: React.FC<QueueItemProps> = ({ delivery, onAssignClick, now }) =
             <div className="flex items-center gap-2">
               <span className={cn(
                 "text-[8px] font-black px-1.5 py-0.5 rounded-md",
-                delivery.direction === 'OUTBOUND' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                delivery.direction === 'OUTBOUND' 
+                  ? "bg-[var(--muted)] text-amber-700 dark:text-amber-400 border border-amber-200/50" 
+                  : "bg-[var(--muted)] text-emerald-700 dark:text-emerald-400 border border-emerald-200/50"
               )}>
                 {delivery.direction === 'OUTBOUND' ? 'OUTBOUND' : 'INBOUND'}
               </span>

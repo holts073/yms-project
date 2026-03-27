@@ -14,6 +14,7 @@ interface DashboardTableProps {
   onMailTransport: (delivery: Delivery) => void;
   onUpdateStatus: (delivery: Delivery, status: number) => void;
   canEdit: boolean;
+  borderless?: boolean;
 }
 
 export const DashboardTable: React.FC<DashboardTableProps> = ({
@@ -23,7 +24,8 @@ export const DashboardTable: React.FC<DashboardTableProps> = ({
   onYmsRegister,
   onMailTransport,
   onUpdateStatus,
-  canEdit
+  canEdit,
+  borderless = false
 }) => {
   const columns = [
     {
@@ -107,5 +109,5 @@ export const DashboardTable: React.FC<DashboardTableProps> = ({
     }
   ];
 
-  return <Table data={deliveries} columns={columns} onRowClick={(d) => onSelect(d.id)} />;
+  return <Table data={deliveries} columns={columns} onRowClick={(d) => onSelect(d.id)} borderless={borderless} />;
 };

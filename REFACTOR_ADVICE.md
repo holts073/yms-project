@@ -1,31 +1,26 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.6.1 — Bijgewerkt: 2026-03-26*
+*Versie: v3.7.0 — Bijgewerkt: 2026-03-27*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
 
-## ✅ Opgelost in v3.6.0
-- **Partial Update Crash (v3.5.4)** ✅: `socketHandlers.ts` implementeert nu server-side merging van data. Dit voorkomt dat `NOT NULL` constraints (zoals `type`) falen bij updates die niet alle velden bevatten. 
-- **Functional Component 'this' Context** ✅: Refactored `YmsDashboard.tsx` handlers om `this` context issues in functional components te voorkomen.
-- **Pipeline View Consistency** ✅: De nieuwe Grid/List toggle in de pipeline zorgt voor een flexibele UI die past bij de werklast.
-- **Navigation Flow** ✅: Dashboard deep-linking via `initialSelectedId`.
-- **Security Baseline (v3.6.1)** ✅: `requiresReset` flag en Bcrypt resilience geïmplementeerd. De login flow is nu crash-proof.
-- **Prop-drilling (v3.6.1)** ✅: `YmsDashboard` gesaneerd; sub-componenten praten nu direct met `useYmsData`.
-- **Loading UX (v3.6.1)** ✅: Skeleton loaders en Shell-First rendering operationeel.
+## ✅ Opgelost in v3.7.0
+- **Compact Archief & Filters** ✅: Het archief is nu bruikbaar voor grote datasets door minder witruimte en krachtige zoekopties.
+- **Infrastructuur Beheer** ✅: Docks en Wachtplaatsen kunnen nu door Admins worden verwijderd. Dit voorkomt vervuiling van de UI bij wijzigingen in het magazijn.
+- **Real-time Feedback** ✅: Introductie van het `notification` event om gebruikers direct op de hoogte te stellen van kritieke events (zonder full state diffs).
+- **Zwak standaardwachtwoord Flow** ✅: `requiresReset` logic dwingt gebruikers tot een veilig wachtwoord.
 
-## ✅ Opgelost in v3.2.3.3 (Selectie)
-- **FK-Mismatch Database**: De `FOREIGN KEY(dockId, warehouseId) REFERENCES yms_docks` compound-constraint is verwijderd.
-- **Broken Data-TestID in Atoms**: Shared components (`Card`, `Badge`) spreaden nu props naar DOM-elementen.
-- **E2E Testing Foundation**: Playwright framework operationeel.
+## ✅ Opgelost in v3.6.0 / v3.6.1
+- **Partial Update Crash (v3.5.4)** ✅: `socketHandlers.ts` implementeert nu server-side merging van data.
+- **Security Baseline (v3.6.1)** ✅: Bcrypt resilience en forced reset operationeel.
+- **Prop-drilling (v3.6.1)** ✅: `YmsDashboard` gesaneerd via `useYmsData`.
 
 ## 🔴 Prioriteit 1: Beveiliging & Integriteit
-
-- **Zwak standaardwachtwoord**: Nieuwe gebruikers krijgen `welkom123`. Overweeg een forced-reset flow.
 - **Schema Migratie Strategie**: Implementeer een formele migratie-engine (bijv. genummerde SQL-bestanden in `/migrations/`).
 - **Audit Trail Coverage**: Zorg dat alle `UPDATE` acties in de database een overeenkomstige regel in `audit_logs` schrijven (niet alleen via socket-events).
 
 ## 🟡 Prioriteit 1: Code Kwaliteit & Resilience
-- **Null-Safety bij Async Sync**: Nu we "Shell-First" renderen, moeten alle nieuwe componenten standaard optional chaining (`?.`) gebruiken bij property-access op de globale state.
-- **Ongeoptimaliseerde real-time sync**: Elk `DELIVERY_UPDATED` event triggert een volledige herlaad voor alle clients. Overweeg delta-updates (Phase 3.7).
+- **Delta-Updates**: Elk `DELIVERY_UPDATED` event triggert een volledige herlaad voor alle clients. Implementeer delta-updates voor betere schaalbaarheid bij >100 actieve zendingen.
+- **CSS Token Audit**: Enkele componenten gebruiken nog hardcoded kleuren in plaats van CSS variabelen (`--muted`, etc.).
 
 ## 🟢 Prioriteit 2: Operationele Configuratie
 - **SMTP Setup**: Geef een duidelijke foutmelding in de UI als credentials ontbreken.
