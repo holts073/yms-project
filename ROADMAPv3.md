@@ -58,6 +58,24 @@
 
 ---
 
+## 🔵 Geplande Sprint: v3.10.0 — Role-Based Access Control (RBAC) & Security Hardening
+*Verantwoordelijke agent: @System-Architect, @Data-Specialist, @UX-Visual-Director*
+
+> [!IMPORTANT]
+> Dit is een "breaking" fundamentele aanpassing. Elke actie in het systeem moet vanaf nu gevalideerd worden tegen de rechten van de gebruiker.
+
+### Scope
+- [ ] **Granular Permissions Matrix**: Toewijzen van permissies (bijv. `CAN_DELETE`, `CAN_EDIT_FINANCE`) aan rollen.
+- [ ] **RBAC Middleware**: Backend validatie op elk socket-event en API request.
+- [ ] **Protected UI**: Componenten die knoppen en menu-opties verbergen op basis van de ingelogde gebruiker.
+- [ ] **Enforced Warehouse Isolation**: Gebruikers beperken tot één of meerdere specifieke `warehouseId`'s.
+- [ ] **Audit Trail 2.0**: Logging van *wie* (welke rol) een actie uitvoert voor volledige traceerbaarheid.
+
+### Design Rule
+- Geen "hardcoded" admin-checks. Gebruik een permissie-gebaseerd systeem (bijv. `if (user.hasPermission('EDIT_SLOTS'))`).
+
+---
+
 ## 🔮 Langetermijn: v4.0.0 — Advanced Analytics & Forecasting
 *Verantwoordelijke agent: Alle agents*
 

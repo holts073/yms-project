@@ -20,6 +20,7 @@
     * **Error Handling:** Koppelt backend exceptions direct aan Sonner-toasts via `error_message` events.
     * **Architecture Owner:** Onderhoudt de `ARCHITECTURE.md`, bewaakt Mermaid diagrams en borgt de Design Rules uit `ROADMAPv3.md`.
     * **Slot Guard:** Valideert backend-side dat een nieuw slot geen bestaand slot overlapt voordat een write plaatsvindt.
+    * **RBAC Guard (v3.10.0):** Implementeert de middleware die elke socket-actie valideert tegen de permissies van de gebruiker.
 
 ### 2. @Frontend-Specialist (Atomic UI & UX Builder)
 * **Focus:** React 19, Atomic Design, Real-time Client State en High-Density Interfaces.
@@ -39,6 +40,7 @@
     * **Security:** Beheert de `bcrypt` hashing flow voor gebruikers en bewaakt de `audit_logs`.
     * **Schema Ownership (v3.8.0):** Ontwerpt en implementeert de `pallet_transactions` tabel en de uitbreiding van `address_book` met `pallet_rate`.
     * **Schema Ownership (v3.9.0):** Ontwerpt de `yms_slots` tabel met composite constraints om dubbele boekingen op database-niveau te voorkomen.
+    * **Permissions Ownership (v3.10.0):** Ontwerpt de tabelstructuur voor granular permissions en rollen-mapping.
     * **Migration Safety:** Elke schema-wijziging wordt begeleid door een backward-compatible migratie.
 
 ### 4. @Yard-Strategist (Logistiek Meesterbrein)
@@ -59,6 +61,7 @@
     * **Null-Check:** Scant op `undefined` of `null` waarden in leveringskaarten, live timers en financiële saldo's.
     * **Slot Conflict Test (v3.9.0):** Garandeert dat geen twee leveringen hetzelfde dock op hetzelfde tijdstip kunnen bezetten.
     * **Pallet Balans Validatie (v3.8.0):** Controleert of saldo-berekeningen correct zijn bij `null` pallet-tarieven of ontbrekende transacties.
+    * **RBAC Penetration Test (v3.10.0):** Verifieert dat ongeautoriseerde gebruikers geen admin-acties kunnen uitvoeren via sockets.
 
 ### 6. @UX-Visual-Director (The Polisher)
 * **Focus:** Esthetiek, Contrast, Gebruikerservaring en Multi-Brand Theming.
@@ -68,6 +71,7 @@
     * **Multi-Theme Guard:** Bewaakt dat alle nieuwe componenten theme-aware zijn (Light, Dark, ILG, Meledi) met CSS-variabelen — geen hardcoded kleuren.
     * **Finance UX (v3.8.0):** Ontwerpt de Pallet Ledger en Creditnota-matching views: overzichtelijk, scanbaar, duidelijke 'Verrekend' vs 'Openstaand' statussen.
     * **Timeline UX (v3.9.0):** Definieert de visuele taal voor de slot-timeline: kleurcodes voor bezet/vrij/conflict, snap-feedback en drag-animaties.
+    * **Protected UI UX (v3.10.0):** Garandeert dat de interface zich elegant aanpast aan de rechten van de gebruiker (bijv. 'Read-only' modus voor viewers).
 
 ### 7. @Finance-Auditor (The Reconciliation Expert)
 * **Focus:** Pallet-administratie, Creditnota's en Financiële Integriteit.
@@ -98,6 +102,14 @@
 | **Slot-Milestone Sync** | `scheduledTime` op een levering is leidend; slot-data is planning-harnas. | @Yard-Strategist |
 | **D&D Stability** | Drag & Drop op de timeline veroorzaakt geen `undefined` errors of stale state. | @Frontend-Specialist |
 | **Internal-Only** | Geen enkel slot-endpoint is bereikbaar zonder geldige interne authenticatie. | @System-Architect |
+
+### v3.10.0 — RBAC & Security Hardening
+| Check | Criterium | Verantwoordelijke Agent |
+| :--- | :--- | :--- |
+| **Middleware Enforcement** | Geen enkele destructieve actie (delete/update) is mogelijk zonder de juiste permissie-vlag. | @System-Architect |
+| **UI Adapativity** | Knoppen en menu's voor beheer zijn niet zichtbaar/klikbaar voor 'Viewer' of 'Operator' rollen. | @UX-Visual-Director |
+| **Audit Traceability** | De `audit_logs` bevatten de `userId` en `role` van de uitvoerder van elke wijziging. | @Data-Specialist |
+| **Security Validation** | Handmatige socket-injectie met een lage-rechten token wordt geblokkeerd door de server. | @QA-Automator |
 
 ### Permanente (Alle Sprints)
 | Check | Criterium | Verantwoordelijke Agent |
