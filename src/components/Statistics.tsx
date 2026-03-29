@@ -19,13 +19,14 @@ const Statistics = () => {
   const yms = useYmsData();
 
   const statsData = useMemo(() => {
-    const completed = deliveries.filter(d => d.status === 100 || d.status === 'COMPLETED' || d.status === 'GATE_OUT');
-    const active = deliveries.filter(d => d.status < 100 && d.status !== 'COMPLETED' && d.status !== 'GATE_OUT');
+    const completed = deliveries.filter(d => d.status === 100);
+    const active = deliveries.filter(d => d.status < 100);
     
     // OTIF
     const onTime = completed.filter(d => {
-      if (!d.scheduledTime) return false;
-      return new Date(d.updatedAt) <= new Date(d.scheduledTime);
+      const targetTime = d.eta || d.etaWarehouse;
+      if (!targetTime) return false;
+      return new Date(d.updatedAt) <= new Date(targetTime);
     });
     const otif = completed.length > 0 ? Math.round((onTime.length / completed.length) * 100) : 0;
 

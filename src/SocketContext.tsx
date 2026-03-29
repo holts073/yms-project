@@ -82,6 +82,47 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setState(newState);
     });
 
+    newSocket.on('state_patch', (patch: { type: string, payload: any }) => {
+      setState(prevState => {
+        if (!prevState) return null;
+        
+        const newState = { ...prevState };
+        switch (patch.type) {
+          case 'DELIVERY_ADDED':
+            // Prevent duplicates if already present
+            if (newState.deliveries.some(d => d.id === patch.payload.id)) return prevState;
+            newState.deliveries = [patch.payload, ...newState.deliveries];
+            break;
+          case 'DELIVERY_UPDATED':
+            newState.deliveries = newState.deliveries.map(d => 
+              d.id === patch.payload.id ? { ...d, ...patch.payload } : d
+            );
+            break;
+          case 'YMS_DELIVERY_UPDATED':
+            newState.yms.deliveries = newState.yms.deliveries.map(d => 
+              d.id === patch.payload.id ? { ...d, ...patch.payload } : d
+            );
+            break;
+          case 'DELIVERY_DELETED':
+            newState.deliveries = newState.deliveries.filter(d => d.id !== patch.payload);
+            newState.yms.deliveries = newState.yms.deliveries.filter(d => d.mainDeliveryId !== patch.payload);
+            break;
+          case 'ADDRESS_UPDATED':
+            const entry = patch.payload;
+            const category = entry.type === 'supplier' ? 'suppliers' : (entry.type === 'transporter' ? 'transporters' : 'customers');
+            newState.addressBook[category] = newState.addressBook[category].map(a => 
+              a.id === entry.id ? entry : a
+            );
+            // If new, push it (though ADDRESS_ADDED could be separate, let's merge)
+            if (!newState.addressBook[category].some(a => a.id === entry.id)) {
+              newState.addressBook[category].push(entry);
+            }
+            break;
+        }
+        return newState;
+      });
+    });
+
     newSocket.on('notification', (data: { message: string, type: 'info' | 'success' | 'warning' | 'error' }) => {
       const { message, type } = data;
       if (type === 'success') toast.success(message);

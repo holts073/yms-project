@@ -195,12 +195,11 @@ export function insertDelivery(d: Delivery) {
       }
     }
 
-    // Audit logs
-    stmts.deleteAudit.run(d.id);
-    if (d.auditTrail) {
-      for (const a of d.auditTrail) {
-        stmts.insertAudit.run(Math.random().toString(36).substr(2, 9), d.id, a.timestamp, a.user, a.action, a.details);
-      }
+    // Audit logs - Append instead of replace to preserve history
+    if (d.auditTrail && d.auditTrail.length > 0) {
+      // Only insert the NEW entries (last one usually)
+      const lastAudit = d.auditTrail[d.auditTrail.length - 1];
+      stmts.insertAudit.run(Math.random().toString(36).substr(2, 9), d.id, lastAudit.timestamp, lastAudit.user, lastAudit.action, lastAudit.details);
     }
   })();
 }
@@ -284,6 +283,10 @@ export function saveLog(log: Omit<LogEntry, 'id'>) {
 }
 
 export const addLog = (log: Omit<LogEntry, 'id'>) => saveLog(log);
+
+export function addAuditEntry(deliveryId: string, user: string, action: string, details: string) {
+  stmts.insertAudit.run(Math.random().toString(36).substr(2, 9), deliveryId, new Date().toISOString(), user, action, details);
+}
 
 // YMS Queries
 export function getYmsDocks(warehouseId?: string, includeAll: boolean = false): (YmsDock & { isOverridden: boolean })[] {

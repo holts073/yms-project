@@ -4,7 +4,7 @@ import {
   saveAddressBookEntry, deleteAddressEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
   getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, deleteYmsDock, deleteYmsWaitingArea, saveYmsWarehouse, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
-  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, saveLog, getYmsDocks, getYmsAlerts, savePalletTransaction
+  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, saveLog, getYmsDocks, getYmsAlerts, savePalletTransaction, addAuditEntry
 } from '../../src/db/queries';
 import { saveSetting, getSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
@@ -23,6 +23,10 @@ const broadcastState = (io: any) => {
   io.sockets.sockets.forEach((s: any) => {
     s.emit("state_update", buildStaticState(io, s.data.selectedWarehouseId));
   });
+};
+
+const broadcastDelta = (io: any, type: string, payload: any) => {
+  io.emit("state_patch", { type, payload });
 };
 
 export const setupSocketHandlers = (io: Server) => {
@@ -113,10 +117,13 @@ export const setupSocketHandlers = (io: Server) => {
             };
             
             insertDelivery(newDelivery);
+            addAuditEntry(newDelivery.id, user.name, "Aangemaakt", `Levering ${payload.reference} aangemaakt via system dashboard`);
+            
             logEntry.action = "Created Delivery";
             logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
             logEntry.reference = payload.reference;
-            broadcastState(io);
+            
+            broadcastDelta(io, 'DELIVERY_ADDED', newDelivery);
             io.emit('notification', { 
               message: `Nieuwe vracht aangemaakt: ${payload.reference}`, 
               type: 'info',
@@ -207,8 +214,10 @@ export const setupSocketHandlers = (io: Server) => {
             }
 
             insertDelivery(newPayload);
+            addAuditEntry(newPayload.id, user.name, logEntry.action || "Bijgewerkt", logEntry.details || `Details bijgewerkt voor ${newPayload.reference}`);
+            
             logEntry.reference = newPayload.reference;
-            broadcastState(io);
+            broadcastDelta(io, 'DELIVERY_UPDATED', newPayload);
 
             // Auto-YMS Creation Logic
             const isAtLastStep = (newPayload.type === 'container' && newPayload.status >= 75 && newPayload.status < 100) ||
@@ -283,8 +292,9 @@ export const setupSocketHandlers = (io: Server) => {
             }
             saveYmsDelivery(current);
             syncDockStatus(current.id, current.dockId || null, current.status, current.warehouseId);
+            addAuditEntry(current.mainDeliveryId || current.id, user.name, "YMS Status Update", `YMS Status gewijzigd naar ${current.status}`);
             
-            broadcastState(io);
+            broadcastDelta(io, 'YMS_DELIVERY_UPDATED', current);
             break;
           }
           
@@ -333,10 +343,9 @@ export const setupSocketHandlers = (io: Server) => {
             saveYmsDelivery(updated);
             syncDockStatus(updated.id, updated.dockId, updated.status, updated.warehouseId);
             
-            logEntry.action = `Planning: Dock ${dockId} Toegewezen`;
-            logEntry.details = `Levering ${delivery.reference} toegewezen aan Dock ${dockId} (Status: ${newStatus})`;
+            addAuditEntry(updated.mainDeliveryId || updated.id, user.name, "Dock Toegewezen", `Levering ${delivery.reference} toegewezen aan Dock ${dockId}`);
             
-            broadcastState(io);
+            broadcastDelta(io, 'YMS_DELIVERY_UPDATED', updated);
             break;
           }
 
@@ -359,7 +368,7 @@ export const setupSocketHandlers = (io: Server) => {
             saveYmsDelivery(updated);
             logEntry.action = "Aankomst Geregistreerd";
             logEntry.details = `Levering ${delivery.reference} is aangemeld bij de gate.`;
-            broadcastState(io);
+            broadcastDelta(io, 'YMS_DELIVERY_UPDATED', updated);
             io.emit('notification', { 
               message: `Chauffeur aangemeld bij de gate: ${delivery.reference}`, 
               type: 'success',
@@ -380,7 +389,7 @@ export const setupSocketHandlers = (io: Server) => {
             deleteDelivery(payload);
             logEntry.action = "Deleted Delivery";
             logEntry.details = `Removed delivery ID: ${payload}`;
-            broadcastState(io);
+            broadcastDelta(io, 'DELIVERY_DELETED', payload);
             break;
 
           case "ADD_ADDRESS":
@@ -389,7 +398,7 @@ export const setupSocketHandlers = (io: Server) => {
             saveAddressBookEntry(payload.entry);
             logEntry.action = type === "ADD_ADDRESS" ? "Toegevoegd Adres" : "Gewijzigd Adres";
             logEntry.details = `Adres ${payload.entry.name} succesvol ${type === "ADD_ADDRESS" ? "toegevoegd" : "gewijzigd"} in ${payload.category}.`;
-            broadcastState(io);
+            broadcastDelta(io, 'ADDRESS_UPDATED', payload.entry);
             break;
 
           case "DELETE_ADDRESS":
