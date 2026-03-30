@@ -41,11 +41,13 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
         <div className="grid grid-cols-2 gap-6">
           <Input 
             label="Referentie"
+            data-testid="input-reference"
             value={delivery?.reference || ''}
             onChange={(e) => onUpdateEditing({...delivery, reference: e.target.value})}
           />
           <Input 
             label="Kenteken"
+            data-testid="input-license"
             className="uppercase tracking-wider"
             value={delivery?.licensePlate || ''}
             onChange={(e) => onUpdateEditing({...delivery, licensePlate: e.target.value})}
@@ -77,6 +79,7 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
           <Input 
             label="Tijd (HH:mm)"
             type="time"
+            data-testid="input-scheduled-time"
             value={delivery?.scheduledTime ? new Date(delivery.scheduledTime).toTimeString().substr(0, 5) : ''}
             onChange={(e) => {
               const [h, m] = e.target.value.split(':');
@@ -110,6 +113,7 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
           <Input 
             type="number"
             label="Pallets"
+            data-testid="input-pallets"
             value={delivery?.palletCount || 0}
             onChange={(e) => onUpdateEditing({...delivery, palletCount: parseInt(e.target.value) || 0})}
           />
@@ -138,7 +142,7 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
 
         <div className="flex gap-4 pt-4">
           <Button variant="secondary" className="flex-1" onClick={onClose}>Annuleren</Button>
-          <Button className="flex-1" onClick={() => onSave(delivery!)}>Opslaan</Button>
+          <Button data-testid="btn-save-delivery" className="flex-1" onClick={() => onSave(delivery!)}>Opslaan</Button>
         </div>
       </div>
     </Modal>

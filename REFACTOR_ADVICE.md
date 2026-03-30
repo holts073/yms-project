@@ -1,23 +1,24 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.7.4 — Bijgewerkt: 2026-03-27*
+*Versie: v3.7.5 — Bijgewerkt: 2026-03-29 door @System-Architect*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
 
-## ✅ Opgelost in v3.7.0
-- **Compact Archief & Filters** ✅: Het archief is nu bruikbaar voor grote datasets door minder witruimte en krachtige zoekopties.
-- **Infrastructuur Beheer** ✅: Docks en Wachtplaatsen kunnen nu door Admins worden verwijderd. Dit voorkomt vervuiling van de UI bij wijzigingen in het magazijn.
-- **Real-time Feedback** ✅: Introductie van het `notification` event om gebruikers direct op de hoogte te stellen van kritieke events (zonder full state diffs).
-- **Zwak standaardwachtwoord Flow** ✅: `requiresReset` logic dwingt gebruikers tot een veilig wachtwoord.
-- **High-Density Table Design (v3.7.4)** ✅: Alle core YMS lijsten (Leveringen, Docks, Wachtruimtes) zijn omgezet van kaarten naar compacte tabellen voor maximaal overzicht.
-- **Full Theme Synchronization (v3.7.4)** ✅: Hardcoded CSS tokens zijn gesaneerd; de UI is nu 100% theme-aware voor alle brand-thema's (ILG, Meledi).
-- **Audit Trail Coverage & Consistency (Refactor)** ✅: Gecentraliseerde auditing in de DB-laag; elke `UPDATE` wordt nu consistent vastgelegd.
-- **Delta-Updates (Performance Refactor)** ✅: Staat pakt nu alleen wijzigingen op (`state_patch`) in plaats van volledige state-diffs, wat de schaalbaarheid verbetert.
+## ✅ Opgelost in v3.7.5 (Huidige Focus)
+- **Massive Type-Safety Fix** ✅: 18 kritieke type-fouten in `StatCard`, `Statistics` en `DashboardKPIs` zijn opgelost. Het project is nu 100% lint-free (`tsc --noEmit`).
+- **StatCard Component Refactor** ✅: Ondersteunt nu `variant`, `active`, `onClick`, `description` en `compact` props voor betere dashboard-integratie.
+- **Legacy Cleanup** ✅: Verwijdering van `inspect.ts` en `inspect2.ts` om de IDE "Problems" lijst schoon te houden.
 
-## ✅ Opgelost in v3.6.0 / v3.6.1
-- **Partial Update Crash (v3.5.4)** ✅: `socketHandlers.ts` implementeert nu server-side merging van data.
-- **Security Baseline (v3.6.1)** ✅: Bcrypt resilience en forced reset operationeel.
-- **Prop-drilling (v3.6.1)** ✅: `YmsDashboard` gesaneerd via `useYmsData`.
+## ✅ Opgelost in v3.7.0 - v3.7.4
+- **Table-First Design** ✅: Alle core YMS lijsten zijn omgezet naar compacte tabellen voor maximaal overzicht.
+- **Compact Archief & Filters** ✅: Bruikbaar voor grote datasets door minder witruimte en krachtige zoekopties.
+- **Infrastructuur Beheer** ✅: Docks en Wachtplaatsen kunnen door Admins worden verwijderd.
+- **Full Theme Synchronization** ✅: 100% theme-aware voor alle brand-thema's (ILG, Meledi).
+- **Delta-Updates (Performance Refactor)** ✅: Staat pakt nu alleen wijzigingen op (`state_patch`) in plaats van volledige state-diffs.
 
-## 🟡 Prioriteit 2: Operationele Configuratie
-- **SMTP Setup**: Geef een duidelijke foutmelding in de UI als credentials ontbreken.
+## 🟡 Prioriteit 1: Systeem Integriteit
+- **RBAC Enforcement (v3.10.0)**: Middleware implementeren die elke destructieve actie valideert tegen de permissies van de gebruiker.
+- **SMTP Setup**: Geef een duidelijke foutmelding in de UI als credentials ontbreken voor de transport-mail.
+
+## 🟡 Prioriteit 2: Optimalisatie
 - **Asset Optimalisatie**: `logo.jfif` en andere afbeeldingen omzetten naar `.webp`.
+- **E2E Opschaling**: Uitbreiden van Playwright tests naar alle kritieke flows (Archive, Settings).

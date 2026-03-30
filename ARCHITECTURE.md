@@ -1,25 +1,67 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.7.4 — Bijgewerkt: 2026-03-27 door @System-Architect*
+*Versie: v3.7.4 — Bijgewerkt: 2026-03-29 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na v3.7.4 release: High-Density Table layouts, Multi-Theme Synchronization en Verbeterde Yard Flow.
+> Bijgewerkt na v3.7.4 release: High-Density Table layouts, Multi-Theme Synchronization en volledige Type-Safety audit.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
-## 1. Atomic Design & Mappenstructuur
+## 1. Mappenstructuur (Folder Tree)
 
-We hanteren een **Atomic Design** methodiek voor maximale herbruikbaarheid en logische isolatie:
+We hanteren een strikte scheiding tussen de frontend (React) en backend (Node.js/Socket.io). De frontend volgt de **Atomic Design** principes.
 
-| Laag | Pad | Inhoud |
-|---|---|---|
-| Atoms & Molecules | `/src/components/shared` | Button, Modal, Badge, Card — volledig context-vrij |
-| Organisms | `/src/components/features` | YmsTimeline, YmsDockGrid (Table), YmsDeliveryList (Table) — bevatten bedrijfslogica |
-| Templates & Pages | `/src/components/` | YmsDashboard (4rd-cols), Settings — brengen features samen |
-| Hooks | `/src/hooks/` | `useYmsData`, `useDeliveries` — isoleren state-access |
+```text
+.
+├── src/                    # Frontend (React 19)
+│   ├── components/
+│   │   ├── shared/         # Atoms & Molecules: Button, Modal, Badge, Card (Context-vrij)
+│   │   ├── features/       # Organisms: Timeline, DockGrid, DeliveryTable (Business Logic)
+│   │   ├── ui/             # UI-specifieke hulpcomponenten
+│   │   └── ...             # Pagina's: YmsDashboard, Statistics, Archive, Settings
+│   ├── hooks/              # Custom Hooks: useYmsData, useDeliveries, useSocket
+│   ├── lib/                # Utilities: logistics.ts (validatie), utils.ts (styling)
+│   ├── db/                 # Client-side DB toegang (queries.ts, sqlite.ts)
+│   ├── types.ts            # Centrale TypeScript-interfaces (Single Source of Truth)
+│   └── main.tsx            # React Entry point
+├── server/                 # Backend (Node.js, Express, Socket.io)
+│   ├── routes/             # REST API Router (authenticatie, bulk-acties)
+│   ├── sockets/            # socketHandlers.ts (Centrale Action-Router)
+│   ├── services/           # Services: pdfService, queueService (Logistieke algoritmes)
+│   ├── db/                 # Database: Migraties, Migrator-logic
+│   ├── middleware/         # Auth Middleware (JWT validatie)
+│   └── scripts/            # Database Health Checks en Fix-scripts
+├── database.sqlite         # Productie-data (SQLite)
+├── server.ts               # Backend Entry point (Express + Socket.io Server)
+└── package.json            # Afhankelijkheden en build-scripts
+```
 
-## 2. Logistieke State Machine
+## 2. Systeem Blauwdruk (Dataflow)
 
-De levenscyclus van een vracht is strikt gedefinieerd om data-inconsistenties te voorkomen:
+Het systeem werkt op basis van een real-time, event-gedreven architectuur.
+
+```mermaid
+graph TD
+    subgraph "Frontend (Client)"
+        UI["React UI (Action)"]
+        SC["SocketContext (State)"]
+    end
+
+    subgraph "Backend (Server)"
+        SH["SocketHandlers (Router)"]
+        DB["Better-SQLite3 (WAL)"]
+        BS["buildStaticState (State Builder)"]
+    end
+
+    UI -- "socket.emit('action')" --> SH
+    SH -- "SQL Query" --> DB
+    DB -- "Trigger Update" --> BS
+    BS -- "socket.emit('state_update')" --> SC
+    SC -- "Re-render" --> UI
+```
+
+## 3. Logistieke Levenscyclus (State Machine)
+
+De levenscyclus van een vracht is cruciaal voor de **Smart Call Logic** en dashboard-filtering:
 
 ```mermaid
 stateDiagram-v2
@@ -31,36 +73,24 @@ stateDiagram-v2
     GATE_IN --> DOCKED : Direct (magazijn zonder gate)
     DOCKED --> UNLOADING : Lossen gestart
     DOCKED --> LOADING : Laden gestart
-    UNLOADING --> COMPLETED : Gereed
-    LOADING --> COMPLETED : Gereed
-    COMPLETED --> [*] : Gearchiveerd
+    UNLOADING --> COMPLETED : Gereed / Te verrekenen
+    LOADING --> COMPLETED : Gereed / Te verrekenen
+    COMPLETED --> GATE_OUT : Terrein verlaten
+    GATE_OUT --> [*] : Gearchiveerd
 ```
 
-## 3. Uni-directionele Dataflow (Kern-Architectuur)
+## 4. Uni-directionele Dataflow (Kern-Architectuur)
 
-Het systeem hanteert een strikte uni-directionele dataflow om race-conditions en stale state te vermijden:
+Het systeem hanteert een strikte flow om race-conditions te vermijden:
 
-```
-[Gebruiker] → [UI Action] → [SocketContext.dispatch()]
-    → [socket.emit('action', {type, payload})]
-    → [Server: socketHandlers.ts — try/catch per case]
-    → [Database: queries.ts — INSERT OR REPLACE]
-    → [buildStaticState(warehouseId)]
-    → [io.sockets.forEach → s.emit('state_update', ...)]
-    → [Optioneel: io.emit('notification', {message, type})]
-    → [SocketContext setState()] → [React re-render]
-```
+1.  **UI Action**: Gebruiker klikt op een knop (bijv. "Lossen").
+2.  **Socket Emit**: De client stuurt een event naar de server met de API-token.
+3.  **Server Validatie**: De server valideert de rechten en de huidige status.
+4.  **Database Write**: De wijziging wordt persistent gemaakt in SQLite (WAL mode).
+5.  **State Broadcast**: De server bouwt de *nieuwe statische state* op en verstuurt deze naar alle aangesloten clients in dat magazijn.
+6.  **React Sync**: De client update zijn lokale cache en triggert een re-render.
 
-**Real-time Notificaties (v3.7.0):**
-De server emit nu een `notification` event voor kritieke acties (`ADD_DELIVERY`, `YMS_REGISTER_ARRIVAL`, automatische milestone-sprongen). De `SocketContext` op de client vangt dit op en toont een `sonner` toast. Dit patroon voorkomt dat de volledige state gescand moet worden op wijzigingen voor visuele feedback.
-
-**Kritische bevindingen & v3.6.0 Feature Architecture:**
-- **Navigation Flow**: Het dashboard gebruikt `onNavigate` met een `initialSelectedId` om direct de detail-modal in de `DeliveryManager` te triggeren via een `useEffect` hook.
-- **Mail Integration**: De `TransportMailModal` genereert client-side `mailto:` links op basis van dynamische transporteur-data, waardoor geen backend SMTP-relay nodig is voor de eerste versie.
-- **State Merging (v3.5.4)**: `socketHandlers.ts` implementeert nu server-side merging van payloads om `NOT NULL` constraint violations bij partiële updates te voorkomen.
-- **Queue Management**: De wachtrij gebruikt een prioriteitsalgoritme (Reefer first) en live wachttijd-calculatie.
-
-## 4. Database Architectuur (SQLite via better-sqlite3)
+## 5. Database Architectuur (SQLite via better-sqlite3)
 
 ### Tabelstructuur — Kern (Global Pipeline)
 ```
@@ -73,42 +103,30 @@ audit_logs     (id PK, deliveryId FK, timestamp, user, action, details)
 settings       (key PK, value JSON)
 ```
 
-### Tabelstructuur — YMS-kern
+### Tabelstructuur — YMS (Operational)
 ```
-yms_warehouses (id PK, name, hasGate)
+yms_warehouses (id PK, name, descriptor, address, hasGate)
 yms_docks      (id, warehouseId — composite PK)
 yms_waiting_areas (id, warehouseId — composite PK)
 yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, ...)
+pallet_transactions (id PK, entityId, balanceChange, createdAt)
 ```
 
-## 5. Audit Trail & Logboek (v3.6.0)
-Elke wijziging aan een levering wordt vastgelegd in de `audit_logs` tabel. In de **Archief** module wordt deze data via de `AuditLogModal` gevisualiseerd in een chronologische tijdlijn (wie, wat, wanneer), wat essentieel is voor post-operationele analyse en compliance.
+## 6. Multi-Warehouse Isolatie
+Isolatie wordt afgedwongen op socket-niveau: elk event wordt gefilterd op `warehouseId`. Dit voorkomt dat data van Magazijn A lekt naar Magazijn B.
 
-## 6. Multi-Warehouse State Isolatie
-Elk socket-verbinding draagt een `socket.data.selectedWarehouseId`. Bij elke `buildStaticState`-aanroep wordt `getYmsDeliveries(warehouseId)` en `getYmsDocks(warehouseId)` doorgegeven zodat elke gebruiker alleen de data van zijn eigen magazijn ziet.
+## 7. Kwaliteitsbewaking (v3.7.4)
+Sinds v3.7.4 is de "High-Density" mode de standaard. Dit betekent:
+- Geen onnodige witruimte in tabellen.
+- Informatiedichtheid geoptimaliseerd voor 4K en breedbeeld monitoren.
+- Volledige theme-synchronisatie via CSS variabelen.
 
-## 7. Kwaliteitsbewaking (Automated Validation Suite)
+## 8. Beveiliging & Compliance
+- **JWT**: Alle communicatie is versleuteld en geautoriseerd.
+- **Audit Trail**: Elke actie is herleidbaar naar een gebruiker en timestamp.
+- **Bcrypt**: Wachtwoorden worden nooit in plaintext opgeslagen.
+- **RBAC Guard (v3.10.0)**: Middleware die elke socket-actie valideert tegen de permissies van de gebruiker.
 
-Sinds v3.5.1 hanteert het platform een volledig geautomatiseerde validatie-suite:
-
-| Laag | Tool | Scope |
-|---|---|---|
-| **E2E Testing** | Playwright | Kritieke user-flows zoals de Priority Queue en Dashboard Navigatie. |
-| **Integration** | Vitest | Uni-directionele dataflow validatie (Action → Socket → DB). |
-| **Integrity** | tsx script | Database health checks (`db-health.ts`) op inconsistenties. |
-
-## 9. Operationele Beveiliging & Shell-First UI (v3.6.1)
-
-Met de introductie van v3.6.1 hebben we de focus verlegd naar **Stabiliteit** en **Zichtbare Snelheid**:
-
-- **Shell-First Rendering**: `App.tsx` rendert de sidebar en navigatie onmiddellijk na authenticatie, zonder te wachten op de volledige socket-synchronisatie. De content-area toont skeletons totdat `state` niet meer `null` is.
-- **Null-State Resilience**: Componenten zoals `Dashboard.tsx` zijn nu volledig resilient tegen initial null-states via optional chaining (`state?.addressBook?...`).
-- **Forced Password Reset**: Bij gebruik van het standaardwachtwoord (`welkom123`) wordt de `requiresReset` flag geactiveerd, wat de gebruiker dwingt tot een wachtwoordwijziging.
-- **Bcrypt Resilience**: De auth-flow bevat een try-catch om fouten met legacy of "dummy" hashes te voorkomen, met een veilige fallback naar de default-check.
-
-## 10. Release Criteria (v3.6.1)
-- ✅ `npm run test:full` slaagt 100% (incl. E2E in ~1.7s)
-- ✅ Geen `TypeError` bij initial loading (null-state safe)
-- ✅ Password reset logic is database-gefaciliteerd
-- ✅ Prop-drilling in YmsDashboard volledig gesaneerd via `useYmsData`
-- ✅ Docks en Wachtrijen worden correct gereset bij opschonen
+## 9. Shell-First UI & Performance
+- **Shell-First Rendering**: Sidebar en navigatie renderen onmiddellijk; content-area toont skeletons tijdens sync.
+- **Null-State Resilience**: Componenten zijn bestand tegen initieel ontbrekende data via optional chaining.

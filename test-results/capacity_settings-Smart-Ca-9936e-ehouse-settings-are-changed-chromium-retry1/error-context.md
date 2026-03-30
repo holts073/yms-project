@@ -1,0 +1,141 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img "ILG Logo" [ref=e6]
+        - heading "ILG Foodgroup YMS v3.7.3" [level=1] [ref=e7]:
+          - text: ILG Foodgroup
+          - text: YMS v3.7.3
+      - navigation [ref=e8]:
+        - button "Dashboard" [ref=e9]:
+          - img [ref=e10]
+          - generic [ref=e15]: Dashboard
+        - paragraph [ref=e17]: Logistieke Flow
+        - button "Inkomend (Pipeline)" [ref=e18]:
+          - img [ref=e19]
+          - generic [ref=e24]: Inkomend (Pipeline)
+        - paragraph [ref=e26]: Yard Management
+        - button "Aankomst & Inspectie" [ref=e27]:
+          - img [ref=e28]
+          - generic [ref=e31]: Aankomst & Inspectie
+        - button "Dock Planning" [ref=e32]:
+          - img [ref=e33]
+          - generic [ref=e35]: Dock Planning
+        - button "Archief (Historie)" [ref=e36]:
+          - img [ref=e37]
+          - generic [ref=e41]: Archief (Historie)
+        - paragraph [ref=e43]: Overig
+        - button "Adressenboek" [ref=e44]:
+          - img [ref=e45]
+          - generic [ref=e49]: Adressenboek
+        - button "Publieke Monitor" [ref=e50]:
+          - img [ref=e51]
+          - generic [ref=e53]: Publieke Monitor
+        - paragraph [ref=e55]: Financiën
+        - button "Pallet Reconciliatie" [ref=e56]:
+          - img [ref=e57]
+          - generic [ref=e60]: Pallet Reconciliatie
+        - button "Analyse & Rapportage" [ref=e62]:
+          - generic [ref=e63]:
+            - img [ref=e64]
+            - generic [ref=e66]: Analyse & Rapportage
+          - img [ref=e67]
+        - button "Instellingen" [ref=e70]:
+          - generic [ref=e71]:
+            - img [ref=e72]
+            - generic [ref=e75]: Instellingen
+          - img [ref=e76]
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - img [ref=e81]
+          - generic [ref=e84]:
+            - paragraph [ref=e85]: Admin
+            - paragraph [ref=e86]: admin
+          - 'button "Huidig thema: light" [ref=e87]':
+            - img [ref=e88]
+        - button "Uitloggen" [ref=e94]:
+          - img [ref=e95]
+          - generic [ref=e98]: Uitloggen
+    - main [ref=e99]:
+      - generic [ref=e102]:
+        - generic [ref=e104]:
+          - img [ref=e106]
+          - generic [ref=e111]:
+            - heading "Supply Chain Dashboard" [level=2] [ref=e112]
+            - paragraph [ref=e113]: Real-time overzicht van logistieke operaties en yard management.
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - generic [ref=e116] [cursor=pointer]:
+              - generic [ref=e117]:
+                - heading "Actie Vereist" [level=3] [ref=e118]
+                - img [ref=e120]
+              - generic [ref=e123]: "0"
+              - paragraph [ref=e125]: Documenten missen
+            - generic [ref=e126] [cursor=pointer]:
+              - generic [ref=e127]:
+                - heading "Onderweg" [level=3] [ref=e128]
+                - img [ref=e130]
+              - generic [ref=e136]: "0"
+              - paragraph [ref=e138]: Naar magazijn
+            - generic [ref=e139] [cursor=pointer]:
+              - generic [ref=e140]:
+                - heading "Douane" [level=3] [ref=e141]
+                - img [ref=e143]
+              - generic [ref=e146]: "0"
+              - paragraph [ref=e148]: Inklaring lopende
+            - generic [ref=e149] [cursor=pointer]:
+              - generic [ref=e150]:
+                - heading "In Transit" [level=3] [ref=e151]
+                - img [ref=e153]
+              - generic [ref=e157]: "0"
+              - paragraph [ref=e159]: Niet geladen / Onderweg
+          - generic [ref=e160]:
+            - generic [ref=e161] [cursor=pointer]:
+              - generic [ref=e162]:
+                - heading "YMS Aankomst" [level=3] [ref=e163]
+                - img [ref=e165]
+              - generic [ref=e169]: "3"
+            - generic [ref=e170] [cursor=pointer]:
+              - generic [ref=e171]:
+                - heading "Vertragingen" [level=3] [ref=e172]
+                - img [ref=e174]
+              - generic [ref=e178]: "0"
+            - generic [ref=e179]:
+              - generic [ref=e180]:
+                - heading "Docks" [level=3] [ref=e181]
+                - img [ref=e183]
+              - generic [ref=e186]: 40%
+            - generic [ref=e187]:
+              - generic [ref=e188]:
+                - heading "Site Stay" [level=3] [ref=e189]
+                - img [ref=e191]
+              - generic [ref=e195]: 0m
+            - generic [ref=e196]:
+              - generic [ref=e197]:
+                - heading "Yard" [level=3] [ref=e198]
+                - img [ref=e200]
+              - generic [ref=e204]: 60%
+            - generic [ref=e205]:
+              - generic [ref=e206]:
+                - heading "Laat" [level=3] [ref=e207]
+                - img [ref=e209]
+              - generic [ref=e212]: "0"
+        - generic [ref=e213]:
+          - heading "Actie Vereist" [level=3] [ref=e214]
+          - table [ref=e218]:
+            - rowgroup [ref=e219]:
+              - row "Referentie Indicaties Status ETA Actie" [ref=e220]:
+                - columnheader "Referentie" [ref=e221]
+                - columnheader "Indicaties" [ref=e222]
+                - columnheader "Status" [ref=e223]
+                - columnheader "ETA" [ref=e224]
+                - columnheader "Actie" [ref=e225]
+            - rowgroup [ref=e226]:
+              - row "Geen gegevens gevonden." [ref=e227]:
+                - cell "Geen gegevens gevonden." [ref=e228]:
+                  - paragraph [ref=e229]: Geen gegevens gevonden.
+```

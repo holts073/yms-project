@@ -1,5 +1,5 @@
 # AGENT ORCHESTRATION: ILG Control Tower
-*Versie: v3.7.4 — Bijgewerkt: 2026-03-27 door @System-Architect*
+*Versie: v3.7.5 — Bijgewerkt: 2026-03-29 door @System-Architect*
 
 ## I. Algemene Richtlijnen (Global Strategy)
 * **Taal:** Alle communicatie, code-documentatie en UI-teksten zijn in het **Nederlands**.

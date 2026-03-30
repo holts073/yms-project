@@ -11,7 +11,8 @@ import {
   YmsWarehouse, 
   YmsDockOverride, 
   YmsAlert,
-  LogEntry 
+  LogEntry,
+  PalletTransaction
 } from '../types';
 
 // Cached Prepared Statements
@@ -39,8 +40,9 @@ const stmts = {
   getUserPassword: db.prepare('SELECT passwordHash FROM users WHERE id = ?'),
   insertUser: db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions, requiresReset) VALUES (?, ?, ?, ?, ?, ?, ?)'),
   deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
-  getAddressBookByEmail: (type: string) => db.prepare("SELECT * FROM address_book WHERE type = ?"),
-  deleteAddressEntry: db.prepare('DELETE FROM address_book WHERE id = ?'),
+  getAddressBook: db.prepare('SELECT * FROM address_book ORDER BY name ASC'),
+  insertAddressBook: db.prepare('INSERT OR REPLACE INTO address_book (id, type, name, contact, email, address, pickupAddress, otif, remarks, supplier_number, customer_number, pallet_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+  deleteAddressBook: db.prepare('DELETE FROM address_book WHERE id = ?'),
   getLogs: db.prepare('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 100'),
   insertLog: db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)'),
   getYmsDocks: db.prepare('SELECT * FROM yms_docks'),
@@ -71,8 +73,7 @@ const stmts = {
   deleteYmsDock: db.prepare('DELETE FROM yms_docks WHERE id = ? AND warehouseId = ?'),
   deleteYmsWaitingArea: db.prepare('DELETE FROM yms_waiting_areas WHERE id = ? AND warehouseId = ?'),
   getYmsWarehouses: db.prepare('SELECT * FROM yms_warehouses'),
-  insertYmsWarehouse: db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address, hasGate) VALUES (?, ?, ?, ?, ?)'),
-  saveAddressBookEntry: db.prepare('INSERT OR REPLACE INTO address_book (id, type, name, contact, email, address, pickupAddress, otif, remarks, supplier_number, customer_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+  insertYmsWarehouse: db.prepare('INSERT OR REPLACE INTO yms_warehouses (id, name, description, address, hasGate, fastLaneThreshold, minutesPerPallet, baseUnloadingTime, openingTime, closingTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
   getYmsDockOverrides: db.prepare('SELECT * FROM yms_dock_overrides'),
   getYmsDockOverridesByWarehouse: db.prepare('SELECT * FROM yms_dock_overrides WHERE warehouseId = ?'),
   insertYmsDockOverride: db.prepare(`
@@ -89,7 +90,12 @@ const stmts = {
   deleteYmsAlert: db.prepare('DELETE FROM yms_alerts WHERE id = ?'),
   resolveYmsAlert: db.prepare('UPDATE yms_alerts SET resolved = 1 WHERE id = ?'),
   getPalletTransactionsByEntity: db.prepare('SELECT * FROM pallet_transactions WHERE entityId = ? ORDER BY createdAt DESC'),
-  insertPalletTransaction: db.prepare('INSERT OR REPLACE INTO pallet_transactions (id, entityId, entityType, deliveryId, balanceChange, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
+  getPalletTransactions: db.prepare('SELECT * FROM pallet_transactions ORDER BY createdAt DESC'),
+  insertPalletTransaction: db.prepare('INSERT OR REPLACE INTO pallet_transactions (id, entityId, entityType, deliveryId, balanceChange, createdAt) VALUES (?, ?, ?, ?, ?, ?)'),
+  getYmsSlots: db.prepare('SELECT * FROM yms_slots WHERE warehouseId = ?'),
+  insertYmsSlot: db.prepare('INSERT OR REPLACE INTO yms_slots (id, warehouseId, dockId, deliveryId, startTime, endTime) VALUES (?, ?, ?, ?, ?, ?)'),
+  deleteYmsSlot: db.prepare('DELETE FROM yms_slots WHERE id = ?'),
+  deleteYmsSlotByDelivery: db.prepare('DELETE FROM yms_slots WHERE deliveryId = ?')
 };
 
 export function getAllDeliveries(page: number = 1, limit: number = 1000, search: string = '', typeFilter: string = 'all', sort: string = 'eta', statusLess100: boolean = false) {
@@ -231,14 +237,15 @@ export function deleteUser(id: string) {
 }
 
 export function getAddressBook() {
-  const suppliers = db.prepare("SELECT * FROM address_book WHERE type = 'supplier'").all() as AddressEntry[];
-  const transporters = db.prepare("SELECT * FROM address_book WHERE type = 'transporter'").all() as AddressEntry[];
-  const customers = db.prepare("SELECT * FROM address_book WHERE type = 'customer'").all() as AddressEntry[];
+  const all = stmts.getAddressBook.all() as AddressEntry[];
+  const suppliers = all.filter(e => e.type === 'supplier');
+  const transporters = all.filter(e => e.type === 'transporter');
+  const customers = all.filter(e => e.type === 'customer');
   return { suppliers, transporters, customers };
 }
 
 export function saveAddressBookEntry(entry: AddressEntry) {
-  stmts.saveAddressBookEntry.run(
+  return stmts.insertAddressBook.run(
     entry.id, 
     entry.type, 
     entry.name, 
@@ -246,15 +253,16 @@ export function saveAddressBookEntry(entry: AddressEntry) {
     entry.email, 
     entry.address, 
     entry.pickupAddress || null, 
-    entry.otif || null, 
+    entry.otif || 0, 
     entry.remarks || null,
     entry.supplier_number || null,
-    entry.customer_number || null
+    entry.customer_number || null,
+    entry.pallet_rate || 0.00
   );
 }
 
 export function deleteAddressEntry(id: string) {
-  stmts.deleteAddressEntry.run(id);
+  stmts.deleteAddressBook.run(id);
 }
 
 export function savePalletTransaction(t: { entityId: string, entityType: string, deliveryId: string, balanceChange: number }) {
@@ -269,8 +277,11 @@ export function getPalletBalances() {
   }, {} as Record<string, number>);
 }
 
-export function getPalletTransactions(entityId: string): (AuditEntry & { balanceChange: number })[] {
-  return stmts.getPalletTransactionsByEntity.all(entityId) as (AuditEntry & { balanceChange: number })[];
+export function getPalletTransactions(entityId?: string): PalletTransaction[] {
+  if (entityId) {
+    return stmts.getPalletTransactionsByEntity.all(entityId) as PalletTransaction[];
+  }
+  return stmts.getPalletTransactions.all() as PalletTransaction[];
 }
 
 export function getLogs() {
@@ -411,7 +422,18 @@ export function getYmsWarehouses(): YmsWarehouse[] {
 
 export function saveYmsWarehouse(w: YmsWarehouse) {
   const isNew = !db.prepare('SELECT id FROM yms_warehouses WHERE id = ?').get(w.id);
-  stmts.insertYmsWarehouse.run(w.id, w.name, w.description || null, w.address || null, w.hasGate ? 1 : 0);
+  stmts.insertYmsWarehouse.run(
+    w.id, 
+    w.name, 
+    w.description || null, 
+    w.address || null, 
+    w.hasGate ? 1 : 0,
+    w.fastLaneThreshold || 12,
+    w.minutesPerPallet || 2,
+    w.baseUnloadingTime || 15,
+    w.openingTime || '07:00',
+    w.closingTime || '15:00'
+  );
   
   if (isNew) {
     initializeWarehouseInfrastructure(w.id);
@@ -478,4 +500,23 @@ export function deleteYmsAlert(id: string) {
 
 export function resolveYmsAlert(id: string) {
   stmts.resolveYmsAlert.run(id);
+}
+
+// v3.9.0 Slot Queries
+export function getYmsSlots(warehouseId: string): YmsSlot[] {
+  return stmts.getYmsSlots.all(warehouseId) as YmsSlot[];
+}
+
+import { YmsSlot } from '../types';
+
+export function saveYmsSlot(slot: YmsSlot) {
+  stmts.insertYmsSlot.run(slot.id, slot.warehouseId, slot.dockId, slot.deliveryId, slot.startTime, slot.endTime);
+}
+
+export function deleteYmsSlot(id: string) {
+  stmts.deleteYmsSlot.run(id);
+}
+
+export function deleteYmsSlotByDelivery(deliveryId: string) {
+  stmts.deleteYmsSlotByDelivery.run(deliveryId);
 }

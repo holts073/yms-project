@@ -1,67 +1,118 @@
-# Project Architectuur - Yard Management System (YMS)
+# ARCHITECTUUR: ILG Foodgroup Control Tower
+*Versie: v3.7.5 — Bijgewerkt: 2026-03-29 door @System-Architect*
 
-Dit document beschrijft de technische architectuur van het YMS-project na de succesvolle modularisatie en refactoring.
+> [!NOTE]
+> Bijgewerkt na v3.7.5 release: High-Density Table layouts, Multi-Theme Synchronization en volledige Type-Safety audit.
 
-## 1. Project Map (Folder Tree)
+Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
+
+## 1. Mappenstructuur (Folder Tree)
+
+We hanteren een strikte scheiding tussen de frontend (React) en backend (Node.js/Socket.io). De frontend volgt de **Atomic Design** principes.
 
 ```text
-/root/yms-project/
-├── server/                 # Backend Node.js/Express
-│   ├── routes/             # RESTful API endpoints (voornamelijk fallback & auth)
-│   ├── services/           # Gedeelde business logica server-side
-│   ├── sockets/            # Socket.io actie-handlers (Gecentraliseerde data-brug)
-│   └── workers/            # Achtergrond processen (zoals inventory-worker)
-├── src/                    # Frontend React/Vite
-│   ├── components/         # Atomic Design UI structuur
-│   │   ├── features/       # Samengestelde bedrijfslogica componenten (Cards, Tables, Timelines)
-│   │   ├── shared/         # Herbruikbare, 'dumb' thema-componenten (Button, Input, Badge, Modal)
-│   │   └── (pages)         # Hoofdpagina's geassembleerd uit features (YmsDashboard, Settings, e.d.)
-│   ├── db/                 # Database laag & SQLite initialisatie
-│   ├── hooks/              # Data-fetching en socket logica (useYmsData, useDeliveries)
-│   ├── lib/                # Utility functies en validaties (clsx, ymsRules)
-│   ├── App.tsx             # Hoofd React entry point (Routing, Auth)
-│   ├── ThemeContext.tsx    # Beheert overkoepelend Dark/Light modus
-│   └── SocketContext.tsx   # Globale WebSocket state en dispatcher
-└── database.sqlite         # SQLite database in WAL-modus
+.
+├── src/                    # Frontend (React 19)
+│   ├── components/
+│   │   ├── shared/         # Atoms & Molecules: Button, Modal, Badge, Card (Context-vrij)
+│   │   ├── features/       # Organisms: Timeline, DockGrid, DeliveryTable (Business Logic)
+│   │   ├── ui/             # UI-specifieke hulpcomponenten
+│   │   └── ...             # Pagina's: YmsDashboard, Statistics, Archive, Settings
+│   ├── hooks/              # Custom Hooks: useYmsData, useDeliveries, useSocket
+│   ├── lib/                # Utilities: logistics.ts (validatie), utils.ts (styling)
+│   ├── db/                 # Client-side DB toegang (queries.ts, sqlite.ts)
+│   ├── types.ts            # Centrale TypeScript-interfaces (Single Source of Truth)
+│   └── main.tsx            # React Entry point
+├── server/                 # Backend (Node.js, Express, Socket.io)
+│   ├── routes/             # REST API Router (authenticatie, bulk-acties)
+│   ├── sockets/            # socketHandlers.ts (Centrale Action-Router)
+│   ├── services/           # Services: pdfService, queueService (Logistieke algoritmes)
+│   ├── db/                 # Database: Migraties, Migrator-logic
+│   ├── middleware/         # Auth Middleware (JWT validatie)
+│   └── scripts/            # Database Health Checks en Fix-scripts
+├── database.sqlite         # Productie-data (SQLite)
+├── server.ts               # Backend Entry point (Express + Socket.io Server)
+└── package.json            # Afhankelijkheden en build-scripts
 ```
 
-## 2. Atomic Design Hiërarchie
+## 2. Systeem Blauwdruk (Dataflow)
+
+Het systeem werkt op basis van een real-time, event-gedreven architectuur.
 
 ```mermaid
 graph TD
-    TP[ThemeProvider & SocketContext] --> P[Pages / Dashboards]
-    P --> FC[Feature Components]
-    FC --> SC[Shared Components]
-    
-    subgraph "Core App"
-    TP
+    subgraph "Frontend (Client)"
+        UI["React UI (Action)"]
+        SC["SocketContext (State)"]
     end
-    
-    subgraph "src/components/"
-    P
+
+    subgraph "Backend (Server)"
+        SH["SocketHandlers (Router)"]
+        DB["Better-SQLite3 (WAL)"]
+        BS["buildStaticState (State Builder)"]
     end
-    
-    subgraph "src/components/features/"
-    FC
-    end
-    
-    subgraph "src/components/shared/"
-    SC
-    end
+
+    UI -- "socket.emit('action')" --> SH
+    SH -- "SQL Query" --> DB
+    DB -- "Trigger Update" --> BS
+    BS -- "socket.emit('state_update')" --> SC
+    SC -- "Re-render" --> UI
 ```
 
-## 3. Data Flow
-De uni-directionele stroom garandeert consistentie en maakt de frontend predictabel:
-1. **Actie (Frontend)**: Een gebeurtenis in een feature component roept een abstracte functie uit een Hook aan (bijv. `deliveryActions.assignDock()`).
-2. **Dispatch (SocketContext)**: De Hook vuurt een Socket.io event af naar de backend met een gedefinieerde `action` (bijv. `YMS_SAVE_DOCK`) en een payload.
-3. **Afhandeling (Backend)**: De `socketHandlers.ts` valideert de permissies (Admin / Staff), registreert dit direct in de Audit Log, en voert gecachete database operations uit.
-4. **Broadcast**: De backend pusht via `io.emit("state_update")` een nieuw, volledig statussnapshot naar alle verbonden clients.
-5. **Render (Frontend)**: De `SocketContext` update de reactieve locale state. De afhankelijke Hooks vangen dit op, en de `pages` en `features` schieten de zuivere data door naar de 'dumb' `shared` componenten voor de uiteindelijke visuele (re)render.
+## 3. Logistieke Levenscyclus (State Machine)
 
-## 4. Database Laag (SQLite & Optimalisaties)
-De data persistence laag is ontworpen rond `better-sqlite3` en steunt op diverse optimalisaties voor maximale betrouwbaarheid in netwerkomgevingen:
+De levenscyclus van een vracht is cruciaal voor de **Smart Call Logic** en dashboard-filtering:
 
-- **Prepared Statements**: Alle queries in `src/db/queries.ts` worden bij het opstarten eenmalig gecompileerd en permanent in het geheugen opgeslagen (`stmts` cache). Dit versnelt iteraties drastisch, elimineert N+1 problemen en sluit SQL-injectie gegarandeerd uit.
-- **Indices & Relaties**: Om de complexe query's (die over dashboards verspreid worden) sub-milliseconde snel te houden, worden foreign keys strikt afgedwongen en indices (zoals op `status`, `warehouseId`, en datumvelden) pro-actief opgebouwd.
-- **WAL Modus**: De database functioneert in Write-Ahead Logging modus. Dit stelt de Socket-server in staat om gelijktijdige en ononderbroken asynchrone lees- en schrijfacties uit te voeren zonder database locks.
-- **Period Overrides Logica**: Periodieke overschrijvingen op Docks (aangepaste capaciteit en tijdelijke blokkades) verlopen asynchroon via de `yms_dock_overrides` tabel. Deze logica ligt los van de statische locaties; de backend fuseert actieve overrides over conventionele docks in-memory voordat de "state" naar de frontend vloeit. Hierdoor hoeven master-tabellen niet iteratief te worden overschreven voor tijdelijke gebeurtenissen.
+```mermaid
+stateDiagram-v2
+    [*] --> PLANNED : Ex-works / Container aangemeld
+    PLANNED --> EXPECTED : ETA bevestigd
+    EXPECTED --> GATE_IN : Aangemeld bij YMS (opt. Gate)
+    GATE_IN --> IN_YARD : Naar wachtruimte gereden
+    IN_YARD --> DOCKED : Dock toegewezen
+    GATE_IN --> DOCKED : Direct (magazijn zonder gate)
+    DOCKED --> UNLOADING : Lossen gestart
+    DOCKED --> LOADING : Laden gestart
+    UNLOADING --> COMPLETED : Gereed / Te verrekenen
+    LOADING --> COMPLETED : Gereed / Te verrekenen
+    COMPLETED --> GATE_OUT : Terrein verlaten
+    GATE_OUT --> [*] : Gearchiveerd
+```
+
+## 4. Uni-directionele Dataflow (Kern-Architectuur)
+
+Het systeem hanteert een strikte flow om race-conditions te vermijden:
+
+1.  **UI Action**: Gebruiker klikt op een knop (bijv. "Lossen").
+2.  **Socket Emit**: De client stuurt en event naar de server met de API-token.
+3.  **Server Validatie**: De server valideert de rechten en de huidige status.
+4.  **Database Write**: De wijziging wordt persistent gemaakt in SQLite (WAL mode).
+5.  **State Broadcast**: De server bouwt de *nieuwe statische state* op en verstuurt deze naar alle aangesloten clients in dat magazijn.
+6.  **React Sync**: De client update zijn lokale cache en triggert een re-render.
+
+## 5. Database Architectuur (SQLite)
+
+### Tabelstructuur — Kern (Global Pipeline)
+*   **users**: Beheert authenticatie, rollen en permissies (v3.10.0 RBAC).
+*   **deliveries**: De "Hearth" van de pipeline. Bevat alle metadata voor containers en ex-works.
+*   **documents**: Status van verplichte documentatie (SWB, NOA, etc.).
+*   **audit_logs**: Chronologisch verslag van elke mutatie per zending.
+
+### Tabelstructuur — YMS (Operational)
+*   **yms_warehouses**: Magazijn configuratie (met/zonder gate, openingstijden).
+*   **yms_docks**: Dock-beschikbaarheid, temperatuur-geschiktheid en bezettingsgraad.
+*   **yms_deliveries**: Real-time yard status, inclusief `scheduledTime` en `statusTimestamps`.
+*   **pallet_transactions**: Transactie-log voor pallet-ruil (v3.8.0 Ledger).
+
+## 6. Multi-Warehouse Isolatie
+Isolatie wordt afgedwongen op socket-niveau: elk event wordt gefilterd op `warehouseId`. Dit voorkomt dat data van Magazijn A lekt naar Magazijn B.
+
+## 7. Kwaliteitsbewaking (v3.7.5)
+- **High-Density**: Informatiedichtheid geoptimaliseerd voor breedbeeld monitoren.
+- **Type-Safety**: 100% lint-free codebase (`tsc --noEmit`).
+- **Theme-Sync**: Volledige thema-synchronisatie via CSS variabelen.
+
+## 8. Beveiliging & Compliance
+- **JWT**: Alle communicatie is versleuteld en geautoriseerd.
+- **Audit Trail**: Elke actie is herleidbaar naar een gebruiker en timestamp.
+- **RBAC Guard (v3.10.0)**: Middleware die elke socket-actie valideert.

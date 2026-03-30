@@ -10,7 +10,8 @@ export const useYmsData = () => {
     selectedWarehouseId,
     deliveries = [],
     priorityQueue = [],
-    dockOverrides: overrides = [] 
+    dockOverrides: overrides = [],
+    ymsSlots = [] 
   } = state?.yms || {};
   
   const activeWarehouseId = selectedWarehouseId || warehouses[0]?.id || 'W01';
@@ -49,6 +50,7 @@ export const useYmsData = () => {
     allWaitingAreas: waitingAreas,
     overrides: filteredOverrides,
     deliveries,
+    ymsSlots: ymsSlots.filter((s: any) => s.warehouseId === activeWarehouseId),
     priorityQueue,
     selectedWarehouseId: activeWarehouseId,
     currentWarehouse,

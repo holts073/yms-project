@@ -41,20 +41,26 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
 
   return (
     <div className="flex-1 bg-card rounded-[2.5rem] border border-border overflow-hidden flex flex-col shadow-2xl relative">
-      <div ref={scrollContainerRef} className="flex-1 overflow-auto custom-scrollbar relative bg-[var(--muted)]/5">
+      <div ref={scrollContainerRef} data-testid="timeline-grid" className="flex-1 overflow-auto custom-scrollbar relative bg-[var(--muted)]/5">
         {/* Timeline Header */}
         <div className="flex sticky top-0 z-20 bg-[var(--muted)] border-b border-border">
           <div className="w-40 flex-shrink-0 border-r border-border p-4 font-bold text-xs text-[var(--muted-foreground)] uppercase tracking-widest bg-[var(--muted)]">Docks</div>
           {Array.from({ length: totalHours }).map((_, i) => (
-            <div key={i} className="w-[200px] flex-shrink-0 p-4 border-r border-border text-sm font-bold text-foreground text-center">{i + startHour}:00</div>
+            <div key={i} className="w-[200px] flex-shrink-0 border-r border-border flex flex-col">
+              <div className="p-2 text-sm font-bold text-foreground text-center border-b border-border/50">{i + startHour}:00</div>
+              <div className="flex text-[9px] font-black text-[var(--muted-foreground)]/50 divide-x divide-border/30">
+                <div className="flex-1 text-center py-1">:00</div>
+                <div className="flex-1 text-center py-1">:30</div>
+              </div>
+            </div>
           ))}
         </div>
 
         {/* Timeline Content */}
-        <div className="relative flex-1 overflow-auto" style={{ minHeight: `${Math.max(400, docks.length * 100)}px` }}>
+        <div className="relative flex-1" style={{ minHeight: `${Math.max(400, docks.length * 130)}px` }}>
           {docks.length === 0 && (
             <div className="py-20 text-center text-[var(--muted-foreground)] italic px-4">
-              Geen actieve docks gevonden voor dit magazijn. Ga naar Instellingen om docks te activeren.
+              Geen actieve docks gevonden voor dit magazijn.
             </div>
           )}
           
@@ -70,7 +76,7 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
                 timelineWidth={timelineWidth}
                 getStatusLabel={getStatusLabel}
                 onSaveDelivery={onSaveDelivery}
-                warehouse={docks.find(d => d.warehouseId === dock.warehouseId) ? (useYmsData().warehouses.find(w => w.id === dock.warehouseId)) : undefined}
+                warehouse={useYmsData().warehouses.find(w => w.id === dock.warehouseId)}
             />
           ))}
           
@@ -78,7 +84,7 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
           {isToday && (
               <div className="absolute top-0 bottom-0 w-0.5 bg-rose-500 z-30 pointer-events-none shadow-[0_0_10px_rgba(244,63,94,0.5)]"
                    style={{ left: 160 + (Math.max(0, Math.min(timelineWidth, (new Date().getHours() - startHour) * 60 + new Date().getMinutes())) / (totalHours * 60)) * timelineWidth }}>
-                  <div className="bg-rose-500 text-white text-[8px] font-black px-1 rounded-sm absolute -top-4 -left-3">NU</div>
+                  <div className="bg-rose-500 text-white text-[8px] font-black px-1 rounded-sm absolute -top-4 -left-3 shadow-lg">NU</div>
               </div>
           )}
         </div>
@@ -128,18 +134,18 @@ const YmsDockDroppableRow: React.FC<{
                 isOver && "bg-indigo-500/5 ring-1 ring-inset ring-indigo-500/20"
             )}
         >
-            <div className="w-40 flex-shrink-0 border-r border-border p-4 bg-[var(--muted)]/50 group-hover:bg-[var(--muted)] transition-colors">
-                <div className="font-bold text-foreground flex justify-between items-center">
+            <div className="w-40 flex-shrink-0 border-r border-border p-4 bg-[var(--muted)]/50 group-hover:bg-[var(--muted)] transition-colors sticky left-0 z-10">
+                <div className="font-bold text-foreground flex justify-between items-center group-hover:text-indigo-600 transition-colors">
                     {dock.name}
                     {dock.status === 'Blocked' && <AlertCircle size={12} className="text-rose-500" />}
                 </div>
-                <div className="flex flex-wrap gap-1 mt-1.5">
+                <div className="flex flex-wrap gap-1 mt-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                     {dock.allowedTemperatures.map(temp => (
                         <div key={temp} className={cn(
                             "flex items-center gap-0.5 px-1 rounded text-[7px] font-bold uppercase border",
                             temp === 'Vries' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' : 
                             temp === 'Koel' ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800' : 
-                            'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
+                            'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
                         )}>
                             {temp === 'Vries' ? <Snowflake size={8} /> : temp === 'Koel' ? <Thermometer size={8} /> : <Flame size={8} />}
                             {temp}
@@ -149,10 +155,30 @@ const YmsDockDroppableRow: React.FC<{
             </div>
             
             <div className={cn("flex-1 flex relative h-32", `min-w-[${timelineWidth}px]`)} style={{ minWidth: timelineWidth }}>
+                {/* 30-Minute Droppable Slot Grid */}
+                <div className="absolute inset-0 flex pointer-events-auto">
+                    {Array.from({ length: totalHours * 2 }).map((_, i) => {
+                        const h = Math.floor(i / 2) + startHour;
+                        const m = (i % 2) * 30;
+                        const timeStr = `${selectedDate}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000Z`;
+                        return (
+                            <YmsSlotDroppableCell 
+                                key={i}
+                                id={`slot-${dock.id}-${i}`}
+                                dockId={dock.id}
+                                time={timeStr}
+                                width={hourWidth / 2}
+                            />
+                        );
+                    })}
+                </div>
+                
+                {/* Visual Dividers */}
                 {Array.from({ length: totalHours }).map((_, i) => (
-                    <div key={i} className="w-[200px] border-r border-border flex-shrink-0" />
+                    <div key={i} className="w-[200px] border-r border-border/40 flex-shrink-0 pointer-events-none" />
                 ))}
                 
+                {/* Deliveries Overlay */}
                 {dock.status !== 'Blocked' && deliveries.filter(d => String(d.dockId) === String(dock.id)).map(delivery => {
                     if (!delivery.scheduledTime) return null;
                     const date = new Date(delivery.scheduledTime);
@@ -161,7 +187,7 @@ const YmsDockDroppableRow: React.FC<{
                     const dDate = date.toISOString().split('T')[0];
                     if (dDate !== selectedDate) return null;
 
-                    const hour = date.getHours();
+                    const hour = date.getUTCHours();
                     if (hour < startHour || hour >= startHour + totalHours) return null;
 
                     return (
@@ -177,6 +203,45 @@ const YmsDockDroppableRow: React.FC<{
                     );
                 })}
             </div>
+        </div>
+    );
+};
+
+const YmsSlotDroppableCell: React.FC<{ id: string, dockId: number, time: string, width: number }> = ({ id, dockId, time, width }) => {
+    const { ymsSlots } = useYmsData();
+    const { isOver, setNodeRef } = useDroppable({
+        id,
+        data: {
+            type: 'dock-cell',
+            dockId,
+            time
+        }
+    });
+
+    // Check if this slot is occupied
+    const cellStart = new Date(time);
+    const isOccupied = ymsSlots.some(s => {
+        if (s.dockId !== dockId) return false;
+        const sStart = new Date(s.startTime);
+        const sEnd = new Date(s.endTime);
+        return cellStart >= sStart && cellStart < sEnd;
+    });
+
+    return (
+        <div 
+            ref={setNodeRef}
+            style={{ width }}
+            data-testid={`slot-cell-${dockId}-${time.split('T')[1].substr(0, 5)}`}
+            className={cn(
+                "h-full border-r border-border/10 transition-all flex items-center justify-center",
+                isOver && "bg-indigo-500/20 ring-2 ring-inset ring-indigo-500 animate-pulse z-10",
+                isOccupied && !isOver && "bg-slate-100/30 dark:bg-slate-800/20 backdrop-blur-[2px]"
+            )}
+        >
+            {isOccupied && (
+                <div className="w-full h-full opacity-20 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,currentColor_5px,currentColor_10px)] text-slate-400 pointer-events-none" />
+            )}
+            {isOver && <Clock size={14} className="text-indigo-600 animate-bounce" />}
         </div>
     );
 };
@@ -206,10 +271,13 @@ const TimelineDraggableItem: React.FC<{
 
     const isReefer = delivery.isReefer || delivery.temperature === 'Vries' || delivery.temperature === 'Koel';
     const date = new Date(delivery.scheduledTime);
-    const hour = date.getHours();
-    const min = date.getMinutes();
+    const hour = date.getUTCHours();
+    const min = date.getUTCMinutes();
     const leftPos = (hour - startHour) * hourWidth + (min / 60) * hourWidth;
-    const width = (delivery.estimatedDuration || 90) / 60 * hourWidth;
+    const baseTime = warehouse?.baseUnloadingTime || 30;
+    const minPerPallet = warehouse?.minutesPerPallet || 2;
+    const calculatedDuration = delivery.palletCount ? (baseTime + delivery.palletCount * minPerPallet) : (delivery.estimatedDuration || 60);
+    const width = calculatedDuration / 60 * hourWidth;
 
     const isOutsideHours = !isWithinOpeningHours(delivery.scheduledTime, warehouse?.openingTime, warehouse?.closingTime);
 
@@ -227,6 +295,8 @@ const TimelineDraggableItem: React.FC<{
             style={style}
             {...listeners}
             {...attributes}
+            data-testid={`timeline-item-${delivery.reference}`}
+            data-duration={calculatedDuration}
             className={cn(
                 "absolute top-2 bottom-2 bg-card border border-border rounded-xl shadow-md p-2 cursor-grab active:cursor-grabbing hover:border-indigo-500 transition-all group/card overflow-hidden",
                 isDragging && "shadow-2xl border-indigo-500 scale-105 z-50",

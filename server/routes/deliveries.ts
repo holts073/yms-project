@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts, getPalletBalances } from '../../src/db/queries';
+import { getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts, getPalletBalances, getYmsSlots } from '../../src/db/queries';
 import { getSetting } from '../../src/db/sqlite';
 import nodemailer from 'nodemailer';
 import { generateTransportOrderPDF } from '../services/pdfService';
@@ -34,6 +34,7 @@ export const buildStaticState = (io?: Server, selectedWarehouseId?: string) => {
       priorityQueue: sortPriorityQueue(ymsDeliveries),
       dockOverrides: getYmsDockOverrides(selectedWarehouseId),
       alerts: getYmsAlerts(selectedWarehouseId),
+      ymsSlots: getYmsSlots(selectedWarehouseId || 'W01'),
       selectedWarehouseId: selectedWarehouseId || null
     },
     activeUsers

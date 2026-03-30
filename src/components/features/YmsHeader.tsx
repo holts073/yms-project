@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, Calendar, MapPin } from 'lucide-react';
+import { Search, Plus, Calendar, MapPin, Settings2 } from 'lucide-react';
 import { Button } from '../shared/Button';
 import { YmsWarehouse } from '../../types';
 
@@ -14,6 +14,7 @@ interface YmsHeaderProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   onNewDelivery: () => void;
+  onWarehouseSettings?: (id: string) => void;
   onBack?: () => void;
 }
 
@@ -28,6 +29,7 @@ export const YmsHeader: React.FC<YmsHeaderProps> = ({
   searchTerm,
   onSearchChange,
   onNewDelivery,
+  onWarehouseSettings,
   onBack
 }) => {
   return (
@@ -84,6 +86,7 @@ export const YmsHeader: React.FC<YmsHeaderProps> = ({
             <button
               key={w.id}
               onClick={() => onSelectWarehouse(w.id)}
+              data-testid={selectedWarehouseId === w.id ? "active-warehouse" : `warehouse-${w.id}`}
               className={`flex-1 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 selectedWarehouseId === w.id 
                   ? 'bg-card text-indigo-600 dark:text-indigo-400 shadow-sm border border-border' 
@@ -93,6 +96,16 @@ export const YmsHeader: React.FC<YmsHeaderProps> = ({
               {w.name}
             </button>
           ))}
+          {onWarehouseSettings && (
+            <button 
+              onClick={() => onWarehouseSettings(selectedWarehouseId)}
+              data-testid="btn-warehouse-settings"
+              className="p-2 text-[var(--muted-foreground)] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              title="Capaciteit Instellingen"
+            >
+              <Settings2 size={16} />
+            </button>
+          )}
         </div>
       </div>
     </div>

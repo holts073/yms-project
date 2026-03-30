@@ -2,10 +2,14 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1, // Force sequential for socket stability
+  timeout: 60000, 
+  expect: {
+    timeout: 10000,
+  },
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:3000',

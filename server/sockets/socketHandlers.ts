@@ -2,9 +2,10 @@ import { Server, Socket } from "socket.io";
 import { 
   insertDelivery, getAllDeliveries, deleteDelivery, saveUser, getUsers, 
   saveAddressBookEntry, deleteAddressEntry, getAddressBook, saveYmsDock, saveYmsWaitingArea, 
-  getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, deleteYmsDock, deleteYmsWaitingArea, saveYmsWarehouse, 
+  getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, deleteYmsDock, deleteYmsWaitingArea, saveYmsWarehouse, getYmsWarehouses, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
-  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, saveLog, getYmsDocks, getYmsAlerts, savePalletTransaction, addAuditEntry
+  saveYmsAlert, deleteYmsAlert, resolveYmsAlert, saveLog, getYmsDocks, getYmsAlerts, savePalletTransaction, addAuditEntry,
+  getYmsSlots, saveYmsSlot, deleteYmsSlotByDelivery
 } from '../../src/db/queries';
 import { saveSetting, getSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
@@ -326,26 +327,81 @@ export const setupSocketHandlers = (io: Server) => {
               finalScheduledTime += 'T10:00:00.000Z';
             }
 
+            // v3.9.0 Smart Slot Calculation
+            const warehouseId = delivery.warehouseId || 'W01';
+            const warehouses = getYmsWarehouses();
+            const warehouse = warehouses.find(w => w.id === warehouseId);
+            
+            const baseTime = warehouse?.baseUnloadingTime || 15;
+            const minPerPallet = warehouse?.minutesPerPallet || 2;
+            const palletCount = delivery.palletCount || 0;
+            
+            // Formula: Base + (Pallets * Min/Pallet)
+            let duration = baseTime + (palletCount * minPerPallet);
+            
+            // Round to nearest 15 or 30 for cleaner grid visualization if desired, 
+            // but let's keep it exact for now and let the grid handle it.
+            duration = Math.max(30, duration); // Minimum 30 min slot
+            
+            const startTime = new Date(finalScheduledTime);
+            const endTime = new Date(startTime.getTime() + duration * 60000);
+            
+            // Fast Lane Validation
+            const dock = getYmsDocks(warehouseId).find(d => d.id === dockId);
+            if (dock?.isFastLane && warehouse?.fastLaneThreshold) {
+              if (palletCount > warehouse.fastLaneThreshold && !isAdmin) {
+                throw new Error(`Conflict: Dock ${dockId} is een Fast Lane (Max ${warehouse.fastLaneThreshold} pallets). Deze levering heeft ${palletCount} pallets.`);
+              }
+            }
+
+            const existingSlots = getYmsSlots(warehouseId);
+            const conflict = existingSlots.find(s => {
+              if (s.dockId !== dockId) return false;
+              if (s.deliveryId === deliveryId) return false; // Ignore own slot if moving
+              
+              const sStart = new Date(s.startTime);
+              const sEnd = new Date(s.endTime);
+              
+              // Overlap check: (start1 < end2) && (end1 > start2)
+              return (startTime < sEnd) && (endTime > sStart);
+            });
+
+            if (conflict && !isAdmin) {
+              throw new Error(`Conflict: Dock ${dockId} is al bezet tussen ${new Date(conflict.startTime).toLocaleTimeString()} en ${new Date(conflict.endTime).toLocaleTimeString()} door ${conflict.deliveryId}.`);
+            }
+
             const updated = {
               ...delivery,
               dockId,
               status: newStatus as YmsDeliveryStatus,
               registrationTime: regTime,
               scheduledTime: finalScheduledTime,
+              estimatedDuration: duration,
               statusTimestamps: {
                 ...(delivery.statusTimestamps || {}),
                 [newStatus]: timestamp,
-                ...(!delivery.registrationTime ? { GATE_IN: timestamp } : {}) // Also log registration if skipping
+                ...(!delivery.registrationTime ? { GATE_IN: timestamp } : {}) 
               }
             };
-            
-            console.log(`[YMS_ASSIGN_DOCK] Saving updated delivery:`, { id: updated.id, dockId: updated.dockId, status: updated.status });
+
+            console.log(`[YMS_ASSIGN_DOCK] Saving updated delivery:`, { id: updated.id, dockId: updated.dockId, status: updated.status, duration: updated.estimatedDuration });
             saveYmsDelivery(updated);
+            
+            // Sync yms_slots table
+            deleteYmsSlotByDelivery(deliveryId);
+            saveYmsSlot({
+               id: Math.random().toString(36).substr(2, 9),
+               warehouseId,
+               dockId,
+               deliveryId,
+               startTime: startTime.toISOString(),
+               endTime: endTime.toISOString()
+            });
+
             syncDockStatus(updated.id, updated.dockId, updated.status, updated.warehouseId);
+            addAuditEntry(updated.mainDeliveryId || updated.id, user.name, "Dock Toegewezen", `Levering ${delivery.reference} toegewezen aan Dock ${dockId} (Slot: ${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}, Duur: ${duration}m)`);
             
-            addAuditEntry(updated.mainDeliveryId || updated.id, user.name, "Dock Toegewezen", `Levering ${delivery.reference} toegewezen aan Dock ${dockId}`);
-            
-            broadcastDelta(io, 'YMS_DELIVERY_UPDATED', updated);
+            broadcastState(io); // Need full state for slots
             break;
           }
 
@@ -440,6 +496,7 @@ export const setupSocketHandlers = (io: Server) => {
                 case "warehouse": saveYmsWarehouse(payload); logEntry.details = `Magazijn ${payload.name} opgeslagen`; break;
                 case "dockoverride": saveYmsDockOverride(payload); logEntry.details = `Dock override opgeslagen`; break;
                 case "alert": saveYmsAlert(payload); logEntry.details = `Systeemwaarschuwing opgeslagen`; break;
+                case "delivery": saveYmsDelivery(payload); logEntry.details = `YMS Levering ${payload.reference} opgeslagen`; break;
               }
               broadcastState(io);
               logEntry.action = `Systeemconfiguratie: ${table} opgeslagen`;

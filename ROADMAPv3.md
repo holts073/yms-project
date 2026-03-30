@@ -1,5 +1,5 @@
 # ROADMAP v3 - ILG Foodgroup YMS Control Tower
-*Versie: v3.7.4 — Bijgewerkt: 2026-03-27 door @System-Architect*
+*Versie: v3.7.5 — Bijgewerkt: 2026-03-29 door @System-Architect*
 
 > [!NOTE]
 > Dit document is de strategische leidraad voor het team. Elke sprint is afgestemd met alle agent-profielen uit `AGENTS.md`. Nieuwe sprints starten NIET voordat de vorige sprint volledig getest en gedocumenteerd is.
@@ -18,21 +18,23 @@
 | **v3.7.2** | UI Flow & Responsiviteit (MilestoneStepper) | ✅ Gereleased |
 | **v3.7.3** | Theme & UI Polish (Branding ILG/Meledi) | ✅ Gereleased |
 | **v3.7.4** | Layout Consolidation (Tabellen & Stuck Fix) | ✅ Gereleased |
+| **v3.7.5** | Type-Safety Audit & Documentation Update | ✅ Gereleased |
+| **v3.8.0** | Pallet Administratie & Financiën | ✅ Gereleased |
 
 ---
 
-## 🟡 Volgende Sprint: v3.8.0 — Pallet Administratie & Financiën
+## 🟡 Volgende Sprint: v3.9.0 — Intern Slot Management & Capaciteit
 *Verantwoordelijke agent: @Finance-Auditor, @Data-Specialist*
 
 > [!IMPORTANT]
 > Pallet-reconciliatie is een **aparte, async module**. De bestaande Yard milestones worden niet aangeraakt.
 
 ### Scope
-- [ ] **Pallet Ledger**: Nieuwe `pallet_transactions` tabel voor elke ruil (in/uit per levering)
-- [ ] **Kosten per Leverancier**: Uitbreiding `address_book` met `pallet_rate` (€/pallet)
-- [ ] **Saldo-overzicht**: Per transporteur een actueel saldo (hoeveel pallets schuld/tegoed)
-- [ ] **Creditnota Matching**: Mogelijkheid om ontvangen creditnota te koppelen aan openstaande transacties
-- [ ] **Bulk Verrekening**: Een 'Settle'-actie om een reeks transacties als afgehandeld te markeren
+- [x] **Pallet Ledger**: Nieuwe `pallet_transactions` tabel voor elke ruil (in/uit per levering)
+- [x] **Kosten per Leverancier**: Uitbreiding `address_book` met `pallet_rate` (€/pallet)
+- [x] **Saldo-overzicht**: Per transporteur een actueel saldo (hoeveel pallets schuld/tegoed)
+- [x] **Creditnota Matching**: Mogelijkheid om ontvangen creditnota te koppelen aan openstaande transacties
+- [x] **Bulk Verrekening**: Een 'Settle'-actie om een reeks transacties als afgehandeld te markeren
 
 ### Niet in scope
 - Automatische import van creditnota's (PDF/EDI) → v4.x

@@ -85,14 +85,24 @@ export const AddressModal: React.FC<AddressModalProps> = ({
           />
         )}
 
-        <Input 
-          as="textarea"
-          label="Opmerkingen"
-          rows={2}
-          value={entry?.remarks || ''}
-          onChange={e => onUpdateEditing({ ...entry, remarks: e.target.value })}
-          placeholder="Algemene opmerkingen over deze relatie..."
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input 
+            as="textarea"
+            label="Opmerkingen"
+            rows={2}
+            value={entry?.remarks || ''}
+            onChange={e => onUpdateEditing({ ...entry, remarks: e.target.value })}
+            placeholder="Algemene opmerkingen over deze relatie..."
+          />
+          <Input 
+            label="Pallet Tarief (€)"
+            type="number"
+            step="0.01"
+            value={entry?.pallet_rate || 0}
+            onChange={e => onUpdateEditing({ ...entry, pallet_rate: parseFloat(e.target.value) })}
+            placeholder="Bijv. 15.50"
+          />
+        </div>
 
         <div className="pt-4 flex gap-4">
           <Button variant="secondary" className="flex-1" onClick={onClose}>Annuleren</Button>

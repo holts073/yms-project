@@ -19,6 +19,7 @@ export interface AddressEntry {
   remarks?: string;
   supplier_number?: string;
   customer_number?: string;
+  pallet_rate?: number; // v3.8.0 Pallet Rate (€)
 }
 
 export interface AuditEntry {
@@ -138,6 +139,7 @@ export interface AppState {
   };
   deliveries: Delivery[];
   palletBalances: Record<string, number>;
+  palletTransactions: PalletTransaction[]; // v3.8.0 Ledger
   logs: LogEntry[];
   users: User[];
   settings: AppSettings;
@@ -150,6 +152,7 @@ export interface AppState {
     priorityQueue: YmsDelivery[];
     dockOverrides: YmsDockOverride[];
     alerts: YmsAlert[];
+    ymsSlots: YmsSlot[]; // v3.9.0 Slots
     selectedWarehouseId: string | null;
   };
   activeUsers: number;
@@ -167,6 +170,9 @@ export interface YmsWarehouse {
   hasGate: boolean;
   openingTime?: string;
   closingTime?: string;
+  fastLaneThreshold?: number;
+  minutesPerPallet?: number;
+  baseUnloadingTime?: number;
 }
 
 export interface YmsDock {
@@ -241,4 +247,22 @@ export interface YmsDockOverride {
   endDate: string;   // YYYY-MM-DD
   status: 'Available' | 'Blocked';
   allowedTemperatures: YmsTemperature[];
+}
+
+export interface PalletTransaction {
+  id: string;
+  entityId: string;
+  entityType: 'supplier' | 'transporter' | 'customer';
+  deliveryId: string;
+  balanceChange: number;
+  createdAt: string;
+}
+
+export interface YmsSlot {
+  id: string;
+  warehouseId: string;
+  dockId: number;
+  deliveryId: string;
+  startTime: string; // ISO
+  endTime: string;   // ISO
 }

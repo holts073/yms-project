@@ -18,7 +18,8 @@ import {
   FileText,
   ClipboardList,
   Zap,
-  Calendar
+  Calendar,
+  BadgeEuro
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -39,6 +40,7 @@ import Reporting from './components/Reporting';
 import YmsDashboard from './components/YmsDashboard';
 import YmsSettings from './components/YmsSettings';
 import YmsPublic from './components/YmsPublic';
+import { Reconciliation } from './components/features/Reconciliation';
 
 import { Toaster } from 'sonner';
 
@@ -198,6 +200,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       case 'yms-arrivals': return <YmsDashboard view="arrivals" />;
       case 'yms-planning': return <YmsDashboard view="planning" onBack={() => handleNavigate('dashboard')} />;
       case 'yms-public': return <YmsPublic onBack={() => handleNavigate('dashboard')} />;
+      case 'pallet-reconciliation': return <Reconciliation />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
@@ -239,7 +242,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       {/* Sidebar */}
       <aside className={cn(
         "bg-card border-r border-border flex flex-col p-4 transition-all duration-300",
-        activeTab === 'yms-planning' ? "w-0 p-0 overflow-hidden border-none hidden md:hidden" : "w-72"
+        activeTab === 'yms-planning' ? "w-0 p-0 overflow-hidden border-none opacity-0 invisible pointer-events-none absolute md:relative" : "w-72"
       )}>
         <div className="flex items-center gap-3 mb-6 px-4">
           <img 
@@ -311,6 +314,17 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             label="Publieke Monitor" 
             active={activeTab === 'yms-public'} 
             onClick={() => handleSidebarClick('yms-public')} 
+          />
+
+          <div className="pt-4 pb-1 px-6">
+            <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Financiën</p>
+          </div>
+
+          <SidebarItem 
+            icon={BadgeEuro} 
+            label="Pallet Reconciliatie" 
+            active={activeTab === 'pallet-reconciliation'} 
+            onClick={() => handleSidebarClick('pallet-reconciliation')} 
           />
 
           <SidebarDropdown 

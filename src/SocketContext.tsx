@@ -99,9 +99,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             );
             break;
           case 'YMS_DELIVERY_UPDATED':
-            newState.yms.deliveries = newState.yms.deliveries.map(d => 
-              d.id === patch.payload.id ? { ...d, ...patch.payload } : d
-            );
+            if (!newState.yms.deliveries.some(d => d.id === patch.payload.id)) {
+              newState.yms.deliveries = [patch.payload, ...newState.yms.deliveries];
+            } else {
+              newState.yms.deliveries = newState.yms.deliveries.map(d => 
+                d.id === patch.payload.id ? { ...d, ...patch.payload } : d
+              );
+            }
             break;
           case 'DELIVERY_DELETED':
             newState.deliveries = newState.deliveries.filter(d => d.id !== patch.payload);
@@ -220,7 +224,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       dispatch(type, payload);
     };
     window.addEventListener('YMS_ACTION', handleAction);
-    return () => window.removeEventListener('YMS_ACTION', handleAction);
+    (window as any).YMS_READY = true;
+    return () => {
+      window.removeEventListener('YMS_ACTION', handleAction);
+      (window as any).YMS_READY = false;
+    };
   }, [socket, isAuthenticated]);
 
   return (

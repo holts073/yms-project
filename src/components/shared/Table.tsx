@@ -67,6 +67,7 @@ export function Table<T extends { id: string | number }>({
             {data.map((item) => (
               <tr 
                 key={item.id} 
+                data-testid="table-row"
                 className={cn(
                   "hover:bg-[var(--muted)]/40 transition-colors group",
                   onRowClick && "cursor-pointer",

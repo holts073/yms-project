@@ -66,11 +66,13 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
       header: 'Status',
       accessor: (d: YmsDelivery) => (
         <div className="flex flex-col gap-1">
-          <Badge variant={
-            d.status === 'EXPECTED' ? 'info' : 
-            d.status === 'GATE_IN' ? 'warning' : 
-            d.status === 'COMPLETED' ? 'success' : 'default'
-          } size="xs" className="w-fit">
+          <Badge 
+            data-testid="delivery-status-badge"
+            variant={
+              d.status === 'EXPECTED' ? 'info' : 
+              d.status === 'GATE_IN' ? 'warning' : 
+              d.status === 'COMPLETED' ? 'success' : 'default'
+            } size="xs" className="w-fit">
             {getStatusLabel(d.status)}
           </Badge>
           <div className="flex gap-1 items-center">
@@ -86,7 +88,7 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
       header: 'Referentie / Leverancier',
       accessor: (d: YmsDelivery) => (
         <div className="flex flex-col">
-          <span className="font-black text-foreground text-sm tracking-tight">{d.reference}</span>
+          <span data-testid="delivery-reference" className="font-black text-foreground text-sm tracking-tight">{d.reference}</span>
           <span className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase truncate max-w-[150px]">{d.supplier}</span>
         </div>
       )
@@ -119,28 +121,28 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
       accessor: (d: YmsDelivery) => (
         <div className="flex items-center justify-end gap-1.5">
           {d.status === 'EXPECTED' && (
-            <Button size="xs" onClick={() => onRegisterExpected(d)} className="bg-purple-600 hover:bg-purple-700 h-7 px-3">
+            <Button data-testid="btn-register" size="xs" onClick={() => onRegisterExpected(d)} className="bg-purple-600 hover:bg-purple-700 h-7 px-3">
               Aanmelden
             </Button>
           )}
           {(d.status === 'GATE_IN' || d.status === 'PLANNED') && (
-            <Button size="xs" variant="outline" leftIcon={<WarehouseIcon size={12} />} onClick={() => onAssignClick?.(d)} className="h-7 px-3">
+            <Button data-testid="btn-assign" size="xs" variant="outline" leftIcon={<WarehouseIcon size={12} />} onClick={() => onAssignClick?.(d)} className="h-7 px-3">
               Toewijzen
             </Button>
           )}
           {d.status === 'DOCKED' && (
-            <Button size="xs" variant="outline" leftIcon={<Play size={12} />} onClick={() => onUpdateStatus(d, 'UNLOADING')} className="h-7 px-3">
+            <Button data-testid="btn-unload" size="xs" variant="outline" leftIcon={<Play size={12} />} onClick={() => onUpdateStatus(d, 'UNLOADING')} className="h-7 px-3">
               Lossen
             </Button>
           )}
           {(d.status === 'UNLOADING' || d.status === 'LOADING') && (
-            <Button size="xs" leftIcon={<CheckCircle2 size={12} />} onClick={() => onUpdateStatus(d, 'COMPLETED')} className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button data-testid="btn-complete" size="xs" leftIcon={<CheckCircle2 size={12} />} onClick={() => onUpdateStatus(d, 'COMPLETED')} className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white">
               Gereed
             </Button>
           )}
           {/* Missing status progression buttons */}
           {d.status === 'IN_YARD' && (
-            <Button size="xs" variant="outline" leftIcon={<ArrowRight size={12} />} onClick={() => onUpdateStatus(d, 'GATE_IN')} className="h-7 px-3 border-amber-500 text-amber-600">
+            <Button data-testid="btn-call" size="xs" variant="outline" leftIcon={<ArrowRight size={12} />} onClick={() => onUpdateStatus(d, 'GATE_IN')} className="h-7 px-3 border-amber-500 text-amber-600">
               Oproepen
             </Button>
           )}

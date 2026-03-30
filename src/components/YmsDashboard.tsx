@@ -13,7 +13,9 @@ import { YmsDeliveryList } from './features/YmsDeliveryList';
 import { YmsQueue } from './features/YmsQueue';
 import { YmsAssignmentModal } from './features/YmsAssignmentModal';
 import { YmsDeliveryModal } from './features/YmsDeliveryModal';
-import { YmsDelivery, YmsDeliveryStatus } from '../types';
+import { YmsCapacityStats } from './features/YmsCapacityStats';
+import { WarehouseSettingsModal } from './features/WarehouseSettingsModal';
+import { YmsDelivery, YmsDeliveryStatus, YmsWarehouse } from '../types';
 import { FullPageLoader } from './shared/LoadingSpinner';
 import { Skeleton, GridSkeleton, TableSkeleton } from './shared/SkeletonLoader';
 import { 
@@ -59,6 +61,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingDelivery, setEditingDelivery] = useState<Partial<YmsDelivery> | null>(null);
   const [assigningDelivery, setAssigningDelivery] = useState<YmsDelivery | null>(null);
+  const [isWarehouseSettingsOpen, setIsWarehouseSettingsOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -68,6 +71,17 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
       },
     })
   );
+
+  // E2E Synchronization helper
+  React.useEffect(() => {
+    const handleSync = (e: any) => {
+      if (e.detail?.type === 'YMS_SET_SELECTED_DATE') {
+        setSelectedDate(e.detail.payload);
+      }
+    };
+    window.addEventListener('YMS_ACTION', handleSync);
+    return () => window.removeEventListener('YMS_ACTION', handleSync);
+  }, []);
 
   // Derived state
   const filteredDeliveries = useMemo(() => {
@@ -100,47 +114,29 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+    if (!over) return;
 
-    if (over && active.id !== over.id) {
-      const deliveryId = active.id as string;
-      const overId = over.id as string;
-      
-      const delivery = yms.deliveries.find(d => d.id === deliveryId);
-      if (!delivery) return;
+    const delivery = yms.deliveries.find(d => d.id === active.id);
+    if (!delivery) return;
 
-      // Handle drop on a Dock in the timeline
-      if (overId.startsWith('dock-')) {
-        const dockIdStr = overId.replace('dock-', '');
-        const dockId = Number(dockIdStr);
-        
-        // If it's a new assignment or a move, update it
-        if (delivery.dockId !== dockId) {
-          // Calculate time based on horizontal position if available via data
-          const dropData = over.data.current;
-          let scheduledTime = delivery.scheduledTime;
-          
-          if (dropData?.type === 'dock-cell' && dropData.time) {
-            scheduledTime = dropData.time;
-          }
-
-          deliveryActions.assignDock(deliveryId, dockId, scheduledTime);
-        }
-      }
+    if (over.data.current?.type === 'dock-cell') {
+      const { dockId, time } = over.data.current;
+      deliveryActions.assignDock(delivery.id, Number(dockId), time);
     }
   };
 
-  if (!state) {
+  if (yms.warehouses.length === 0) {
     return (
-      <div className="p-8 space-y-8 h-screen overflow-hidden">
-        <div className="flex items-center justify-between mb-10">
-          <div className="flex items-center gap-4">
-            <Skeleton variant="circle" />
+      <div className="min-h-screen bg-background p-8 space-y-10">
+        <div className="flex justify-between items-center">
             <div className="space-y-2">
-              <Skeleton className="w-48 h-8" />
-              <Skeleton className="w-64 h-4" />
+                <Skeleton className="h-10 w-64 rounded-xl" />
+                <Skeleton className="h-4 w-96 rounded-lg" />
             </div>
-          </div>
-          <Skeleton className="w-48 h-12 rounded-2xl" />
+            <Skeleton className="h-12 w-48 rounded-2xl" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-[2.5rem]" />)}
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
            <div className="xl:col-span-2 space-y-6">
@@ -181,12 +177,14 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onNewDelivery={() => setEditingDelivery({ warehouseId: yms.selectedWarehouseId || undefined })}
+        onWarehouseSettings={() => setIsWarehouseSettingsOpen(true)}
         onBack={onBack}
       />
 
       <div className="flex gap-4 p-2 bg-card rounded-[2rem] border border-border w-fit shadow-sm">
         <button
           onClick={() => setDirectionFilter('INBOUND')}
+          data-testid="nav-inbound"
           className={`px-8 py-3 rounded-2xl font-black uppercase tracking-widest transition-all ${
             directionFilter === 'INBOUND' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20' : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]/50'
           }`}
@@ -195,6 +193,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         </button>
         <button
           onClick={() => setDirectionFilter('OUTBOUND')}
+          data-testid="nav-outbound"
           className={`px-8 py-3 rounded-2xl font-black uppercase tracking-widest transition-all ${
             directionFilter === 'OUTBOUND' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20' : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]/50'
           }`}
@@ -212,7 +211,10 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
       ) : (
         <div className="flex flex-col gap-10">
           <section className="space-y-6 flex flex-col h-[600px]">
-            <h3 className="text-2xl font-black text-foreground">Docks & Planning</h3>
+            <div className="flex items-center justify-between">
+              <h3 data-testid="page-title" className="text-2xl font-black text-foreground">Docks & Planning</h3>
+              <YmsCapacityStats />
+            </div>
             <ErrorBoundary fallbackTitle="Timeline Fout">
               <YmsTimeline 
                 deliveries={filteredDeliveries}
@@ -226,7 +228,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
 
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             <div className="xl:col-span-2 space-y-4">
-              <h3 className="text-xl font-black text-foreground tracking-tight">Actieve Leveringen</h3>
+              <h3 data-testid="page-title" className="text-xl font-black text-foreground tracking-tight">Actieve Leveringen</h3>
               <ErrorBoundary fallbackTitle="Leveringenlijst Fout">
                 <YmsDeliveryList 
                   deliveries={filteredDeliveries}
@@ -285,6 +287,13 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         waitingAreas={yms.waitingAreas}
         onAssignDock={(id, time) => { deliveryActions.assignDock(assigningDelivery!.id, id, time); setAssigningDelivery(null); }}
         onAssignWaitingArea={(id) => { yms.actions.updateDelivery({ ...assigningDelivery!, waitingAreaId: id, status: 'IN_YARD' }); setAssigningDelivery(null); }}
+      />
+
+      <WarehouseSettingsModal 
+        isOpen={isWarehouseSettingsOpen}
+        onClose={() => setIsWarehouseSettingsOpen(false)}
+        warehouse={yms.currentWarehouse || null}
+        onSave={(w) => yms.actions.updateWarehouse(w)}
       />
 
       <DragOverlay>
