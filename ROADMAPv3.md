@@ -1,5 +1,5 @@
 # ROADMAP v3 - ILG Foodgroup YMS Control Tower
-*Versie: v3.7.5 — Bijgewerkt: 2026-03-29 door @System-Architect*
+*Versie: v3.9.4 — Bijgewerkt: 2026-03-30 door @System-Architect*
 
 > [!NOTE]
 > Dit document is de strategische leidraad voor het team. Elke sprint is afgestemd met alle agent-profielen uit `AGENTS.md`. Nieuwe sprints starten NIET voordat de vorige sprint volledig getest en gedocumenteerd is.
@@ -20,40 +20,23 @@
 | **v3.7.4** | Layout Consolidation (Tabellen & Stuck Fix) | ✅ Gereleased |
 | **v3.7.5** | Type-Safety Audit & Documentation Update | ✅ Gereleased |
 | **v3.8.0** | Pallet Administratie & Financiën | ✅ Gereleased |
+| **v3.9.0** | Intern Slot Management & Capaciteit | ✅ Gereleased |
 
 ---
 
-## 🟡 Volgende Sprint: v3.9.0 — Intern Slot Management & Capaciteit
-*Verantwoordelijke agent: @Finance-Auditor, @Data-Specialist*
-
-> [!IMPORTANT]
-> Pallet-reconciliatie is een **aparte, async module**. De bestaande Yard milestones worden niet aangeraakt.
-
-### Scope
-- [x] **Pallet Ledger**: Nieuwe `pallet_transactions` tabel voor elke ruil (in/uit per levering)
-- [x] **Kosten per Leverancier**: Uitbreiding `address_book` met `pallet_rate` (€/pallet)
-- [x] **Saldo-overzicht**: Per transporteur een actueel saldo (hoeveel pallets schuld/tegoed)
-- [x] **Creditnota Matching**: Mogelijkheid om ontvangen creditnota te koppelen aan openstaande transacties
-- [x] **Bulk Verrekening**: Een 'Settle'-actie om een reeks transacties als afgehandeld te markeren
-
-### Niet in scope
-- Automatische import van creditnota's (PDF/EDI) → v4.x
-- Koppeling met extern boekhoudpakket → na management-besluit
-
----
-
-## 🔵 Geplande Sprint: v3.9.0 — Intern Slot Management & Capaciteit
+## ✅ Voltooide Sprint: v3.9.0 — Intern Slot Management & Capaciteit
 *Verantwoordelijke agent: @Yard-Strategist, @Frontend-Specialist, @System-Architect*
 
 > [!IMPORTANT]
 > Geen externe portal. Alle slot-logica is intern en voor back-office medewerkers only (AVG/GDPR compliant).
 
 ### Scope
-- [ ] **Slot-based Timeline**: Dockplanning op 30-minuten intervallen, visueel zichtbaar
-- [ ] **`yms_slots` tabel**: Vervangt de huidige vrije D&D met een gestructureerde reservering
-- [ ] **Conflict-detectie**: Automatisch weigeren van dubbele boekingen op hetzelfde dock/slot
-- [ ] **Drag & Drop Refactor**: D&D 'snapt' naar dichtstbijzijnde vrije slot (intern gebruik)
-- [ ] **Overzicht Bezettingsgraad**: Per dag/week zichtbaar hoeveel % van de dockcapaciteit benut is
+- [x] **Slot-based Timeline**: Dockplanning op 30-minuten intervallen, visueel zichtbaar
+- [x] **`yms_slots` tabel**: Beheert de reserveringen via gestructureerde data
+- [x] **Conflict-detectie**: Voorkomt dubbele boekingen op hetzelfde dock/slot
+- [x] **Drag & Drop Refactor**: D&D 'snapt' naar dichtstbijzijnde vrije slot (intern gebruik)
+- [x] **Overzicht Bezettingsgraad**: Live statistieken over dock-benutting
+- [x] **E2E Reliability**: 100% pass-rate op de volledige operational suite (v3.9.4)
 
 ### Design Rule
 - `scheduledTime` op de levering blijft de primaire bron voor milestones. Een slot-reservering is een planning-harnas; het vervangt geen operationele data.

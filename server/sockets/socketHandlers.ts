@@ -194,23 +194,25 @@ export const setupSocketHandlers = (io: Server) => {
               logEntry.details = `Details bijgewerkt voor: ${newPayload.reference}`;
             }
 
-            // Pallet Exchange Logic
-            if (newPayload.status === 100 && existing?.status !== 100 && newPayload.palletExchange && newPayload.palletCount > 0) {
+            // Pallet Exchange Logic (v3.8.1: Requirement for explicit confirmation)
+            if (newPayload.status === 100 && existing?.status !== 100 && newPayload.isPalletExchangeConfirmed) {
               const entityId = newPayload.supplierId || newPayload.transporterId || newPayload.customerId;
               if (entityId) {
-                // Inbound (bringing goods) = they owe us pallets? Or we owe them?
-                // Let's assume positive balance means they have our pallets, negative means we owe them.
-                // Simple logic: Inbound adds to our stock, so we owe them (+balance). Outbound we send them pallets, so they owe us (-balance).
                 const isOutbound = newPayload?.type === 'exworks' || newPayload?.direction === 'OUTBOUND';
                 const sign = isOutbound ? -1 : 1;
+                const actualCount = newPayload.palletsExchanged ?? newPayload.palletCount ?? 0;
                 
-                savePalletTransaction({
-                  entityId,
-                  entityType: newPayload.supplierId ? 'supplier' : (newPayload.transporterId ? 'transporter' : 'customer'),
-                  deliveryId: newPayload.id,
-                  balanceChange: newPayload.palletCount * sign
-                });
-                logEntry.details += ` | Palletruil geregistreerd: ${newPayload.palletCount * sign} pallets.`;
+                if (actualCount !== 0) {
+                  savePalletTransaction({
+                    entityId,
+                    entityType: newPayload.supplierId ? 'supplier' : (newPayload.transporterId ? 'transporter' : 'customer'),
+                    deliveryId: newPayload.id,
+                    balanceChange: actualCount * sign,
+                    palletType: newPayload.palletType,
+                    palletRate: newPayload.palletRate
+                  });
+                  logEntry.details += ` | Palletruil bevestigd: ${actualCount * sign} pallets (${newPayload.palletType || 'EUR'} @ €${newPayload.palletRate || 0}).`;
+                }
               }
             }
 
@@ -256,11 +258,15 @@ export const setupSocketHandlers = (io: Server) => {
                   temperature: (tempMap[newPayload.cargoType] || 'Droog') as YmsTemperature,
                   isReefer: newPayload.type === 'container',
                   scheduledTime,
-                  status: 'PLANNED' as YmsDeliveryStatus,
-                  transporterId: newPayload.transporterId,
-                  statusTimestamps: { 'PLANNED': timestamp }
+                  status: 'EXPECTED',
+                  transporterId: newPayload.transporterId || null,
+                  direction: newPayload.type === 'exworks' ? 'OUTBOUND' : 'INBOUND',
+                  palletCount: newPayload.palletCount || 0,
+                  palletType: newPayload.palletType || 'EUR',
+                  palletRate: newPayload.palletRate || 0,
+                  statusTimestamps: { 'EXPECTED': timestamp }
                 };
-                saveYmsDelivery(newYmsDelivery);
+                saveYmsDelivery(newYmsDelivery as YmsDelivery);
                 broadcastState(io);
               }
             }
@@ -289,11 +295,39 @@ export const setupSocketHandlers = (io: Server) => {
                   const activeAlerts = alerts.filter(a => a.deliveryId === current.id && !a.resolved);
                   activeAlerts.forEach(a => resolveYmsAlert(a.id));
                 }
+
+                // Pallet Logic for Standalone YMS Deliveries (v3.8.1)
+                if (current.status === 'COMPLETED' && existing.status !== 'COMPLETED' && !current.mainDeliveryId && current.isPalletExchangeConfirmed) {
+                  const entityId = current.supplierId || current.transporterId;
+                  if (entityId) {
+                    const sign = current.direction === 'OUTBOUND' ? -1 : 1;
+                    const actualCount = current.palletsExchanged ?? current.palletCount ?? 0;
+                    
+                    if (actualCount !== 0) {
+                      savePalletTransaction({
+                        entityId,
+                        entityType: current.supplierId ? 'supplier' : 'transporter',
+                        deliveryId: current.id,
+                        balanceChange: actualCount * sign,
+                        palletType: current.palletType,
+                        palletRate: current.palletRate
+                      });
+                      logEntry.details = `Palletruil voor ${current.reference} bevestigd: ${actualCount * sign} pallets (${current.palletType || 'EUR'} @ €${current.palletRate || 0}).`;
+                      logEntry.action = "Palletruil Bevestigd";
+                    }
+                  }
+                }
               }
             }
             saveYmsDelivery(current);
             syncDockStatus(current.id, current.dockId || null, current.status, current.warehouseId);
-            addAuditEntry(current.mainDeliveryId || current.id, user.name, "YMS Status Update", `YMS Status gewijzigd naar ${current.status}`);
+            if (current.mainDeliveryId) {
+              addAuditEntry(current.mainDeliveryId, user.name, "YMS Status Update", `YMS Status gewijzigd naar ${current.status}`);
+            }
+
+            logEntry.action = "YMS Status Update";
+            logEntry.details = `Status voor ${current.reference} gewijzigd naar ${current.status}`;
+            logEntry.reference = current.reference;
             
             broadcastDelta(io, 'YMS_DELIVERY_UPDATED', current);
             break;
@@ -399,7 +433,13 @@ export const setupSocketHandlers = (io: Server) => {
             });
 
             syncDockStatus(updated.id, updated.dockId, updated.status, updated.warehouseId);
-            addAuditEntry(updated.mainDeliveryId || updated.id, user.name, "Dock Toegewezen", `Levering ${delivery.reference} toegewezen aan Dock ${dockId} (Slot: ${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}, Duur: ${duration}m)`);
+            if (updated.mainDeliveryId) {
+              addAuditEntry(updated.mainDeliveryId, user.name, "Dock Toegewezen", `Levering ${delivery.reference} toegewezen aan Dock ${dockId} (Slot: ${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}, Duur: ${duration}m)`);
+            }
+
+            logEntry.action = "Dock Toegewezen";
+            logEntry.details = `Levering ${delivery.reference} toegewezen aan Dock ${dockId} (Slot: ${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()})`;
+            logEntry.reference = delivery.reference;
             
             broadcastState(io); // Need full state for slots
             break;

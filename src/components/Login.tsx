@@ -40,7 +40,7 @@ export const Login = () => {
             />
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">ILG Foodgroup</h1>
-          <p className="text-slate-400 text-sm font-medium">Logistics & Yard Management System v3.3.0</p>
+          <p className="text-slate-400 text-sm font-medium">Logistics & Yard Management System v3.9.4</p>
         </div>
 
         {/* Form Section */}

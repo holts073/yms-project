@@ -8,11 +8,12 @@ import { useYmsData } from '../../hooks/useYmsData';
 import { YmsWaitingArea } from '../../types';
 import { cn } from '../../lib/utils';
 
-export const YmsWaitingAreaGrid: React.FC = () => {
+export const YmsWaitingAreaGrid: React.FC<{ data?: YmsWaitingArea[] }> = ({ data }) => {
   const { waitingAreas, actions } = useYmsData();
   const { currentUser } = useSocket();
   const isAdmin = currentUser?.role === 'admin';
-  const sortedWaitingAreas = React.useMemo(() => [...waitingAreas].sort((a, b) => a.name.localeCompare(b.name)), [waitingAreas]);
+  const displayData = data || waitingAreas;
+  const sortedWaitingAreas = React.useMemo(() => [...displayData].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })), [displayData]);
 
   const columns = [
     {
@@ -43,37 +44,6 @@ export const YmsWaitingAreaGrid: React.FC = () => {
         </span>
       )
     },
-    {
-      header: 'Acties',
-      className: 'text-right',
-      accessor: (wa: YmsWaitingArea) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" 
-            title="Blokkeren/Deblokkeren"
-            onClick={() => actions.updateWaitingArea({ ...wa, adminStatus: wa.adminStatus === 'Inactive' ? 'Active' : 'Inactive' })}
-          >
-            {wa.adminStatus === 'Inactive' ? <Unlock size={14} /> : <Lock size={14} />}
-          </Button>
-
-          {isAdmin && (
-            <button 
-              onClick={() => {
-                if (confirm(`Weet je zeker dat je wachtplaats ${wa.name} wilt verwijderen?`)) {
-                  actions.deleteWaitingArea(wa.id, wa.warehouseId);
-                }
-              }}
-              className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
-              title="Verwijderen"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
-        </div>
-      )
-    }
   ];
 
   return (

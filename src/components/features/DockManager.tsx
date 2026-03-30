@@ -1,5 +1,6 @@
 import React from 'react';
-import { MapPin, Thermometer, Plus } from 'lucide-react';
+import { MapPin, Thermometer, Plus, Trash2 } from 'lucide-react';
+import { useYmsData } from '../../hooks/useYmsData';
 import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
@@ -13,6 +14,7 @@ interface DockManagerProps {
 }
 
 export const DockManager: React.FC<DockManagerProps> = ({ docks, warehouseId, onUpdate }) => {
+  const { actions } = useYmsData();
   const filteredDocks = docks.filter(d => d.warehouseId === warehouseId);
 
   const toggleTemp = (dock: YmsDock, temp: YmsTemperature) => {
@@ -40,7 +42,7 @@ export const DockManager: React.FC<DockManagerProps> = ({ docks, warehouseId, on
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {filteredDocks.map(dock => (
-          <Card key={dock.id} padding="lg" className="hover:shadow-lg transition-all group border-2 hover:border-indigo-500/20">
+          <Card key={dock.id} data-testid={`dock-card-${dock.id}`} padding="lg" className="hover:shadow-lg transition-all group border-2 hover:border-indigo-500/20">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">
               <MapPin size={24} />
@@ -100,12 +102,22 @@ export const DockManager: React.FC<DockManagerProps> = ({ docks, warehouseId, on
              >
                {dock.isFastLane ? 'FAST LANE: AAN' : 'STANDAARD DOCK'}
              </button>
-             <button
-                onClick={() => onUpdate({ ...dock, status: dock.status === 'Blocked' ? 'Available' : 'Blocked' })}
-                className="text-[10px] font-black uppercase tracking-widest text-rose-600 pt-2 hover:underline"
-             >
-                {dock.status === 'Blocked' ? 'Deblokkeren' : 'Blokkeren'}
-             </button>
+             <div className="flex items-baseline justify-between mt-2">
+                <button
+                   data-testid={`block-dock-${dock.id}`}
+                   onClick={() => onUpdate({ ...dock, status: dock.status === 'Blocked' ? 'Available' : 'Blocked' })}
+                   className="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:underline"
+                >
+                   {dock.status === 'Blocked' ? 'Deblokkeren' : 'Blokkeren'}
+                </button>
+                <button
+                  data-testid={`delete-dock-${dock.id}`}
+                  onClick={() => confirm(`Weet je zeker dat je ${dock.name} wilt verwijderen?`) && actions.deleteDock(dock.id, warehouseId)}
+                  className="p-2 text-[var(--muted-foreground)] hover:text-rose-500 transition-colors"
+                >
+                  <Trash2 size={12} />
+                </button>
+             </div>
           </div>
         </Card>
       ))}

@@ -8,7 +8,8 @@ export const YmsCapacityStats: React.FC = () => {
   
   const stats = useMemo(() => {
     // Basic calculation for the visible timeline (7:00 - 23:00 = 16 hours = 32 slots per dock)
-    const totalPossibleSlots = docks.length * 32;
+    const activeDocksCount = docks.filter(d => d.status !== 'Blocked' && d.adminStatus !== 'Inactive').length;
+    const totalPossibleSlots = activeDocksCount * 32;
     const occupiedSlots = ymsSlots.length;
     const occupancyPercentage = totalPossibleSlots > 0 ? Math.round((occupiedSlots / totalPossibleSlots) * 100) : 0;
     
@@ -50,9 +51,9 @@ export const YmsCapacityStats: React.FC = () => {
           </div>
           <span className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Capaciteit</span>
         </div>
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-black text-foreground">{stats.occupied}</span>
-          <span className="text-sm font-bold text-[var(--muted-foreground)]">/ {stats.total} slots</span>
+        <div className="flex items-baseline gap-1" data-testid="capacity-stats">
+          <span className="text-3xl font-black text-foreground" data-testid="capacity-total">{stats.occupied}</span>
+          <span className="text-sm font-bold text-[var(--muted-foreground)]">/ <span data-testid="capacity-max">{stats.total}</span> slots</span>
         </div>
       </div>
 

@@ -26,10 +26,10 @@ const stmts = {
   insertDelivery: db.prepare(`
     INSERT OR REPLACE INTO deliveries (
       id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt,
-      transportCost, weight, palletType, palletCount, cargoType, loadingCountry, loadingCity, palletExchange,
+      transportCost, weight, palletType, palletCount, palletRate, cargoType, loadingCountry, loadingCity, palletExchange,
       etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
       notes, statusHistory, loadingTime, dockId, customsStatus, dischargeTerminal, incoterm, readyForPickupDate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
   insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required) VALUES (?, ?, ?, ?, ?)'),
@@ -46,14 +46,14 @@ const stmts = {
   getLogs: db.prepare('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 100'),
   insertLog: db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)'),
   getYmsDocks: db.prepare('SELECT * FROM yms_docks'),
-  getYmsDocksByWarehouse: db.prepare('SELECT * FROM yms_docks WHERE warehouseId = ?'),
+  getYmsDocksByWarehouse: db.prepare('SELECT * FROM yms_docks WHERE warehouseId = ? ORDER BY name ASC'),
   saveYmsDock: db.prepare(`
     INSERT OR REPLACE INTO yms_docks (
       name, allowedTemperatures, status, adminStatus, currentDeliveryId, isFastLane, direction_capability, id, warehouseId
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   getYmsWaitingAreas: db.prepare('SELECT * FROM yms_waiting_areas'),
-  getYmsWaitingAreasByWarehouse: db.prepare('SELECT * FROM yms_waiting_areas WHERE warehouseId = ?'),
+  getYmsWaitingAreasByWarehouse: db.prepare('SELECT * FROM yms_waiting_areas WHERE warehouseId = ? ORDER BY name ASC'),
   saveYmsWaitingArea: db.prepare(`
     INSERT OR REPLACE INTO yms_waiting_areas (
       name, status, adminStatus, currentDeliveryId, id, warehouseId
@@ -66,8 +66,8 @@ const stmts = {
       id, warehouseId, reference, licensePlate, supplier, supplierId, mainDeliveryId, temperature, 
       scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
       estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate,
-      direction, palletCount
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      direction, palletCount, palletType, palletRate
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteYmsDelivery: db.prepare('DELETE FROM yms_deliveries WHERE id = ?'),
   deleteYmsDock: db.prepare('DELETE FROM yms_docks WHERE id = ? AND warehouseId = ?'),
@@ -91,7 +91,7 @@ const stmts = {
   resolveYmsAlert: db.prepare('UPDATE yms_alerts SET resolved = 1 WHERE id = ?'),
   getPalletTransactionsByEntity: db.prepare('SELECT * FROM pallet_transactions WHERE entityId = ? ORDER BY createdAt DESC'),
   getPalletTransactions: db.prepare('SELECT * FROM pallet_transactions ORDER BY createdAt DESC'),
-  insertPalletTransaction: db.prepare('INSERT OR REPLACE INTO pallet_transactions (id, entityId, entityType, deliveryId, balanceChange, createdAt) VALUES (?, ?, ?, ?, ?, ?)'),
+  insertPalletTransaction: db.prepare('INSERT OR REPLACE INTO pallet_transactions (id, entityId, entityType, deliveryId, balanceChange, palletType, palletRate, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
   getYmsSlots: db.prepare('SELECT * FROM yms_slots WHERE warehouseId = ?'),
   insertYmsSlot: db.prepare('INSERT OR REPLACE INTO yms_slots (id, warehouseId, dockId, deliveryId, startTime, endTime) VALUES (?, ?, ?, ?, ?, ?)'),
   deleteYmsSlot: db.prepare('DELETE FROM yms_slots WHERE id = ?'),
@@ -187,7 +187,7 @@ export function insertDelivery(d: Delivery) {
   db.transaction(() => {
     stmts.insertDelivery.run(
       d.id, d.type, d.reference, d.supplierId, d.transporterId, d.forwarderId, d.status, d.eta, d.createdAt, d.updatedAt,
-      d.transportCost, d.weight, d.palletType, d.palletCount, d.cargoType, d.loadingCountry, d.loadingCity, d.palletExchange ? 1 : 0,
+      d.transportCost, d.weight, d.palletType || null, d.palletCount || 0, d.palletRate || 0, d.cargoType, d.loadingCountry, d.loadingCity, d.palletExchange ? 1 : 0,
       d.etd, d.etaPort, d.etaWarehouse, d.originalEtaWarehouse, d.portOfArrival, d.billOfLading, d.containerNumber,
       d.notes, d.statusHistory ? JSON.stringify(d.statusHistory) : null, d.loadingTime, d.dockId || null,
       d.customsStatus || null, d.dischargeTerminal || null, d.incoterm || null, d.readyForPickupDate || null
@@ -265,8 +265,17 @@ export function deleteAddressEntry(id: string) {
   stmts.deleteAddressBook.run(id);
 }
 
-export function savePalletTransaction(t: { entityId: string, entityType: string, deliveryId: string, balanceChange: number }) {
-  stmts.insertPalletTransaction.run(Math.random().toString(36).substr(2, 9), t.entityId, t.entityType, t.deliveryId, t.balanceChange, new Date().toISOString());
+export function savePalletTransaction(t: { entityId: string, entityType: string, deliveryId: string, balanceChange: number, palletType?: string, palletRate?: number }) {
+  stmts.insertPalletTransaction.run(
+    Math.random().toString(36).substr(2, 9),
+    t.entityId,
+    t.entityType,
+    t.deliveryId,
+    t.balanceChange,
+    t.palletType || null,
+    t.palletRate || 0,
+    new Date().toISOString()
+  );
 }
 
 export function getPalletBalances() {
@@ -396,7 +405,9 @@ export function saveYmsDelivery(d: YmsDelivery) {
     d.tempAlertThreshold || 30,
     d.lastEtaUpdate || null,
     d.direction || 'INBOUND',
-    d.palletCount || 0
+    d.palletCount || 0,
+    d.palletType || 'EUR',
+    d.palletRate || 0
   );
 }
 

@@ -276,6 +276,8 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                 ...data,
                 id: editingDelivery?.id || Math.random().toString(36).substr(2, 9),
                 status: editingDelivery?.status || 0,
+                palletCount: parseInt(data.palletCount as string) || 0,
+                palletRate: parseFloat(data.palletRate as string) || 0,
                 documents,
                 updatedAt: new Date().toISOString(),
                 createdAt: editingDelivery?.createdAt || new Date().toISOString()
@@ -353,26 +355,50 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                     <Input label="Laadland" name="loadingCountry" defaultValue={editingDelivery?.loadingCountry} />
                   </>
                 )}
-               <Input label="Aantal Pallets" name="palletCount" type="number" defaultValue={editingDelivery?.palletCount} />
-               <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallet Type</label>
-                  <select name="palletType" defaultValue={editingDelivery?.palletType || 'EUR'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
-                     <option value="EUR">EUR</option>
-                     <option value="BLOK">BLOK</option>
-                     <option value="CHEP">CHEP</option>
-                  </select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Lading Type</label>
-                  <select name="cargoType" defaultValue={editingDelivery?.cargoType || 'Dry'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
-                     <option value="Dry">Droog</option>
-                     <option value="Cool">Koel</option>
-                     <option value="Frozen">Vries</option>
-                  </select>
-               </div>
+                <div className="grid grid-cols-2 gap-6">
+                   <Input label="Aantal Pallets" name="palletCount" type="number" defaultValue={editingDelivery?.palletCount} />
+                   <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Lading Type</label>
+                      <select name="cargoType" defaultValue={editingDelivery?.cargoType || 'Dry'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
+                         <option value="Dry">Droog</option>
+                         <option value="Cool">Koel</option>
+                         <option value="Frozen">Vries</option>
+                      </select>
+                   </div>
+                </div>
                 <Input label="Gewicht (kg)" name="weight" type="number" defaultValue={editingDelivery?.weight} />
+                <div className="space-y-4 bg-card/50 p-4 rounded-2xl border border-border mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallet Type</label>
+                       <select 
+                         name="palletType" 
+                         defaultValue={editingDelivery?.palletType || 'EUR'} 
+                         className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold"
+                         onChange={(e) => {
+                           const rates: any = state.settings?.pallet_rates || { 'EUR': 13, 'DPD': 22.5, 'CHEP': 0, 'BLOK': 15 };
+                           const rateInput = document.getElementById('palletRate') as HTMLInputElement;
+                           if (rateInput) rateInput.value = rates[e.target.value] || '0';
+                         }}
+                       >
+                          <option value="EUR">EUR (€{(state.settings?.pallet_rates?.EUR || 13).toFixed(2)})</option>
+                          <option value="DPD">DPD (€{(state.settings?.pallet_rates?.DPD || 22.5).toFixed(2)})</option>
+                          <option value="CHEP">CHEP (€{(state.settings?.pallet_rates?.CHEP || 0).toFixed(2)})</option>
+                          <option value="BLOK">BLOK (€{(state.settings?.pallet_rates?.BLOK || 15).toFixed(2)})</option>
+                       </select>
+                    </div>
+                    <Input 
+                      label="Tarief (€)" 
+                      name="palletRate" 
+                      id="palletRate"
+                      type="number" 
+                      step="0.01" 
+                      defaultValue={editingDelivery?.palletRate || 13} 
+                    />
+                  </div>
+                </div>
                 <div className="flex items-center gap-3 pt-6 pl-4">
-                   <input type="checkbox" name="palletExchange" id="palletExchange" defaultChecked={editingDelivery?.palletExchange} className="w-5 h-5 rounded border-border" />
+                   <input type="checkbox" name="palletExchange" id="palletExchange" defaultChecked={editingDelivery?.id ? editingDelivery.palletExchange : true} className="w-5 h-5 rounded border-border" />
                    <label htmlFor="palletExchange" className="text-sm font-bold text-foreground">Palletruil Toepassen</label>
                 </div>
              </div>

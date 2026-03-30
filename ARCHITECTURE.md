@@ -1,8 +1,8 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.7.4 — Bijgewerkt: 2026-03-29 door @System-Architect*
+*Versie: v3.9.4 — Bijgewerkt: 2026-03-30 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na v3.7.4 release: High-Density Table layouts, Multi-Theme Synchronization en volledige Type-Safety audit.
+> Bijgewerkt na v3.9.3 E2E Stabilization: 100% E2E Operational Reliability, Socket Upsert-pattern en Layout Resilience.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
@@ -59,7 +59,13 @@ graph TD
     SC -- "Re-render" --> UI
 ```
 
-## 3. Logistieke Levenscyclus (State Machine)
+## 3. State Synchronization (Upsert Pattern)
+Sinds v3.9.1 hanteert de `SocketContext` een **Upsert-patroon** voor real-time updates:
+1. **`state_update`**: Volledige reconciliatie van de warehouse-state bij verbinding of selectie.
+2. **`state_patch`**: Delta-updates voor bestaande records.
+3. **`state_upsert`**: Indien een patch een onbekend ID bevat (bijv. een nieuwe test-levering), wordt deze direct toegevoegd aan de lokale cache. Dit voorkomt 'ghost data' tijdens snelle E2E-sequenties.
+
+## 4. Logistieke Levenscyclus (State Machine)
 
 De levenscyclus van een vracht is cruciaal voor de **Smart Call Logic** en dashboard-filtering:
 
@@ -127,6 +133,12 @@ Sinds v3.7.4 is de "High-Density" mode de standaard. Dit betekent:
 - **Bcrypt**: Wachtwoorden worden nooit in plaintext opgeslagen.
 - **RBAC Guard (v3.10.0)**: Middleware die elke socket-actie valideert tegen de permissies van de gebruiker.
 
-## 9. Shell-First UI & Performance
+## 9. E2E & Layout Resilience
+Om 100% betrouwbaarheid in geautomatiseerde testen te garanderen, hanteren we de **Invisible Sidebar Rule**:
+- In 'Planning Mode' wordt de sidebar niet verwijderd (`hidden`), maar verborgen via `invisible opacity-0`.
+- Dit zorgt ervoor dat Playwright-locators altijd toegang hebben tot navigatie-elementen, wat timeouts voorkomt.
+- Test-helpers in `helpers.ts` maken gebruik van `includeHidden: true` voor robuuste interactie.
+
+## 10. Shell-First UI & Performance
 - **Shell-First Rendering**: Sidebar en navigatie renderen onmiddellijk; content-area toont skeletons tijdens sync.
 - **Null-State Resilience**: Componenten zijn bestand tegen initieel ontbrekende data via optional chaining.

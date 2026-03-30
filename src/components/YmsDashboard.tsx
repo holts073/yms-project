@@ -99,13 +99,28 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
     );
   }, [yms.deliveries, yms.selectedWarehouseId, selectedDate, searchTerm, directionFilter, view]);
 
+  const activeDocks = useMemo(() => {
+    return yms.docks.filter(d => 
+      d.status !== 'Blocked' && 
+      d.adminStatus !== 'Inactive' &&
+      (d.direction_capability === directionFilter || d.direction_capability === 'BOTH')
+    );
+  }, [yms.docks, directionFilter]);
+  const activeWaitingAreas = useMemo(() => {
+    return yms.waitingAreas.filter(wa => 
+      wa.status !== 'Blocked' && 
+      wa.adminStatus !== 'Inactive' &&
+      wa.warehouseId === yms.selectedWarehouseId
+    );
+  }, [yms.waitingAreas, yms.selectedWarehouseId]);
+
   const stats = useMemo(() => ({
     totalDeliveries: filteredDeliveries.filter(d => !['COMPLETED', 'GATE_OUT'].includes(d.status)).length,
-    activeDocks: yms.docks.filter(d => d.status === 'Occupied').length,
-    totalDocks: yms.docks.length,
+    activeDocks: activeDocks.filter(d => d.status === 'Occupied').length,
+    totalDocks: activeDocks.length,
     waitingVehicles: filteredDeliveries.filter(d => d.status === 'GATE_IN' && !d.dockId).length,
     alertsCount: state?.yms?.alerts?.length || 0
-  }), [filteredDeliveries, yms.docks, state]);
+  }), [filteredDeliveries, activeDocks, state]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -127,30 +142,30 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
 
   if (yms.warehouses.length === 0) {
     return (
-      <div className="min-h-screen bg-background p-8 space-y-10">
-        <div className="flex justify-between items-center">
-            <div className="space-y-2">
-                <Skeleton className="h-10 w-64 rounded-xl" />
-                <Skeleton className="h-4 w-96 rounded-lg" />
-            </div>
-            <Skeleton className="h-12 w-48 rounded-2xl" />
+      <div className="min-h-screen bg-background p-4 space-y-6">
+        <div className="col-span-8 space-y-4">
+          <div className="flex justify-between items-center px-2">
+             <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Vrachtwagen Wachtrij</h3>
+             <YmsCapacityStats />
+          </div>
+          <ErrorBoundary fallbackTitle="Wachtrij Fout">
+            <YmsQueue onAssignClick={setAssigningDelivery} />
+          </ErrorBoundary>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-[2.5rem]" />)}
-        </div>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-           <div className="xl:col-span-2 space-y-6">
-              <h3 className="text-2xl font-black text-foreground">Aankomst Wachtrij</h3>
-              <ErrorBoundary fallbackTitle="Wachtrij Fout">
-                <YmsQueue onAssignClick={setAssigningDelivery} />
-              </ErrorBoundary>
-           </div>
-           <div className="space-y-10">
-              <h3 className="text-2xl font-black text-foreground">Wachtruimte Status</h3>
-              <ErrorBoundary fallbackTitle="Wachtruimte Fout">
-                <YmsWaitingAreaGrid />
-              </ErrorBoundary>
-           </div>
+        
+        <div className="col-span-4 space-y-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Docks</h3>
+            <ErrorBoundary fallbackTitle="Dock Fout">
+              <YmsDockGrid data={activeDocks} />
+            </ErrorBoundary>
+          </div>
+          <div className="space-y-4">
+            <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Wachtruimte</h3>
+            <ErrorBoundary fallbackTitle="Wachtruimte Fout">
+              <YmsWaitingAreaGrid data={activeWaitingAreas} />
+            </ErrorBoundary>
+          </div>
         </div>
       </div>
     );
@@ -165,7 +180,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
       onDragEnd={handleDragEnd}
       modifiers={[restrictToWindowEdges]}
     >
-      <div className="min-h-screen bg-background p-4 lg:p-8 font-sans space-y-10">
+      <div className="min-h-screen bg-background p-2 lg:p-4 font-sans space-y-4">
       <YmsHeader 
         title="Yard Management"
         subtitle="Real-time overzicht van je logistieke yard"
@@ -176,12 +191,16 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         onSelectDate={setSelectedDate}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onNewDelivery={() => setEditingDelivery({ warehouseId: yms.selectedWarehouseId || undefined })}
+        onNewDelivery={() => setEditingDelivery({ 
+          warehouseId: yms.selectedWarehouseId || undefined,
+          palletType: 'EUR',
+          palletRate: 13
+        })}
         onWarehouseSettings={() => setIsWarehouseSettingsOpen(true)}
         onBack={onBack}
       />
 
-      <div className="flex gap-4 p-2 bg-card rounded-[2rem] border border-border w-fit shadow-sm">
+      <div className="flex gap-2 p-1.5 bg-card rounded-2xl border border-border w-fit shadow-xs">
         <button
           onClick={() => setDirectionFilter('INBOUND')}
           data-testid="nav-inbound"
@@ -210,7 +229,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             />
       ) : (
         <div className="flex flex-col gap-10">
-          <section className="space-y-6 flex flex-col h-[600px]">
+          <section className="space-y-6 flex flex-col h-[500px]">
             <div className="flex items-center justify-between">
               <h3 data-testid="page-title" className="text-2xl font-black text-foreground">Docks & Planning</h3>
               <YmsCapacityStats />
@@ -226,9 +245,12 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             </ErrorBoundary>
           </section>
 
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-            <div className="xl:col-span-2 space-y-4">
-              <h3 data-testid="page-title" className="text-xl font-black text-foreground tracking-tight">Actieve Leveringen</h3>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div className="xl:col-span-8 space-y-4">
+              <h3 data-testid="page-title" className="text-xl font-black text-foreground tracking-tight flex items-center gap-3">
+                 <Truck size={20} className="text-indigo-500" />
+                 Actieve Leveringen
+              </h3>
               <ErrorBoundary fallbackTitle="Leveringenlijst Fout">
                 <YmsDeliveryList 
                   deliveries={filteredDeliveries}
@@ -249,18 +271,30 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
               </ErrorBoundary>
             </div>
             
-            <div className="space-y-4">
-              <h3 className="text-xl font-black text-foreground tracking-tight">Dock Status</h3>
-              <ErrorBoundary fallbackTitle="Dock Fout">
-                <YmsDockGrid />
-              </ErrorBoundary>
-            </div>
+            <div className="xl:col-span-4 flex flex-col gap-8">
+              <div className="space-y-4 bg-card/10 p-4 rounded-[2rem] border border-border/50">
+                <h3 className="text-lg font-black text-foreground tracking-tight px-2 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                  Beschikbare Docks
+                </h3>
+                <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                  <ErrorBoundary fallbackTitle="Dock Fout">
+                    <YmsDockGrid data={activeDocks} />
+                  </ErrorBoundary>
+                </div>
+              </div>
 
-            <div className="space-y-4">
-              <h3 className="text-xl font-black text-foreground tracking-tight">Wachtruimtes</h3>
-              <ErrorBoundary fallbackTitle="Wachtruimte Fout">
-                <YmsWaitingAreaGrid />
-              </ErrorBoundary>
+              <div className="space-y-4 bg-card/10 p-4 rounded-[2rem] border border-border/50">
+                <h3 className="text-lg font-black text-foreground tracking-tight px-2 flex items-center gap-2">
+                   <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                   Wachtruimtes
+                </h3>
+                <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  <ErrorBoundary fallbackTitle="Wachtruimte Fout">
+                    <YmsWaitingAreaGrid data={activeWaitingAreas} />
+                  </ErrorBoundary>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -273,10 +307,11 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         onSave={(d) => { yms.actions.updateDelivery(d); setEditingDelivery(null); }}
         onUpdateEditing={setEditingDelivery}
         suppliers={state.addressBook?.suppliers || []}
-        transporters={state.addressBook?.transporters || []}
+        transporters={state?.addressBook?.transporters || []}
         warehouses={yms.warehouses}
         docks={yms.docks}
         waitingAreas={yms.waitingAreas}
+        palletRates={state.settings?.pallet_rates}
       />
       
       <YmsAssignmentModal 

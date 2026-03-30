@@ -40,13 +40,13 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
           description="Documenten missen"
         />
         <StatCard 
-          title="Onderweg" 
-          value={stats.enRoute} 
-          icon={<Truck size={20} />} 
-          variant="success"
-          active={filterType === 'enroute'}
-          onClick={() => onFilterChange('enroute')}
-          description="Naar magazijn"
+          title="In Transit" 
+          value={stats.inTransit} 
+          icon={<Clock size={20} />} 
+          variant="info"
+          active={filterType === 'in_transit'}
+          onClick={() => onFilterChange('in_transit')}
+          description="Niet geladen / Onderweg"
         />
         <StatCard 
           title="Douane" 
@@ -58,13 +58,13 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
           description="Inklaring lopende"
         />
         <StatCard 
-          title="In Transit" 
-          value={stats.inTransit} 
-          icon={<Clock size={20} />} 
-          variant="info"
-          active={filterType === 'in_transit'}
-          onClick={() => onFilterChange('in_transit')}
-          description="Niet geladen / Onderweg"
+          title="Onderweg" 
+          value={stats.enRoute} 
+          icon={<Truck size={20} />} 
+          variant="success"
+          active={filterType === 'enroute'}
+          onClick={() => onFilterChange('enroute')}
+          description="Naar magazijn"
         />
       </div>
 

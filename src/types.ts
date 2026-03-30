@@ -45,7 +45,8 @@ export interface Delivery {
   auditTrail?: AuditEntry[];
   transportCost?: number;
   weight?: number;
-  palletType?: 'EUR' | 'BLOK';
+  palletType?: YmsPalletType;
+  palletRate?: number;
   
   // Container specific
   forwarderId?: string;
@@ -113,6 +114,7 @@ export interface AppSettings {
     notification_email?: string;
     auto_archive_days?: number;
   };
+  pallet_rates?: Record<string, number>;
 }
 
 export interface CompanySettings {
@@ -159,6 +161,7 @@ export interface AppState {
 }
 
 export type YmsTemperature = 'Droog' | 'Vries' | 'Koel' | 'Fast Lane';
+export type YmsPalletType = 'EUR' | 'CHEP' | 'DPD' | 'BLOK';
 export type YmsDirection = 'INBOUND' | 'OUTBOUND';
 export type YmsDeliveryStatus = 'EXPECTED' | 'PLANNED' | 'GATE_IN' | 'IN_YARD' | 'DOCKED' | 'UNLOADING' | 'LOADING' | 'COMPLETED' | 'GATE_OUT';
 
@@ -220,6 +223,10 @@ export interface YmsDelivery {
   statusTimestamps?: Record<string, string>; // Maps status to ISO timestamp
   direction?: YmsDirection;
   palletCount?: number;
+  palletType?: YmsPalletType;
+  palletRate?: number;
+  palletsExchanged?: number;
+  isPalletExchangeConfirmed?: boolean;
   
   // Reefer Features
   estimatedDuration?: number;
@@ -255,6 +262,8 @@ export interface PalletTransaction {
   entityType: 'supplier' | 'transporter' | 'customer';
   deliveryId: string;
   balanceChange: number;
+  palletType?: YmsPalletType;
+  palletRate?: number;
   createdAt: string;
 }
 

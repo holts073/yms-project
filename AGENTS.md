@@ -82,6 +82,15 @@
     * **Rate Management:** Beheert de `pallet_rate` configuratie per contactprofiel in het adresboek.
     * **Audit Trail:** Elke financiële transactie krijgt een verplichte `audit_log` entry met gebruiker, datum en bedrag.
 
+### 8. @Text-Director (The Copywriter & UX Voice)
+* **Focus:** Terminologie, Consistentie, Tone-of-Voice en UX Copy.
+* **Verantwoordelijkheden:**
+    * **Terminologie-Wacht:** Zorgt dat termen als 'Slot', 'Dock', 'Levering' en 'Container' overal consistent worden gebruikt (geen mix van Engels/Nederlands).
+    * **Status Labels:** Definieert de exacte teksten voor status-updates (bijv. 'Onderweg' vs 'In Transit') voor maximale duidelijkheid.
+    * **Error Messaging:** Vertaalt technische backend-fouten naar begrijpelijke, behulpzame actie-teksten in de UI.
+    * **Email Templates:** Beheert de tekstuele inhoud van automatisch gegenereerde e-mails (zoals Transport Orders) voor een professionele uitstraling.
+    * **Branding:** Bewaakt dat alle teksten aansluiten bij de premium-positionering van het YMS Control Tower portaal.
+
 ---
 
 ## III. Release Criteria (Per Sprint Checklist)

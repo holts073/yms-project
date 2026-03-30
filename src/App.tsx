@@ -241,8 +241,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans transition-colors duration-300">
       {/* Sidebar */}
       <aside className={cn(
-        "bg-card border-r border-border flex flex-col p-4 transition-all duration-300",
-        activeTab === 'yms-planning' ? "w-0 p-0 overflow-hidden border-none opacity-0 invisible pointer-events-none absolute md:relative" : "w-72"
+        "bg-card border-r border-border flex flex-col p-4 transition-all duration-300 w-72"
       )}>
         <div className="flex items-center gap-3 mb-6 px-4">
           <img 
@@ -251,7 +250,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600 font-black tracking-widest">YMS v3.7.3</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600 font-black tracking-widest">YMS v3.9.4</span></h1>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">

@@ -5,14 +5,15 @@ import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { Table } from '../shared/Table';
 import { useYmsData } from '../../hooks/useYmsData';
-import { YmsDock } from '../../types';
+import { YmsDock, YmsWaitingArea } from '../../types';
 import { cn } from '../../lib/utils';
 
-export const YmsDockGrid: React.FC = () => {
+export const YmsDockGrid: React.FC<{ data?: YmsDock[] }> = ({ data }) => {
   const { docks, actions } = useYmsData();
   const { currentUser } = useSocket();
   const isAdmin = currentUser?.role === 'admin';
-  const sortedDocks = React.useMemo(() => [...docks].sort((a, b) => a.name.localeCompare(b.name)), [docks]);
+  const displayData = data || docks;
+  const sortedDocks = React.useMemo(() => [...displayData].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })), [displayData]);
   
   const columns = [
     {
@@ -52,37 +53,6 @@ export const YmsDockGrid: React.FC = () => {
         </div>
       )
     },
-    {
-      header: 'Acties',
-      className: 'text-right',
-      accessor: (dock: YmsDock) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-            onClick={() => actions.updateDock({ ...dock, status: dock.status === 'Blocked' ? 'Available' : 'Blocked' })}
-            title={dock.status === 'Blocked' ? 'Vrijgeven' : 'Blokkeren'}
-          >
-            {dock.status === 'Blocked' ? <Unlock size={14} /> : <Lock size={14} />}
-          </Button>
-
-          {isAdmin && (
-            <button 
-              onClick={() => {
-                if (confirm(`Weet je zeker dat je ${dock.name} wilt verwijderen?`)) {
-                  actions.deleteDock(dock.id, dock.warehouseId);
-                }
-              }}
-              className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
-              title="Verwijderen"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
-        </div>
-      )
-    }
   ];
 
   return (

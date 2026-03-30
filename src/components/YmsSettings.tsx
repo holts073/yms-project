@@ -13,9 +13,10 @@ import { YmsWarehouse } from '../types';
 
 export default function YmsSettings() {
   const { state, dispatch } = useSocket();
-  const [activeTab, setActiveTab] = useState<'warehouses' | 'docks' | 'waitingAreas' | 'overrides'>('warehouses');
+  const [activeTab, setActiveTab] = useState<'warehouses' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets'>('warehouses');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('W01');
   const [editingWarehouse, setEditingWarehouse] = useState<Partial<YmsWarehouse> | null>(null);
+  const [palletRates, setPalletRates] = useState<Record<string, number>>(state.settings?.pallet_rates || { EUR: 13, DPD: 22.5, CHEP: 0, BLOK: 15 });
   
   if (!state?.yms) return null;
   const { warehouses = [], docks = [], waitingAreas = [] } = state.yms;
@@ -34,8 +35,8 @@ export default function YmsSettings() {
       </header>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex gap-2 p-1.5 bg-card border border-border rounded-3xl w-fit shadow-sm">
-          {['warehouses', 'docks', 'waitingAreas', 'overrides'].map((tab) => (
+        <div className="flex gap-2 p-1.5 bg-card border border-border rounded-3xl w-fit shadow-sm" data-testid="settings-tabs">
+          {['warehouses', 'docks', 'waitingAreas', 'overrides', 'pallets'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -146,6 +147,56 @@ export default function YmsSettings() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'pallets' && (
+            <div className="max-w-2xl space-y-8">
+               <header>
+                 <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Financieel Beheer: Pallets</h3>
+                 <p className="text-[var(--muted-foreground)] text-sm">Beheer de standaardtarieven die worden gebruikt voor berekeningen in het dock- en palletgrootboek.</p>
+               </header>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border p-8 rounded-3xl shadow-sm">
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    label="EUR Pallet (€)" 
+                    value={palletRates.EUR} 
+                    onChange={e => setPalletRates({...palletRates, EUR: parseFloat(e.target.value) || 0})} 
+                  />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    label="DPD Pallet (€)" 
+                    value={palletRates.DPD} 
+                    onChange={e => setPalletRates({...palletRates, DPD: parseFloat(e.target.value) || 0})} 
+                  />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    label="CHEP Pallet (€)" 
+                    value={palletRates.CHEP} 
+                    onChange={e => setPalletRates({...palletRates, CHEP: parseFloat(e.target.value) || 0})} 
+                  />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    label="BLOK Pallet (€)" 
+                    value={palletRates.BLOK} 
+                    onChange={e => setPalletRates({...palletRates, BLOK: parseFloat(e.target.value) || 0})} 
+                  />
+                  
+                  <div className="md:col-span-2 pt-4 border-t border-border mt-4 flex justify-end">
+                    <Button 
+                      variant="primary" 
+                      leftIcon={<Save size={18} />} 
+                      onClick={() => dispatch('SAVE_SETTING', { key: 'pallet_rates', value: palletRates })}
+                    >
+                      Tarieven Opslaan
+                    </Button>
+                  </div>
+               </div>
             </div>
           )}
         </motion.div>

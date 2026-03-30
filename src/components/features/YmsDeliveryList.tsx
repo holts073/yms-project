@@ -16,7 +16,9 @@ import {
   Warehouse as WarehouseIcon,
   Trash2,
   Play,
-  ArrowRight
+  ArrowRight,
+  ClipboardCheck,
+  Check
 } from 'lucide-react';
 import { useYmsData } from '../../hooks/useYmsData';
 import { Badge } from '../shared/Badge';
@@ -136,9 +138,41 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
             </Button>
           )}
           {(d.status === 'UNLOADING' || d.status === 'LOADING') && (
-            <Button data-testid="btn-complete" size="xs" leftIcon={<CheckCircle2 size={12} />} onClick={() => onUpdateStatus(d, 'COMPLETED')} className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white">
-              Gereed
-            </Button>
+            <div className="flex gap-1 items-center">
+              {!d.isPalletExchangeConfirmed && (
+                <Button 
+                  size="xs" 
+                  variant="outline" 
+                  leftIcon={<ClipboardCheck size={12} />} 
+                  onClick={() => {
+                    const promptMsg = `Bevestig palletruil voor ${d.reference}:\n` +
+                                     `Type: ${d.palletType || 'EUR'}\n` +
+                                     `Tarief: €${d.palletRate?.toFixed(2) || '0.00'}\n` +
+                                     `Aantal gepland: ${d.palletCount || 0}\n\n` +
+                                     `Hoeveel pallets zijn er werkelijk geruild?`;
+                    const count = prompt(promptMsg, String(d.palletsExchanged ?? d.palletCount ?? 0));
+                    if (count !== null) {
+                      onUpdateStatus({ 
+                        ...d, 
+                        palletsExchanged: parseInt(count) || 0, 
+                        isPalletExchangeConfirmed: true 
+                      }, d.status);
+                    }
+                  }} 
+                  className="h-7 px-3 border-indigo-500 text-indigo-600 hover:bg-indigo-50"
+                >
+                  Pallets
+                </Button>
+              )}
+              {d.isPalletExchangeConfirmed && (
+                <Badge variant="success" size="xs" className="h-7 px-2 flex items-center gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-200">
+                  <Check size={10} /> {d.palletsExchanged} {d.palletType || 'Pallets'}
+                </Badge>
+              )}
+              <Button data-testid="btn-complete" size="xs" leftIcon={<CheckCircle2 size={12} />} onClick={() => onUpdateStatus(d, 'COMPLETED')} className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white">
+                Gereed
+              </Button>
+            </div>
           )}
           {/* Missing status progression buttons */}
           {d.status === 'IN_YARD' && (
