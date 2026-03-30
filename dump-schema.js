@@ -1,5 +1,5 @@
-const Database = require('better-sqlite3');
-const fs = require('fs');
+import Database from 'better-sqlite3';
+import fs from 'fs';
 
 const db = new Database('database.sqlite');
 const schema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table'").all();
