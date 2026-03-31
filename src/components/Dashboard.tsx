@@ -7,12 +7,14 @@ import { DashboardKPIs } from './features/DashboardKPIs';
 import { DashboardTable } from './features/DashboardTable';
 import { Card } from './shared/Card';
 import { TransportMailModal } from './features/TransportMailModal';
+import { DeliveryDetailModal } from './features/DeliveryDetailModal';
 
 const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: string, id?: string) => void }) => {
   const { state, dispatch, currentUser } = useSocket();
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', true);
   const [filterType, setFilterType] = useState<'action' | 'today' | 'enroute' | 'customs' | 'in_transit'>('action');
   const [mailDelivery, setMailDelivery] = useState<any>(null);
+  const [editingDelivery, setEditingDelivery] = useState<any>(null);
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
@@ -108,12 +110,27 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
           <DashboardTable 
             deliveries={displayedDeliveries}
             suppliers={state?.addressBook?.suppliers || []}
-            onSelect={(id) => onNavigate?.('deliveries', undefined, id)}
+            onSelect={(id) => {
+              const delivery = deliveries.find(d => d.id === id);
+              if (delivery) setEditingDelivery(delivery);
+            }}
             onYmsRegister={handleYmsRegister}
             onMailTransport={(d) => setMailDelivery(d)}
             onUpdateStatus={(d, s) => dispatch('UPDATE_DELIVERY', { ...d, status: s })}
             canEdit={canEdit}
             borderless
+          />
+
+          <DeliveryDetailModal 
+            isOpen={!!editingDelivery}
+            onClose={() => setEditingDelivery(null)}
+            delivery={editingDelivery}
+            state={state}
+            onSave={(data) => {
+              dispatch('UPDATE_DELIVERY', data);
+              setEditingDelivery(null);
+              toast.success('Levering bijgewerkt.');
+            }}
           />
         </Card>
       </section>

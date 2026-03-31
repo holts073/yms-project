@@ -1,5 +1,5 @@
-# ILG Foodgroup — Supply Chain | YMS Control Tower v3.10.0
-*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
+# ILG Foodgroup — Supply Chain | YMS Control Tower v3.10.2
+*Versie: v3.10.2 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat. Sinds v3.7.5 is het systeem 100% type-safe en geoptimaliseerd voor high-density monitoring.
 
@@ -51,6 +51,12 @@ UI Action → socket.emit('action') → Server validatie → SQLite write
 ```
 
 Zie `ARCHITECTURE.md` voor de volledige blauwdruk, inclusief Folder Tree en Mermaid diagrammen.
+
+## 🆕 Changelog v3.10.2 (UI/UX & Navigation Refactor)
+- **✅ Direct Dashboard Editing**: Gebruik van de gedeelde `DeliveryDetailModal` voor CRUD-acties direct vanaf het dashboard.
+- **✅ Premium Sidebar Polish**: Kleurgecodeerde iconen, herstel van de "Overig" categorie en verplaatsing van het versienummer naar de footer.
+- **✅ Centralized Logistics Control**: Alle magazijn-capaciteitsinstellingen verplaatst naar een eigen tabblad in `YmsSettings`.
+- **✅ Audit & QA Flag**: Introductie van de `requiresQA` vlag voor leveringen die kwaliteitsinspectie vereisen.
 
 ## 🆕 Changelog v3.10.1 (Robustness & Sync Fixes)
 - **✅ Global Dock Sync**: `syncDockStatus` zoekt nu in alle magazijnen om 'trapped' docks te voorkomen. 

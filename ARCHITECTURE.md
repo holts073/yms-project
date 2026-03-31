@@ -1,8 +1,8 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
+*Versie: v3.10.2 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na v3.9.3 E2E Stabilization: 100% E2E Operational Reliability, Socket Upsert-pattern en Layout Resilience.
+> Bijgewerkt na v3.10.2 UI & Navigation Refactor: Direct Dashboard Editing, Shared Modal Pattern en Gecentraliseerde Capaciteitsinstellingen.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 
@@ -15,7 +15,7 @@ We hanteren een strikte scheiding tussen de frontend (React) en backend (Node.js
 ├── src/                    # Frontend (React 19)
 │   ├── components/
 │   │   ├── shared/         # Atoms & Molecules: Button, Modal, Badge, Card (Context-vrij)
-│   │   ├── features/       # Organisms: Timeline, DockGrid, DeliveryTable (Business Logic)
+│   │   ├── features/       # Organisms: Timeline, DeliveryTable, DeliveryDetailModal (Business Logic)
 │   │   ├── ui/             # UI-specifieke hulpcomponenten
 │   │   └── ...             # Pagina's: YmsDashboard, Statistics, Archive, Settings
 │   ├── hooks/              # Custom Hooks: useYmsData, useDeliveries, useSocket
@@ -101,7 +101,7 @@ Het systeem hanteert een strikte flow om race-conditions te vermijden:
 ### Tabelstructuur — Kern (Global Pipeline)
 ```
 users          (id PK, name, email, passwordHash, role, permissions JSON)
-deliveries     (id PK, type, reference, billOfLading, supplierId, status, eta, ...)
+deliveries     (id PK, type, reference, billOfLading, supplierId, status, eta, requiresQA, ...)
 documents      (id PK, deliveryId FK, name, status, required)
 address_book   (id PK, type, name, contact, email, ...)
 logs           (id PK, timestamp, user, action, details)
@@ -140,7 +140,10 @@ const checkRole = (required: string) => {
 };
 ```
 
-## 📅 Slot Conflict Management (v3.9.0 / v3.10.0)
+## 7. UI & UX Patterns (v3.10.2)
+- **Shared Modal Logic**: In plaats van pagina-navigatie gebruiken we de `DeliveryDetailModal` voor CRUD-acties op zowel het Dashboard als in het Vrachtbeheer.
+- **Color-Coded Visuals**: De sidebar iconen zijn kleurgecodeerd per categorie (bv. Blauw voor Dashboard, Amber voor Pipeline, Groen voor Yard) voor snellere herkenning.
+- **Centralized Admin**: Capaciteitsinstellingen (minutes per pallet, threshold, hasGate) staan gecentraliseerd onder `YmsSettings.tsx` (Tab: Capaciteit).
 
 Het systeem voorkomt dubbele dock-boekingen op database-niveau en via socket-validatie:
 1. **Overlap Detectie**: `(start1 < end2) && (end1 > start2)`.

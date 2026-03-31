@@ -14,7 +14,6 @@ import { YmsQueue } from './features/YmsQueue';
 import { YmsAssignmentModal } from './features/YmsAssignmentModal';
 import { YmsDeliveryModal } from './features/YmsDeliveryModal';
 import { YmsCapacityStats } from './features/YmsCapacityStats';
-import { WarehouseSettingsModal } from './features/WarehouseSettingsModal';
 import { YmsDelivery, YmsDeliveryStatus, YmsWarehouse } from '../types';
 import { FullPageLoader } from './shared/LoadingSpinner';
 import { Skeleton, GridSkeleton, TableSkeleton } from './shared/SkeletonLoader';
@@ -72,7 +71,6 @@ export default function YmsDashboard({
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingDelivery, setEditingDelivery] = useState<Partial<YmsDelivery> | null>(null);
   const [assigningDelivery, setAssigningDelivery] = useState<YmsDelivery | null>(null);
-  const [isWarehouseSettingsOpen, setIsWarehouseSettingsOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -213,7 +211,6 @@ export default function YmsDashboard({
           palletType: 'EUR',
           palletRate: 13
         }) : undefined}
-        onWarehouseSettings={currentUser?.role === 'admin' ? () => setIsWarehouseSettingsOpen(true) : undefined}
         onBack={onBack}
       />
 
@@ -342,13 +339,6 @@ export default function YmsDashboard({
         waitingAreas={yms.waitingAreas}
         onAssignDock={(id, time) => { deliveryActions.assignDock(assigningDelivery!.id, id, time); setAssigningDelivery(null); }}
         onAssignWaitingArea={(id) => { yms.actions.updateDelivery({ ...assigningDelivery!, waitingAreaId: id, status: 'IN_YARD' }); setAssigningDelivery(null); }}
-      />
-
-      <WarehouseSettingsModal 
-        isOpen={isWarehouseSettingsOpen}
-        onClose={() => setIsWarehouseSettingsOpen(false)}
-        warehouse={yms.currentWarehouse || null}
-        onSave={(w) => yms.actions.updateWarehouse(w)}
       />
 
       <DragOverlay>

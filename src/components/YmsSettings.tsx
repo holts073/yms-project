@@ -13,7 +13,7 @@ import { YmsWarehouse } from '../types';
 
 export default function YmsSettings() {
   const { state, dispatch } = useSocket();
-  const [activeTab, setActiveTab] = useState<'warehouses' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets'>('warehouses');
+  const [activeTab, setActiveTab] = useState<'warehouses' | 'capacity' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets'>('warehouses');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('W01');
   const [editingWarehouse, setEditingWarehouse] = useState<Partial<YmsWarehouse> | null>(null);
   const [palletRates, setPalletRates] = useState<Record<string, number>>(state.settings?.pallet_rates || { EUR: 13, DPD: 22.5, CHEP: 0, BLOK: 15 });
@@ -36,17 +36,24 @@ export default function YmsSettings() {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex gap-2 p-1.5 bg-card border border-border rounded-3xl w-fit shadow-sm" data-testid="settings-tabs">
-          {['warehouses', 'docks', 'waitingAreas', 'overrides', 'pallets'].map((tab) => (
+          {[
+            { id: 'warehouses', label: 'Magazijnen' },
+            { id: 'capacity', label: 'Capaciteit' },
+            { id: 'docks', label: 'Docks' },
+            { id: 'waitingAreas', label: 'Wachtruimtes' },
+            { id: 'overrides', label: 'Overrides' },
+            { id: 'pallets', label: 'Pallets' }
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`px-8 py-3 rounded-2xl text-sm font-bold transition-all ${
-                activeTab === tab 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                activeTab === tab.id 
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20' 
                   : 'text-[var(--muted-foreground)] hover:text-foreground hover:bg-[var(--muted)]/50'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1).replace(/([A-Z])/g, ' $1')}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -82,6 +89,87 @@ export default function YmsSettings() {
               onDelete={(id) => confirm('Verwijderen?') && dispatch('YMS_DELETE_WAREHOUSE', id)}
               dockCount={(id) => docks.filter(d => d.warehouseId === id).length}
             />
+          )}
+
+          {activeTab === 'capacity' && (
+            <div className="max-w-4xl space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Visual Preview */}
+                <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <Calendar size={120} />
+                  </div>
+                  <h4 className="text-xl font-black mb-4 uppercase tracking-tight">Capaciteits Profiel</h4>
+                  <p className="text-indigo-100 text-sm leading-relaxed mb-8 opacity-80 font-medium">
+                    De onderstaande waarden bepalen hoe lang een levering een dock bezet houdt op de planning.
+                  </p>
+                  
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center bg-white/10 p-4 rounded-2xl backdrop-blur-md">
+                      <span className="text-xs font-bold uppercase tracking-widest opacity-60">Geselecteerd Magazijn</span>
+                      <span className="font-bold">{warehouses.find(w => w.id === selectedWarehouseId)?.name || 'Onbekend'}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center bg-white/10 p-4 rounded-2xl backdrop-blur-md">
+                      <span className="text-xs font-bold uppercase tracking-widest opacity-60">Berekening Slot-duur</span>
+                      <span className="font-bold">
+                        {warehouses.find(w => w.id === selectedWarehouseId)?.baseUnloadingTime || 0}m base + 
+                        ({warehouses.find(w => w.id === selectedWarehouseId)?.minutesPerPallet || 0}m × pallets)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Settings Form */}
+                <div className="bg-card border border-border p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    <Input 
+                      label="Basis Lostijd (minuten)" 
+                      type="number" 
+                      value={warehouses.find(w => w.id === selectedWarehouseId)?.baseUnloadingTime || 0}
+                      onChange={e => {
+                        const w = warehouses.find(wh => wh.id === selectedWarehouseId);
+                        if (w) dispatch('YMS_SAVE_WAREHOUSE', { ...w, baseUnloadingTime: parseInt(e.target.value) || 0 });
+                      }}
+                    />
+                    <Input 
+                      label="Minuten per Pallet" 
+                      type="number" 
+                      value={warehouses.find(w => w.id === selectedWarehouseId)?.minutesPerPallet || 0}
+                      onChange={e => {
+                        const w = warehouses.find(wh => wh.id === selectedWarehouseId);
+                        if (w) dispatch('YMS_SAVE_WAREHOUSE', { ...w, minutesPerPallet: parseInt(e.target.value) || 0 });
+                      }}
+                    />
+                    <Input 
+                      label="Fast Lane Drempel (pallets)" 
+                      type="number" 
+                      value={warehouses.find(w => w.id === selectedWarehouseId)?.fastLaneThreshold || 0}
+                      onChange={e => {
+                        const w = warehouses.find(wh => wh.id === selectedWarehouseId);
+                        if (w) dispatch('YMS_SAVE_WAREHOUSE', { ...w, fastLaneThreshold: parseInt(e.target.value) || 0 });
+                      }}
+                    />
+                    
+                    <div className="flex items-center gap-3 p-4 bg-[var(--muted)]/50 rounded-2xl border border-border mt-2">
+                      <input 
+                        type="checkbox" 
+                        id="hasGate-settings" 
+                        checked={!!warehouses.find(w => w.id === selectedWarehouseId)?.hasGate} 
+                        onChange={e => {
+                          const w = warehouses.find(wh => wh.id === selectedWarehouseId);
+                          if (w) dispatch('YMS_SAVE_WAREHOUSE', { ...w, hasGate: e.target.checked });
+                        }}
+                        className="w-5 h-5 rounded-md border-border text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label htmlFor="hasGate-settings" className="text-sm font-bold text-foreground cursor-pointer">
+                        Toegangspoort (Gate-In registratie) actief?
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {activeTab === 'docks' && (

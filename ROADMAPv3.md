@@ -1,5 +1,5 @@
 # ROADMAP v3 - ILG Foodgroup YMS Control Tower
-*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
+*Versie: v3.10.2 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 > [!NOTE]
 > Dit document is de strategische leidraad voor het team. Elke sprint is afgestemd met alle agent-profielen uit `AGENTS.md`. Nieuwe sprints starten NIET voordat de vorige sprint volledig getest en gedocumenteerd is.
@@ -22,6 +22,8 @@
 | **v3.8.0** | Pallet Administratie & Financiën | ✅ Gereleased |
 | **v3.9.0** | Intern Slot Management & Capaciteit | ✅ Gereleased |
 | **v3.10.0** | RBAC Hardening & Synchronization | ✅ Gereleased |
+| **v3.10.2** | UI/UX & Navigation Refactor | ✅ Gereleased |
+| **v3.11.0** | Advanced Seeding & Validation | 🔮 In Progress |
 
 ---
 
@@ -40,7 +42,25 @@
 
 ---
 
-## 🔮 Langetermijn: v4.0.0 — Advanced Analytics & Forecasting
+## ✅ Voltooide Sprint: v3.10.2 — UI/UX & Navigation Refactor
+*Verantwoordelijke agent: @UX-Visual-Director, @Frontend-Specialist*
+
+### Scope
+- [x] **Shared Modal Pattern**: Introductie `DeliveryDetailModal` voor uniforme CRUD.
+- [x] **Sidebar Polish**: Kleurgecodeerde iconen per categorie en "Overig" restauratie.
+- [x] **Settings Centralization**: Capaciteitsinstellingen naar een eigen tab in `YmsSettings`.
+- [x] **QA Inspection Flag**: Integratie in operationele flows.
+
+---
+
+## 🔮 Toekomstige Sprint: v3.11.0 — Advanced Seeding & Validation
+*Verantwoordelijke agent: @QA-Automator, @Data-Specialist*
+
+### Scope
+- [ ] **Extended `seed.ts`**: Willekeurige documentstroom-simulatie en realistische vrachtpayloads.
+- [ ] **Stress Testing**: Validatie van de state-manager bij 1000+ actieve leveringen.
+- [ ] **Opening Hours Logic**: Koppeling van "Now" navigatie aan magazijn-tijden.
+- [ ] **Audit Trail Export**: PDF/CSV rapportages voor management.
 *Verantwoordelijke agent: Alle agents*
 
 - [ ] Leveranciers-prestatierapport (stiptheid, afwijkingen, pallet-gedrag)

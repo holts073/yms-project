@@ -1,15 +1,20 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
+*Versie: v3.10.2 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
 
-## 🛠️ Nieuwe Adviezen: Real-time & Synchronization (v3.11.0)
+## 🛠️ Nieuwe Adviezen: UI & UX Consistency (v3.11.0)
 
-### 1. Delta Event Optimization
-Momenteel gebruikt de `syncDockStatus` een volledige `broadcastState`. Bij extreem grote magazijnen (> 100 docks) is het raadzaam om over te stappen op een specifiek `DOCK_UPDATED` delta-event om client-side re-renders te minimaliseren.
+### 1. Dynamic Sidebar Themes
+Nu de sidebar iconen kleurgecodeerd zijn, kunnen we `motion` gebruiken om de actieve achtergrondkleur (de "glow") dynamisch te laten matchen met de kleur van het icoon in plaats van altijd indigo.
 
 ### 2. Form State Persistence
-Onderzoek of we de edit-form state in de `DeliveryManager` kunnen bufferen in `localStorage` om dataverlies bij incidentele socket-disconnects te voorkomen.
+Onderzoek of we de edit-form state in de `DeliveryDetailModal` kunnen bufferen in `localStorage` om dataverlies bij incidentele socket-disconnects te voorkomen.
+
+## ✅ Opgelost in v3.10.2 (UI/UX & Navigation Refactor)
+- **Redundant Modals** ✅: Introductie van `DeliveryDetailModal.tsx` als centrale single-source-of-truth voor leveringsbeheer. 
+- **Navigation Friction** ✅: Direct dashboard editing verwijdert de noodzaak om naar de pipeline te switchen voor kleine wijzigingen.
+- **Settings Centralization** ✅: Magazijncapaciteit is verplaatst naar een eigen tab in de instellingen, weg van het operationele dashboard.
 
 ## ✅ Opgelost in v3.10.0 (Hardening & Synchronization)
 - **Role-Based Access Control (RBAC)** ✅: Middleware (`checkRole`) en Protected UI vangen nu ongeautoriseerde acties af. Getest met de nieuwe `rbac_security.spec.ts`.

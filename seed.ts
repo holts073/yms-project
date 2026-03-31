@@ -1,14 +1,19 @@
 import 'dotenv/config';
-import { insertDelivery, saveAddressBookEntry, saveUser } from './src/db/queries';
-import { Delivery, AddressEntry, User } from './src/types';
+import { insertDelivery, saveAddressBookEntry, saveUser, saveYmsDelivery } from './src/db/queries';
+import { Delivery, AddressEntry, User, YmsDelivery, YmsTemperature, YmsDirection, AuditEntry } from './src/types';
 import bcrypt from 'bcryptjs';
 import { db } from './src/db/sqlite';
 
 const seedDatabase = async () => {
-  console.log("Purging old data...");
+  console.log("Purging ALL old data to resolve schema conflicts...");
+  // Ordered by dependencies if there were foreign keys (though they are loose)
   db.prepare('DELETE FROM audit_logs').run();
   db.prepare('DELETE FROM documents').run();
   db.prepare('DELETE FROM deliveries').run();
+  db.prepare('DELETE FROM yms_deliveries').run();
+  db.prepare('DELETE FROM yms_slots').run();
+  db.prepare('DELETE FROM pallet_transactions').run();
+  db.prepare('DELETE FROM logs').run();
   db.prepare('DELETE FROM address_book').run();
   db.prepare('DELETE FROM users').run();
 
@@ -19,17 +24,13 @@ const seedDatabase = async () => {
   const managerPwd = process.env.INITIAL_MANAGER_PASSWORD || 'manager123';
   const adminPwd = process.env.INITIAL_ADMIN_PASSWORD || 'admin123';
 
-  if (!process.env.INITIAL_ADMIN_PASSWORD) {
-    console.warn("WARNING: INITIAL_ADMIN_PASSWORD not set in .env. Using default.");
-  }
-
   const staffHash = await bcrypt.hash(staffPwd, 10);
   const managerHash = await bcrypt.hash(managerPwd, 10);
   const adminHash = await bcrypt.hash(adminPwd, 10);
   const viewerHash = await bcrypt.hash('viewer123', 10);
 
   const users: User[] = [
-    { id: 'u1', name: 'Admin', email: 'admin@ilgfood.com', role: 'admin', passwordHash: adminHash },
+    { id: 'u1', name: 'Admin User', email: 'admin@ilgfood.com', role: 'admin', passwordHash: adminHash },
     { id: 'u2', name: 'Logistics Manager', email: 'manager@ilgfood.com', role: 'manager', passwordHash: managerHash, permissions: { sendTransportOrder: true, manageDeliveries: true } },
     { id: 'u3', name: 'Staff User', email: 'staff@ilgfood.com', role: 'staff', passwordHash: staffHash },
     { id: 'u4', name: 'Viewer User', email: 'viewer@ilgfood.com', role: 'viewer', passwordHash: viewerHash }
@@ -38,90 +39,167 @@ const seedDatabase = async () => {
 
   // 2. Address Book
   const addresses: AddressEntry[] = [
-    { id: 's1', type: 'supplier', name: 'Global Foods Inc', contact: 'John Doe', email: 'orders@globalfoods.com', address: '123 Market St, NY', otif: 92 },
-    { id: 's2', type: 'supplier', name: 'Euro Meats', contact: 'Klaus', email: 'klaus@euromeats.de', address: 'Berlin 44, DE', otif: 98 },
-    { id: 's3', type: 'supplier', name: 'Asian Spice Co', contact: 'Kenji', email: 'export@asianspice.co.jp', address: 'Tokyo, JP', otif: 94 },
-    { id: 's4', type: 'supplier', name: 'Mediterranean Oils', contact: 'Maria', email: 'sales@medoils.es', address: 'Barcelona, ES', otif: 96 },
-    { id: 's5', type: 'supplier', name: 'Nordic Seafoods', contact: 'Erik', email: 'erik@nordicsea.no', address: 'Oslo, NO', otif: 91 },
-    { id: 't1', type: 'transporter', name: 'FastTracks Logistics', contact: 'Mike', email: 'dispatch@fasttracks.com', address: 'Rotterdam Port', otif: 95 }
+    { id: 's1', type: 'supplier', name: 'Global Foods Trading', contact: 'John Doe', email: 'orders@globalfoods.com', address: 'Market Square 12, Amsterdam', otif: 92, supplier_number: 'SUP-001', pallet_rate: 14.50 },
+    { id: 's2', type: 'supplier', name: 'Euro Meats BV', contact: 'Klaus Schmidt', email: 'kontakt@euromeats.de', address: 'Fleischstrasse 44, Berlin', otif: 98, supplier_number: 'SUP-002', pallet_rate: 12.00 },
+    { id: 's3', type: 'supplier', name: 'Asian Spice Co', contact: 'Kenji Sato', email: 'export@spice-it.jp', address: 'Shibuya-ku, Tokyo', otif: 94, supplier_number: 'SUP-003', pallet_rate: 15.00 },
+    { id: 's4', type: 'supplier', name: 'Mediterranean Oils SL', contact: 'Maria Garcia', email: 'ventas@medoils.es', address: 'Gran Via 50, Barcelona', otif: 96, supplier_number: 'SUP-004', pallet_rate: 11.50 },
+    { id: 't1', type: 'transporter', name: 'FastTracks Logistics', contact: 'Mike van der Meer', email: 'dispatch@fasttracks.nl', address: 'Port of Rotterdam', otif: 95, customer_number: 'CUS-T1' },
+    { id: 't2', type: 'transporter', name: 'Heavy Load Haulage', contact: 'Jan Janssen', email: 'info@heavyload.be', address: 'Antwerp Terminal', otif: 89, customer_number: 'CUS-T2' }
   ];
   addresses.forEach(saveAddressBookEntry);
 
-  const statusCodes = [0, 20, 25, 40, 50, 60, 75, 80]; // Removed 100 from active deliveries
-  const statusesForExworks = [0, 25, 50, 60, 80]; // Removed 100 from active deliveries
-
-  const supplierIds = ['s1', 's2', 's3', 's4', 's5'];
+  const statusCodes = [0, 20, 25, 40, 50, 60, 75, 80];
+  const countries = ['NL', 'DE', 'BE', 'ES', 'IT', 'FR', 'PL'];
+  const cities: Record<string, string[]> = {
+    'NL': ['Rotterdam', 'Amsterdam', 'Eindhoven'],
+    'DE': ['Hamburg', 'Berlin', 'Munich'],
+    'ES': ['Madrid', 'Barcelona', 'Valencia'],
+    'IT': ['Milan', 'Genoa', 'Naples']
+  };
 
   const generateDelivery = (i: number, forceDelivered: boolean = false): Delivery => {
-    const isContainer = Math.random() > 0.5;
+    const isContainer = Math.random() > 0.4;
     const status = forceDelivered ? 100 : (isContainer 
       ? statusCodes[Math.floor(Math.random() * statusCodes.length)]
-      : statusesForExworks[Math.floor(Math.random() * statusesForExworks.length)]);
+      : statusCodes.filter(s => s !== 25 && s !== 40)[Math.floor(Math.random() * 6)]);
     
     const today = new Date();
-    const offsetETA = Math.floor(Math.random() * 20) - 2; // -2 to +18 days
-    const etaDate = new Date(today);
-    etaDate.setDate(today.getDate() + offsetETA);
+    const offsetdays = Math.floor(Math.random() * 20) - 2; 
+    const etaDate = new Date(today.getTime() + offsetdays * 24 * 60 * 60 * 1000);
+    const country = countries[Math.floor(Math.random() * countries.length)];
+    const cityList = cities[country] || ['Unnamed City'];
+    const city = cityList[Math.floor(Math.random() * cityList.length)];
 
-    const docs = isContainer ? [
-      { id: Math.random().toString(36).substr(2, 9), name: 'Seaway Bill / B/L', status: status >= 25 ? 'received' : 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Commercial Invoice', status: status >= 25 ? 'received' : 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Packing List', status: status >= 25 ? 'received' : 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Notification of Arrival', status: status >= 50 ? 'received' : 'missing', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Certificate of Origin', status: 'pending', required: false }
-    ] : [
-      { id: Math.random().toString(36).substr(2, 9), name: 'CMR / Vrachtbrief', status: status >= 50 ? 'received' : 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Commercial Invoice', status: status >= 50 ? 'received' : 'pending', required: true },
-      { id: Math.random().toString(36).substr(2, 9), name: 'Packing List', status: status >= 50 ? 'received' : 'pending', required: true }
+    const id = `del-${i}-${Math.random().toString(36).substr(2, 5)}`;
+    
+    const docs = [
+      { id: `doc-${id}-1`, name: isContainer ? 'Seaway Bill / B/L' : 'CMR / Vrachtbrief', status: status >= 25 ? 'received' : 'pending', required: true },
+      { id: `doc-${id}-2`, name: 'Commercial Invoice', status: status >= 25 ? 'received' : 'pending', required: true },
+      { id: `doc-${id}-3`, name: 'Packing List', status: status >= 25 ? 'received' : (Math.random() > 0.7 ? 'missing' : 'pending'), required: true },
+    ];
+
+    if (isContainer && status >= 50) {
+      docs.push({ id: `doc-${id}-4`, name: 'Notification of Arrival', status: 'received', required: true });
+    }
+
+    const audit: AuditEntry[] = [
+      { timestamp: new Date().toISOString(), user: 'System', action: 'CREATE', details: 'Initial record created via seed.' }
+    ];
+
+    if (status > 0) {
+      audit.push({ timestamp: new Date().toISOString(), user: 'Logistics Manager', action: 'UPDATE_STATUS', details: `Status updated to ${status}.` });
+    }
+
+    const requiresQA = Math.random() > 0.7;
+    const notesPool = [
+      "Zegel controleren bij aankomst.",
+      "Chauffeur spreekt alleen Spaans.",
+      "Spoedlevering voor klant-order X.",
+      "Extra pallets bijgeladen in Hamburg.",
+      "Let op: temperatuur-gevoelige lading.",
+      "",
+      ""
     ];
 
     return {
-      id: Math.random().toString(36).substr(2, 9),
-      reference: `DEMO-${1000 + i}`,
-      supplierId: supplierIds[Math.floor(Math.random() * supplierIds.length)],
-      transporterId: 't1',
-      forwarderId: isContainer ? 't1' : undefined,
+      id,
       type: isContainer ? 'container' : 'exworks',
-      status: status,
-      etaWarehouse: etaDate.toISOString().split('T')[0],
-      etaPort: isContainer ? new Date(etaDate.getTime() - 4*24*60*60*1000).toISOString().split('T')[0] : undefined,
-      containerNumber: isContainer ? `MSKU${Math.floor(1000000 + Math.random() * 9000000)}` : undefined,
-      billOfLading: isContainer ? `BL${Math.floor(100000 + Math.random() * 900000)}` : undefined,
+      reference: `${isContainer ? 'CONT' : 'TRUK'}-${1000 + i}`,
+      supplierId: `s${1 + Math.floor(Math.random() * 4)}`,
+      transporterId: Math.random() > 0.3 ? 't1' : 't2',
+      forwarderId: isContainer ? 't1' : undefined,
+      status,
+      eta: etaDate.toISOString(),
+      createdAt: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
       palletCount: Math.floor(2 + Math.random() * 30),
       palletType: 'EUR',
       palletExchange: Math.random() > 0.5,
-      cargoType: isContainer ? undefined : 'Dry',
-      weight: Math.floor(500 + Math.random() * 10000),
-      transportCost: Math.floor(150 + Math.random() * 500),
+      palletRate: 12.50,
+      requiresQA,
+      notes: notesPool[Math.floor(Math.random() * notesPool.length)],
+      weight: Math.floor(500 + Math.random() * 15000),
+      transportCost: Math.floor(200 + Math.random() * 1000),
+      cargoType: isContainer ? undefined : (Math.random() > 0.7 ? 'Cool' : 'Dry'),
+      loadingCountry: country,
+      loadingCity: city,
+      loadingTime: "08:00 - 17:00",
+      etd: isContainer ? new Date(etaDate.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+      etaPort: isContainer ? new Date(etaDate.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+      etaWarehouse: etaDate.toISOString().split('T')[0],
+      originalEtaWarehouse: etaDate.toISOString().split('T')[0],
+      portOfArrival: isContainer ? 'Rotterdam' : undefined,
+      billOfLading: isContainer ? `BL-${Math.random().toString(36).substr(2, 8).toUpperCase()}` : undefined,
+      containerNumber: isContainer ? `MSKU${Math.floor(1000000 + Math.random() * 9000000)}` : undefined,
       customsStatus: isContainer ? (status >= 50 ? 'Cleared' : 'Pending') : undefined,
-      dischargeTerminal: isContainer ? 'Rotterdam Maasvlakte APM' : undefined,
-      incoterm: !isContainer ? (['EXW', 'FCA', 'FOB', 'DAP'][Math.floor(Math.random()*4)] as any) : undefined,
-      readyForPickupDate: !isContainer ? new Date(etaDate.getTime() - 2*24*60*60*1000).toISOString().split('T')[0] : undefined,
+      dischargeTerminal: isContainer ? 'APM Terminals Maasvlakte II' : undefined,
+      incoterm: !isContainer ? (['EXW', 'FCA', 'DAP'][Math.floor(Math.random() * 3)] as any) : undefined,
+      readyForPickupDate: !isContainer ? new Date(etaDate.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() : undefined,
       documents: docs as any,
-      statusHistory: [],
-      auditTrail: [],
-      delayRisk: offsetETA < 3 && status < 100 ? 'high' : 'low',
-      predictionReason: offsetETA < 3 && status < 100 ? 'ETA nadert snel.' : undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      statusHistory: [0, Math.min(status, 20)],
+      auditTrail: audit,
+      delayRisk: Math.random() > 0.8 ? 'high' : 'low'
     };
   };
 
-  console.log("Seeding 30 active deliveries WITH documents...");
-
-  for (let i = 1; i <= 30; i++) {
-    const del = generateDelivery(i, false);
-    insertDelivery(del);
+  console.log("Seeding 40 Pipeline deliveries (30 active, 10 delivered)...");
+  const seededDeliveries: Delivery[] = [];
+  for (let i = 1; i <= 40; i++) {
+    const d = generateDelivery(i, i > 30);
+    insertDelivery(d);
+    seededDeliveries.push(d);
   }
 
-  console.log("Seeding 10 delivered deliveries for ARCHIVE...");
+  console.log("Seeding Yard (YMS) data based on Pipeline...");
+  // Pick some deliveries that are "Expected" or further
+  const ymsCandidates = seededDeliveries.filter(d => d.status >= 50 && d.status < 100);
   
-  for (let i = 31; i <= 40; i++) {
-    const del = generateDelivery(i, true);
-    insertDelivery(del);
-  }
+  const ymsStatuses: Record<number, string> = {
+    0: 'EXPECTED',
+    1: 'IN_YARD',
+    2: 'DOCKED',
+    3: 'UNLOADING',
+    4: 'COMPLETED'
+  };
 
-  console.log("Database seeded successfully!");
+  ymsCandidates.slice(0, 15).forEach((d, i) => {
+    const ymsStatus = i < 5 ? 'EXPECTED' : (i < 8 ? 'IN_YARD' : (i < 12 ? 'DOCKED' : 'UNLOADING'));
+    const isReefer = d.cargoType === 'Cool' || d.cargoType === 'Frozen';
+    
+    // License plate generation
+    const plates = ['01-BKB-2', 'V-456-ZZ', '99-XL-PP', 'BT-77-KK', '1-ABC-123', 'DE-XY-100'];
+    
+    const ymsDel: YmsDelivery = {
+      id: `yms-${d.id}`,
+      warehouseId: 'W01',
+      reference: d.reference,
+      licensePlate: plates[i % plates.length],
+      supplier: addresses.find(a => a.id === d.supplierId)?.name || 'Onbekend',
+      supplierId: d.supplierId,
+      mainDeliveryId: d.id,
+      temperature: (d.cargoType as any) || 'Droog',
+      scheduledTime: d.etaWarehouse ? `${d.etaWarehouse}T${10 + (i % 8)}:00:00Z` : new Date().toISOString(),
+      arrivalTime: ymsStatus !== 'EXPECTED' ? new Date().toISOString() : undefined,
+      registrationTime: ymsStatus !== 'EXPECTED' ? new Date().toISOString() : undefined,
+      isLate: Math.random() > 0.8,
+      dockId: ymsStatus === 'DOCKED' || ymsStatus === 'UNLOADING' ? (i % 20) + 1 : undefined,
+      waitingAreaId: ymsStatus === 'IN_YARD' ? (i % 10) + 1 : undefined,
+      transporterId: d.transporterId,
+      status: ymsStatus as any,
+      palletCount: d.palletCount,
+      palletType: d.palletType,
+      palletRate: d.palletRate,
+      direction: 'INBOUND',
+      isReefer,
+      estimatedDuration: 45 + (d.palletCount || 0) * 2,
+      notes: d.notes,
+      requiresQA: d.requiresQA
+    };
+    
+    saveYmsDelivery(ymsDel);
+  });
+
+  console.log("Database seeded successfully with HIGH FIDELITY demo data!");
 };
 
 seedDatabase().catch(console.error);
