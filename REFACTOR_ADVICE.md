@@ -1,7 +1,22 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.9.4 — Bijgewerkt: 2026-03-30 door @System-Architect*
+*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
+
+## 🛠️ Nieuwe Adviezen: Real-time & Synchronization (v3.11.0)
+
+### 1. Delta Event Optimization
+Momenteel gebruikt de `syncDockStatus` een volledige `broadcastState`. Bij extreem grote magazijnen (> 100 docks) is het raadzaam om over te stappen op een specifiek `DOCK_UPDATED` delta-event om client-side re-renders te minimaliseren.
+
+### 2. Form State Persistence
+Onderzoek of we de edit-form state in de `DeliveryManager` kunnen bufferen in `localStorage` om dataverlies bij incidentele socket-disconnects te voorkomen.
+
+## ✅ Opgelost in v3.10.0 (Hardening & Synchronization)
+- **Role-Based Access Control (RBAC)** ✅: Middleware (`checkRole`) en Protected UI vangen nu ongeautoriseerde acties af. Getest met de nieuwe `rbac_security.spec.ts`.
+- **Dock Occupancy Sync** ✅: `syncDockStatus` broadcast nu direct een state-update bij statuswijzigingen, waardoor docks real-time vrijkomen.
+- **Stuck Popup Fix** ✅: `DeliveryManager` auto-open is nu idempotent per ID, wat recursieve popups na een save voorkomt.
+- **Environment Isolation & Reset** ✅: `reset-db.ts` herstelt nu de volledige database-integriteit inclusief test-gebruikers.
+- **Async Socket Synchronization** ✅: `window.YMS_READY` garantie in alle E2E tests via `helpers.ts`.
 
 ## ✅ Opgelost in v3.9.x (Quality Assurance Breakthrough)
 - **100% E2E Pass Rate** ✅: De volledige Playwright suite is nu operationeel. Geen timeouts meer door 'Hidden Sidebar' of ontbrekende velden.
@@ -20,10 +35,6 @@ Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moet
 - **Full Theme Synchronization** ✅: 100% theme-aware voor alle brand-thema's (ILG, Meledi).
 - **Delta-Updates (Performance Refactor)** ✅: Staat pakt nu alleen wijzigingen op (`state_patch`) in plaats van volledige state-diffs.
 
-## 🟡 Prioriteit 1: Systeem Integriteit
-- **RBAC Enforcement (v3.10.0)**: Middleware implementeren die elke destructieve actie valideert tegen de permissies van de gebruiker.
+## 🟡 Prioriteit 1: Optimalisatie & Cleanup
 - **SMTP Setup**: Geef een duidelijke foutmelding in de UI als credentials ontbreken voor de transport-mail.
-
-## 🟡 Prioriteit 2: Optimalisatie
 - **Asset Optimalisatie**: `logo.jfif` en andere afbeeldingen omzetten naar `.webp`.
-- **RBAC Penetration Test (v3.10.0)**: Zodra de permissies er zijn, de E2E suite uitbreiden met security scenarios.

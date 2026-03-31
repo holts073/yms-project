@@ -26,11 +26,13 @@ const seedDatabase = async () => {
   const staffHash = await bcrypt.hash(staffPwd, 10);
   const managerHash = await bcrypt.hash(managerPwd, 10);
   const adminHash = await bcrypt.hash(adminPwd, 10);
+  const viewerHash = await bcrypt.hash('viewer123', 10);
 
   const users: User[] = [
     { id: 'u1', name: 'Admin', email: 'admin@ilgfood.com', role: 'admin', passwordHash: adminHash },
     { id: 'u2', name: 'Logistics Manager', email: 'manager@ilgfood.com', role: 'manager', passwordHash: managerHash, permissions: { sendTransportOrder: true, manageDeliveries: true } },
-    { id: 'u3', name: 'Staff User', email: 'staff@ilgfood.com', role: 'staff', passwordHash: staffHash }
+    { id: 'u3', name: 'Staff User', email: 'staff@ilgfood.com', role: 'staff', passwordHash: staffHash },
+    { id: 'u4', name: 'Viewer User', email: 'viewer@ilgfood.com', role: 'viewer', passwordHash: viewerHash }
   ];
   users.forEach(saveUser);
 

@@ -76,10 +76,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     newSocket.on('init', (initialState: AppState) => {
       setState(initialState);
+      (window as any).YMS_READY = true;
     });
 
     newSocket.on('state_update', (newState: AppState) => {
       setState(newState);
+      (window as any).YMS_READY = true;
     });
 
     newSocket.on('state_patch', (patch: { type: string, payload: any }) => {
@@ -227,12 +229,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     (window as any).YMS_READY = true;
     return () => {
       window.removeEventListener('YMS_ACTION', handleAction);
-      (window as any).YMS_READY = false;
     };
-  }, [socket, isAuthenticated]);
+  }, [dispatch]);
 
   return (
-    <SocketContext.Provider value={{ socket, state, currentUser, isAuthenticated, login, logout, dispatch }}>
+    <SocketContext.Provider value={{ 
+socket, state, currentUser, isAuthenticated, login, logout, dispatch }}>
       {children}
     </SocketContext.Provider>
   );

@@ -35,6 +35,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDelivery, setEditingDelivery] = useState<any>(null);
   const [mailDelivery, setMailDelivery] = useState<any>(null);
+  const [lastAutoOpenedId, setLastAutoOpenedId] = useState<string | null>(null);
   const [formType, setFormType] = useState<'container' | 'exworks'>('container');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -64,17 +65,17 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   }
 
   useEffect(() => {
-    if (initialSelectedId && deliveries.length > 0) {
+    if (initialSelectedId && deliveries.length > 0 && lastAutoOpenedId !== initialSelectedId) {
       const delivery = deliveries.find(d => d.id === initialSelectedId);
       if (delivery) {
-        // Wait a bit for the component to be fully ready
+        setLastAutoOpenedId(initialSelectedId);
         const timer = setTimeout(() => {
           openModal(delivery);
         }, 100);
         return () => clearTimeout(timer);
       }
     }
-  }, [initialSelectedId, deliveries]);
+  }, [initialSelectedId, deliveries, lastAutoOpenedId]);
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 

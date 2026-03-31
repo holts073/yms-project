@@ -1,5 +1,5 @@
-# ILG Foodgroup — Supply Chain | YMS Control Tower v3.9.4
-*Versie: v3.9.4 — Bijgewerkt: 2026-03-30 door @System-Architect*
+# ILG Foodgroup — Supply Chain | YMS Control Tower v3.10.0
+*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat. Sinds v3.7.5 is het systeem 100% type-safe en geoptimaliseerd voor high-density monitoring.
 
@@ -21,6 +21,9 @@ npm run dev
 
 # 3. Voer de volledige validatie-suite uit (Headless)
 npm run test:full
+
+# 4. Voer de nieuwe E2E tests uit (v3.10.0)
+npx playwright test tests/e2e/
 ```
 
 De applicatie is beschikbaar op `http://localhost:3000`.
@@ -49,11 +52,20 @@ UI Action → socket.emit('action') → Server validatie → SQLite write
 
 Zie `ARCHITECTURE.md` voor de volledige blauwdruk, inclusief Folder Tree en Mermaid diagrammen.
 
+## 🆕 Changelog v3.10.1 (Robustness & Sync Fixes)
+- **✅ Global Dock Sync**: `syncDockStatus` zoekt nu in alle magazijnen om 'trapped' docks te voorkomen. 
+- **✅ Automated Slot Cleanup**: Verwijderen van een levering ruimt nu direct de Timeline-slot op.
+- **✅ Reliability Expansion**: `selectWarehouse` helper in E2E tests geforceerd om socket-state te synchroniseren.
+
+## 🆕 Changelog v3.10.0 (Hardening & Synchronization)
+- **✅ Role-Based Access Control (RBAC)**: Introductie van de `viewer` rol met read-only beperkingen in UI en Sockets.
+- **✅ Dock Occupancy Sync**: Backend broadcast state-updates na statuswijzigingen (DOCKED/COMPLETED), waardoor docks real-time vrijkomen in de UI.
+- **✅ Stuck Popup Fix**: DeliveryManager auto-open logic beperkt tot één trigger per ID om recursieve popups te voorkomen.
+- **✅ Smart Slot Conflict Prevention**: Backend en UI blokkeren nu dubbele dock-reserveringen op hetzelfde tijdslot.
+- **✅ E2E Expansion**: Nieuwe testsuites voor RBAC-isolatie, slot-conflicten en dock-synchronisatie.
+- **✅ Environment Isolation**: Verbeterde test-stabiliteit door volledige database-resets inclusief gebruikers.
+
 ## 🆕 Changelog v3.9.x (E2E & Socket Stability)
-- **✅ 100% E2E Operational Reliability**: Alle 7 kritieke flows (Yard, Finance, Pipeline) passeren nu consistent in de Playwright suite.
-- **✅ Socket Upsert Logic**: Frontend state is nu robuust tegen 'ghost data' door real-time upserts van nieuwe leveringen.
-- **✅ Layout Resilience**: 'Invisible Sidebar' strategie voorkomt navigatie-timeouts tijdens geautomatiseerde testen.
-- **✅ Mandatory Field Enforcement**: Strikte validatie op `licensePlate`, `supplier` en `temperature` in alle lagen.
 
 ## 🆕 Changelog v3.7.5 (UI Refresh)
 - **✅ Massive Type-Safety Fix**: 18 kritieke type-fouten in `StatCard`, `Statistics` en `DashboardKPIs` zijn opgelost.
@@ -88,7 +100,7 @@ Sinds v3.5.1 beschikt het systeem over een volledig geautomatiseerde test-suite 
 ├── src/                    # Frontend (React 19)
 │   ├── components/         # Atomic Design: shared, features, ui
 │   ├── hooks/              # Custom Data Hooks (useYmsData, useDeliveries)
-│   ├── db/                 # Database queries & initialisatie
+│   ├── db/                 # Database queries & initialisatie v3.10.1
 │   └── types.ts            # Centrale Interfaces
 ├── server/                 # Backend (Node.js)
 │   ├── routes/             # REST API Router

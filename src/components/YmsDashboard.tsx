@@ -31,7 +31,8 @@ import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { Truck } from 'lucide-react';
 
 export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'arrivals' | 'planning', onBack?: () => void }) {
-  const { state } = useSocket();
+  const { state, currentUser } = useSocket();
+  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'staff';
   const { theme, toggleTheme } = useTheme();
   const yms = useYmsData();
   const { deliveries, actions: deliveryActions } = useDeliveries();
@@ -191,12 +192,12 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
         onSelectDate={setSelectedDate}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onNewDelivery={() => setEditingDelivery({ 
+        onNewDelivery={canEdit ? () => setEditingDelivery({ 
           warehouseId: yms.selectedWarehouseId || undefined,
           palletType: 'EUR',
           palletRate: 13
-        })}
-        onWarehouseSettings={() => setIsWarehouseSettingsOpen(true)}
+        }) : undefined}
+        onWarehouseSettings={currentUser?.role === 'admin' ? () => setIsWarehouseSettingsOpen(true) : undefined}
         onBack={onBack}
       />
 
@@ -255,18 +256,19 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
                 <YmsDeliveryList 
                   deliveries={filteredDeliveries}
                   getStatusLabel={(s) => s}
-                  onUpdateStatus={handleYmsStatusUpdate}
-                  onAssignDock={(d, id) => deliveryActions.assignDock(d.id, Number(id))}
-                  onAssignWaitingArea={(d, id) => yms.actions.updateDelivery({ ...d, waitingAreaId: Number(id), status: 'IN_YARD' })}
-                  onRegisterExpected={(d) => {
+                  onUpdateStatus={canEdit ? handleYmsStatusUpdate : undefined}
+                  onAssignDock={canEdit ? (d, id) => deliveryActions.assignDock(d.id, Number(id)) : undefined}
+                  onAssignWaitingArea={canEdit ? (d, id) => yms.actions.updateDelivery({ ...d, waitingAreaId: Number(id), status: 'IN_YARD' }) : undefined}
+                  onRegisterExpected={canEdit ? (d) => {
                     if (yms.currentWarehouse && !yms.currentWarehouse.hasGate) {
                       setAssigningDelivery(d);
                     } else {
                       deliveryActions.registerArrival(d.id);
                     }
-                  }}
-                  onEdit={setEditingDelivery}
-                  onAssignClick={setAssigningDelivery}
+                  } : undefined}
+                  onEdit={canEdit ? setEditingDelivery : undefined}
+                  onAssignClick={canEdit ? setAssigningDelivery : undefined}
+                  readOnly={!canEdit}
                 />
               </ErrorBoundary>
             </div>

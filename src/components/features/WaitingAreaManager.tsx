@@ -15,19 +15,21 @@ interface WaitingAreaManagerProps {
 
 export const WaitingAreaManager: React.FC<WaitingAreaManagerProps> = ({ waitingAreas, warehouseId, onUpdate }) => {
   const { actions } = useYmsData();
-  const filtered = waitingAreas.filter(wa => wa.warehouseId === warehouseId);
+  const filtered = waitingAreas
+    .filter(wa => wa.warehouseId === warehouseId)
+    .sort((a, b) => a.id - b.id);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest">Wachtruimtes Configureren ({warehouseId})</h3>
         <Button variant="outline" size="xs" leftIcon={<Plus size={12} />} onClick={() => onUpdate({
-          id: (waitingAreas.length + 1).toString(),
+          id: waitingAreas.length + 1,
           warehouseId,
           name: `Wachtplaats ${waitingAreas.length + 1}`,
           status: 'Available',
           adminStatus: 'Active'
-        } as any)}>
+        })}>
           Toevoegen
         </Button>
       </div>

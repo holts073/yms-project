@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.9.4 — Bijgewerkt: 2026-03-30 door @System-Architect*
+*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 > [!NOTE]
 > Bijgewerkt na v3.9.3 E2E Stabilization: 100% E2E Operational Reliability, Socket Upsert-pattern en Layout Resilience.
@@ -119,11 +119,33 @@ pallet_transactions (id PK, entityId, balanceChange, createdAt)
 ```
 
 ## 6. Multi-Warehouse Isolatie
-Isolatie wordt afgedwongen op socket-niveau: elk event wordt gefilterd op `warehouseId`. Dit voorkomt dat data van Magazijn A lekt naar Magazijn B.
+Isolatie## 🔐 Security & RBAC (v3.10.0)
 
-## 7. Kwaliteitsbewaking (v3.7.4)
-Sinds v3.7.4 is de "High-Density" mode de standaard. Dit betekent:
-- Geen onnodige witruimte in tabellen.
+Sinds v3.10.0 hanteert het systeem een strikt **Role-Based Access Control** (RBAC) model, zowel in de UI als op de Sockets:
+
+| Rol | Rechten | Beperkingen |
+| :--- | :--- | :--- |
+| **Admin** | Volledige toegang (CRUD op alles, inclusief settings en users). | Geen. |
+| **Manager** | CRUD op alle logistieke entiteiten. Kan geen configuraties wijzigen. | Geen toegang tot `YMS_SAVE_WAREHOUSE` of `YMS_SAVE_USER`. |
+| **Staff** | CRUD op leveringen en YMS status updates. | Kan geen entiteiten verwijderen (Geen `DELETE`). |
+| **Viewer** | Read-only toegang tot alle dashboards en tabellen. | Geen enkele `dispatch` actie toegestaan. Knoppen worden verborgen in de UI. |
+
+### Socket Guarding
+Elke socket-actie wordt gevalideerd in `server/sockets/socketHandlers.ts` middels de `checkRole` helper:
+```typescript
+const checkRole = (required: string) => {
+  if (user.role === 'admin') return true;
+  if (user.role === required) return true;
+  return false;
+};
+```
+
+## 📅 Slot Conflict Management (v3.9.0 / v3.10.0)
+
+Het systeem voorkomt dubbele dock-boekingen op database-niveau en via socket-validatie:
+1. **Overlap Detectie**: `(start1 < end2) && (end1 > start2)`.
+2. **Duur-berekening**: `Base + (Pallets * Min/Pallet)`.
+3. **Guard**: Admins kunnen conflicten overriden, Lagere rollen krijgen een `Error` bericht via de `error_message` socket event.
 - Informatiedichtheid geoptimaliseerd voor 4K en breedbeeld monitoren.
 - Volledige theme-synchronisatie via CSS variabelen.
 

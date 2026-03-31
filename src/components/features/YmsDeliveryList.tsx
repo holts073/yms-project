@@ -18,7 +18,8 @@ import {
   Play,
   ArrowRight,
   ClipboardCheck,
-  Check
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import { useYmsData } from '../../hooks/useYmsData';
 import { Badge } from '../shared/Badge';
@@ -37,6 +38,7 @@ interface YmsDeliveryListProps {
   onRegisterExpected: (delivery: YmsDelivery) => void;
   onEdit: (delivery: YmsDelivery) => void;
   onAssignClick?: (delivery: YmsDelivery) => void;
+  readOnly?: boolean;
 }
 
 export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
@@ -47,7 +49,8 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
   onAssignWaitingArea,
   onRegisterExpected,
   onEdit,
-  onAssignClick
+  onAssignClick,
+  readOnly = false
 }) => {
   const { docks, waitingAreas, actions } = useYmsData();
   const [filterStatus, setFilterStatus] = useState<YmsDeliveryStatus | 'ALL'>('ALL');
@@ -120,7 +123,14 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
     {
       header: 'Acties',
       className: 'text-right',
-      accessor: (d: YmsDelivery) => (
+      accessor: (d: YmsDelivery) => readOnly ? (
+        <div className="flex items-center justify-end gap-1.5">
+           <Badge variant="outline" className="text-[9px] uppercase tracking-tighter opacity-50">View Only</Badge>
+           <button onClick={() => onEdit(d)} className="p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--muted)] rounded-lg transition-colors">
+              <ChevronRight size={18} />
+           </button>
+        </div>
+      ) : (
         <div className="flex items-center justify-end gap-1.5">
           {d.status === 'EXPECTED' && (
             <Button data-testid="btn-register" size="xs" onClick={() => onRegisterExpected(d)} className="bg-purple-600 hover:bg-purple-700 h-7 px-3">

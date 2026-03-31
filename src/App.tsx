@@ -250,7 +250,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             className="h-10 w-auto object-contain"
             referrerPolicy="no-referrer"
           />
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600 font-black tracking-widest">YMS v3.9.4</span></h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">ILG Foodgroup<br/><span className="text-xs text-indigo-600 font-black tracking-widest">YMS v3.10.0</span></h1>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -298,7 +298,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           />
 
           <div className="pt-4 pb-1 px-6">
-            <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Overig</p>
+            <span className="text-xs font-black bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/30">v3.10.0</span>
           </div>
           
           <SidebarItem 

@@ -322,6 +322,8 @@ export function getYmsDocks(warehouseId?: string, includeAll: boolean = false): 
     query += warehouseId ? " AND adminStatus = 'Active'" : " WHERE adminStatus = 'Active'";
   }
 
+  query += " ORDER BY id ASC";
+
   const docks = db.prepare(query).all(...params) as Record<string, any>[];
   const overrides = getYmsDockOverrides(warehouseId);
   const now = new Date().toISOString().split('T')[0];
@@ -361,6 +363,8 @@ export function getYmsWaitingAreas(warehouseId?: string, includeAll: boolean = f
   if (!includeAll) {
     query += warehouseId ? " AND adminStatus = 'Active'" : " WHERE adminStatus = 'Active'";
   }
+
+  query += " ORDER BY id ASC";
 
   return db.prepare(query).all(...params) as YmsWaitingArea[];
 }

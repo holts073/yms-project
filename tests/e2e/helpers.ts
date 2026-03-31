@@ -1,4 +1,5 @@
 import { Page, expect } from '@playwright/test';
+import { UserRole } from '../../src/types';
 
 /**
  * FIXED TEST DATE (Round 18)
@@ -10,12 +11,35 @@ export const TEST_DATE = '2026-12-25';
  * Common Login Helper with State Isolation
  */
 export async function login(page: Page) {
-  await page.goto('/');
+  return loginAsRole(page, 'admin');
+}
+
+/**
+ * Login specifically as a given role
+ */
+export async function loginAsRole(page: Page, role: UserRole) {
+  const credentials = {
+    admin: { email: 'admin@ilgfood.com', pass: 'admin123' },
+    manager: { email: 'manager@ilgfood.com', pass: 'manager123' },
+    staff: { email: 'staff@ilgfood.com', pass: 'welkom123' },
+    viewer: { email: 'viewer@ilgfood.com', pass: 'viewer123' },
+    tablet: { email: 'tablet@ilgfood.com', pass: 'tablet123' } // Just in case
+  };
+
+  const { email, pass } = credentials[role] || credentials.admin;
+
+  // Navigate to login page if not already there
+  if (page.url().includes('/dashboard') || page.url().includes('/api')) {
+    await page.goto('/');
+  }
+
+  await page.fill('[data-testid="login-email"]', email);
+  await page.fill('[data-testid="login-password"]', pass);
+  await page.click('[data-testid="login-submit"]');
   
-  await page.fill('input[type="email"]', 'admin@ilgfood.com');
-  await page.fill('input[type="password"]', 'welkom123');
-  await page.click('button:has-text("Inloggen")');
-  await expect(page.locator('text=Verbonden met centrale server')).toBeVisible({ timeout: 15000 });
+  // Wait for login success (navigation to dashboard)
+  await page.waitForURL('**/', { timeout: 10000 });
+  await page.waitForSelector('nav', { timeout: 10000 });
   
   // Wait for the Application Socket Listener to be ready
   await page.waitForFunction(() => (window as any).YMS_READY === true, { timeout: 10000 });
@@ -67,8 +91,15 @@ export async function dispatchSync(page: Page, action: { type: string, payload: 
  * Ensure Warehouse exists and is selected
  */
 export async function selectWarehouse(page: Page, whId: string) {
+  // Always dispatch to server to ensure socket.data.selectedWarehouseId is set
+  await page.evaluate((id) => {
+    window.dispatchEvent(new CustomEvent('YMS_ACTION', { 
+      detail: { type: 'SELECT_WAREHOUSE', payload: id } 
+    }));
+  }, whId);
+
+  // UI interaction if needed (clicking the button)
   const buttonSelector = `[data-testid="${whId === 'W01' ? 'active-warehouse' : `warehouse-${whId}`}"]`;
-  
   if (whId !== 'W01') {
     await page.waitForSelector(buttonSelector, { timeout: 10000 });
     await page.click(buttonSelector);

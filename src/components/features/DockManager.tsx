@@ -15,7 +15,9 @@ interface DockManagerProps {
 
 export const DockManager: React.FC<DockManagerProps> = ({ docks, warehouseId, onUpdate }) => {
   const { actions } = useYmsData();
-  const filteredDocks = docks.filter(d => d.warehouseId === warehouseId);
+  const filteredDocks = docks
+    .filter(d => d.warehouseId === warehouseId)
+    .sort((a, b) => a.id - b.id);
 
   const toggleTemp = (dock: YmsDock, temp: YmsTemperature) => {
     const newTemps = dock.allowedTemperatures.includes(temp)

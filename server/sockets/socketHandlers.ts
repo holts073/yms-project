@@ -55,23 +55,32 @@ export const setupSocketHandlers = (io: Server) => {
 
     const syncDockStatus = (deliveryId: string, dockId: number | null, status: string, warehouseId: string) => {
       const docks = getYmsDocks(warehouseId);
+      let changed = false;
       
       // If moving to a dock-active status
       if (dockId && ['DOCKED', 'UNLOADING', 'LOADING'].includes(status)) {
         const dock = docks.find(d => d.id === dockId);
-        // If dock is already occupied by SOMEONE ELSE, maybe clear them?
-        // For now, just force overwrite occupancy
-        if (dock) {
+        if (dock && (dock.status !== 'Occupied' || dock.currentDeliveryId !== deliveryId)) {
           saveYmsDock({ ...dock, status: 'Occupied', currentDeliveryId: deliveryId });
+          changed = true;
         }
       } 
       // If moving to a non-dock status or unassigning
       else {
-        // Find if this delivery was occupying any dock and free it
-        const dockTrapped = docks.find(d => d.currentDeliveryId === deliveryId);
+        // Find if this delivery was occupying ANY dock in ANY warehouse and free it
+        // This is safer than just searching in the provided warehouseId
+        const allDocks = getYmsDocks(); 
+        const dockTrapped = allDocks.find(d => d.currentDeliveryId === deliveryId);
         if (dockTrapped) {
           saveYmsDock({ ...dockTrapped, status: 'Available', currentDeliveryId: null });
+          changed = true;
+          console.log(`[YMS SOCKET] Freed trapped dock ${dockTrapped.id} in warehouse ${dockTrapped.warehouseId} for delivery ${deliveryId}`);
         }
+      }
+
+      if (changed) {
+        console.log(`[YMS SOCKET] Dock status changed for warehouse ${warehouseId}. Broadcasting...`);
+        broadcastState(io);
       }
     };
 
@@ -462,6 +471,7 @@ export const setupSocketHandlers = (io: Server) => {
               }
             };
             saveYmsDelivery(updated);
+            syncDockStatus(updated.id, null, updated.status, updated.warehouseId);
             logEntry.action = "Aankomst Geregistreerd";
             logEntry.details = `Levering ${delivery.reference} is aangemeld bij de gate.`;
             broadcastDelta(io, 'YMS_DELIVERY_UPDATED', updated);
@@ -482,6 +492,15 @@ export const setupSocketHandlers = (io: Server) => {
           }
           case "DELETE_DELIVERY":
             if (!isAdmin) throw new Error("Alleen admins kunnen leveringen verwijderen");
+            
+            // Check if there is a linked YMS delivery that needs a dock sync before deletion
+            const ymsDeliveries = getYmsDeliveries();
+            const linkedYms = ymsDeliveries.find(d => d.mainDeliveryId === payload);
+            if (linkedYms) {
+              syncDockStatus(linkedYms.id, null, 'DELETED', linkedYms.warehouseId);
+              deleteYmsSlotByDelivery(linkedYms.id);
+            }
+            
             deleteDelivery(payload);
             logEntry.action = "Deleted Delivery";
             logEntry.details = `Removed delivery ID: ${payload}`;
@@ -536,7 +555,11 @@ export const setupSocketHandlers = (io: Server) => {
                 case "warehouse": saveYmsWarehouse(payload); logEntry.details = `Magazijn ${payload.name} opgeslagen`; break;
                 case "dockoverride": saveYmsDockOverride(payload); logEntry.details = `Dock override opgeslagen`; break;
                 case "alert": saveYmsAlert(payload); logEntry.details = `Systeemwaarschuwing opgeslagen`; break;
-                case "delivery": saveYmsDelivery(payload); logEntry.details = `YMS Levering ${payload.reference} opgeslagen`; break;
+                case "delivery": 
+                  saveYmsDelivery(payload); 
+                  syncDockStatus(payload.id, payload.dockId || null, payload.status, payload.warehouseId);
+                  logEntry.details = `YMS Levering ${payload.reference} opgeslagen`; 
+                  break;
               }
               broadcastState(io);
               logEntry.action = `Systeemconfiguratie: ${table} opgeslagen`;
@@ -544,7 +567,15 @@ export const setupSocketHandlers = (io: Server) => {
               if (!isAdmin) throw new Error("Alleen admins kunnen gegevens verwijderen");
               const table = type.replace("YMS_DELETE_", "").toLowerCase();
               switch (table) {
-                case "delivery": deleteYmsDelivery(payload); logEntry.details = `YMS Levering ${payload} verwijderd`; break;
+                case "delivery": 
+                  const ymsToDelete = getYmsDeliveries().find(d => d.id === payload);
+                  if (ymsToDelete) {
+                    syncDockStatus(ymsToDelete.id, null, 'DELETED', ymsToDelete.warehouseId);
+                    deleteYmsSlotByDelivery(ymsToDelete.id);
+                  }
+                  deleteYmsDelivery(payload); 
+                  logEntry.details = `YMS Levering ${payload} verwijderd`; 
+                  break;
                 case "dock": deleteYmsDock(payload.id, payload.warehouseId); logEntry.details = `Dock ${payload.id} verwijderd`; break;
                 case "waitingarea": deleteYmsWaitingArea(payload.id, payload.warehouseId); logEntry.details = `Wachtplaats ${payload.id} verwijderd`; break;
                 case "warehouse": deleteYmsWarehouse(payload); logEntry.details = `Magazijn ${payload} verwijderd`; break;

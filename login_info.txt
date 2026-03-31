@@ -1,0 +1,1 @@
+Command is only available in WSL or inside a Visual Studio Code terminal.

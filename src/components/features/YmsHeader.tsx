@@ -55,7 +55,9 @@ export const YmsHeader: React.FC<YmsHeaderProps> = ({
           {onBack && (
             <Button variant="secondary" onClick={onBack}>Terug naar Dashboard</Button>
           )}
-          <Button onClick={onNewDelivery} leftIcon={<Plus size={20} />}>Plan Levering</Button>
+          {onNewDelivery && (
+            <Button onClick={onNewDelivery} leftIcon={<Plus size={20} />}>Plan Levering</Button>
+          )}
         </div>
       </div>
 

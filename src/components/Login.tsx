@@ -40,7 +40,7 @@ export const Login = () => {
             />
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">ILG Foodgroup</h1>
-          <p className="text-slate-400 text-sm font-medium">Logistics & Yard Management System v3.9.4</p>
+          <p className="text-slate-400 text-sm font-medium">Logistics & Yard Management System v3.10.0</p>
         </div>
 
         {/* Form Section */}
@@ -58,6 +58,7 @@ export const Login = () => {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
+                  data-testid="login-email"
                   className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 sm:text-sm"
                   placeholder="naam@ilgfood.com"
                   required
@@ -80,6 +81,7 @@ export const Login = () => {
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
+                  data-testid="login-password"
                   className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 sm:text-sm"
                   placeholder="••••••••"
                   required
@@ -96,6 +98,7 @@ export const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
+              data-testid="login-submit"
               className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75"
             >
               {isLoading ? (

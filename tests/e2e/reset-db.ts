@@ -12,10 +12,27 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_PATH = path.resolve(__dirname, '../../database.sqlite');
 
+import bcrypt from 'bcryptjs';
+
 async function resetTestData() {
   console.log('[reset-db] Opening database at', DB_PATH);
   const db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
+
+  // 0. Reset Users
+  db.prepare('DELETE FROM users').run();
+  const hashes = {
+    admin: await bcrypt.hash('admin123', 10),
+    manager: await bcrypt.hash('manager123', 10),
+    staff: await bcrypt.hash('welkom123', 10),
+    viewer: await bcrypt.hash('viewer123', 10)
+  };
+
+  db.prepare('INSERT INTO users (id, name, email, passwordHash, role) VALUES (?, ?, ?, ?, ?)').run('u1', 'Admin', 'admin@ilgfood.com', hashes.admin, 'admin');
+  db.prepare('INSERT INTO users (id, name, email, passwordHash, role) VALUES (?, ?, ?, ?, ?)').run('u2', 'Manager', 'manager@ilgfood.com', hashes.manager, 'manager');
+  db.prepare('INSERT INTO users (id, name, email, passwordHash, role) VALUES (?, ?, ?, ?, ?)').run('u3', 'Staff', 'staff@ilgfood.com', hashes.staff, 'staff');
+  db.prepare('INSERT INTO users (id, name, email, passwordHash, role) VALUES (?, ?, ?, ?, ?)').run('u4', 'Viewer', 'viewer@ilgfood.com', hashes.viewer, 'viewer');
+  console.log('[reset-db] Cleaned and seeded test users');
 
   // 1. Remove all test warehouses (keep W01)
   const deleteWarehouses = db.prepare("DELETE FROM yms_warehouses WHERE id != 'W01'");
@@ -37,7 +54,12 @@ async function resetTestData() {
   const waResult = deleteWA.run();
   console.log(`[reset-db] Deleted ${waResult.changes} test waiting areas`);
 
-  // 5. Ensure W01 has at least one dock for testing
+  // 5. Remove pallet transactions and audits for tests
+  db.prepare('DELETE FROM pallet_transactions').run();
+  db.prepare('DELETE FROM audit_logs').run();
+  console.log('[reset-db] Purged pallet transactions and audit logs');
+
+  // 6. Ensure W01 has at least one dock for testing
   const docks = db.prepare("SELECT id FROM yms_docks WHERE warehouseId = 'W01'").all();
   if (docks.length === 0) {
     db.prepare(`INSERT OR REPLACE INTO yms_docks (id, warehouseId, name, status, adminStatus, allowedTemperatures, direction_capability)

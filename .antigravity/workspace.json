@@ -1,0 +1,5 @@
+{
+  "name": "yms-project",
+  "languages": ["typescript"],
+  "exclude": ["node_modules/**", "dist/**", ".git/**", "*.sqlite*"]
+}

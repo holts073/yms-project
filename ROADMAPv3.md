@@ -1,5 +1,5 @@
 # ROADMAP v3 - ILG Foodgroup YMS Control Tower
-*Versie: v3.9.4 — Bijgewerkt: 2026-03-30 door @System-Architect*
+*Versie: v3.10.1 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 > [!NOTE]
 > Dit document is de strategische leidraad voor het team. Elke sprint is afgestemd met alle agent-profielen uit `AGENTS.md`. Nieuwe sprints starten NIET voordat de vorige sprint volledig getest en gedocumenteerd is.
@@ -21,43 +21,22 @@
 | **v3.7.5** | Type-Safety Audit & Documentation Update | ✅ Gereleased |
 | **v3.8.0** | Pallet Administratie & Financiën | ✅ Gereleased |
 | **v3.9.0** | Intern Slot Management & Capaciteit | ✅ Gereleased |
+| **v3.10.0** | RBAC Hardening & Synchronization | ✅ Gereleased |
 
 ---
 
-## ✅ Voltooide Sprint: v3.9.0 — Intern Slot Management & Capaciteit
-*Verantwoordelijke agent: @Yard-Strategist, @Frontend-Specialist, @System-Architect*
-
-> [!IMPORTANT]
-> Geen externe portal. Alle slot-logica is intern en voor back-office medewerkers only (AVG/GDPR compliant).
+## ✅ Voltooide Sprint: v3.10.0 — RBAC Hardening & Synchronization
+*Verantwoordelijke agent: @System-Architect, @Data-Specialist, @QA-Automator*
 
 ### Scope
-- [x] **Slot-based Timeline**: Dockplanning op 30-minuten intervallen, visueel zichtbaar
-- [x] **`yms_slots` tabel**: Beheert de reserveringen via gestructureerde data
-- [x] **Conflict-detectie**: Voorkomt dubbele boekingen op hetzelfde dock/slot
-- [x] **Drag & Drop Refactor**: D&D 'snapt' naar dichtstbijzijnde vrije slot (intern gebruik)
-- [x] **Overzicht Bezettingsgraad**: Live statistieken over dock-benutting
-- [x] **E2E Reliability**: 100% pass-rate op de volledige operational suite (v3.9.4)
+- [x] **Granular Permissions Matrix**: Toewijzen van permissies (bijv. `viewer` rol) aan gebruikers.
+- [x] **RBAC Middleware**: Backend validatie op elk socket-actie (`checkRole`).
+- [x] **Protected UI**: Componenten die knoppen en menu-opties verbergen op basis van de ingelogde gebruiker.
+- [x] **Dock Occupancy Sync**: Real-time vrijgeven van docks na statuswijzigingen (`broadcastState`).
+- [x] **Audit Trail 2.0**: Logging van de rol van de uitvoerder voor volledige traceerbaarheid.
 
 ### Design Rule
-- `scheduledTime` op de levering blijft de primaire bron voor milestones. Een slot-reservering is een planning-harnas; het vervangt geen operationele data.
-
----
-
-## 🔵 Geplande Sprint: v3.10.0 — Role-Based Access Control (RBAC) & Security Hardening
-*Verantwoordelijke agent: @System-Architect, @Data-Specialist, @UX-Visual-Director*
-
-> [!IMPORTANT]
-> Dit is een "breaking" fundamentele aanpassing. Elke actie in het systeem moet vanaf nu gevalideerd worden tegen de rechten van de gebruiker.
-
-### Scope
-- [ ] **Granular Permissions Matrix**: Toewijzen van permissies (bijv. `CAN_DELETE`, `CAN_EDIT_FINANCE`) aan rollen.
-- [ ] **RBAC Middleware**: Backend validatie op elk socket-event en API request.
-- [ ] **Protected UI**: Componenten die knoppen en menu-opties verbergen op basis van de ingelogde gebruiker.
-- [ ] **Enforced Warehouse Isolation**: Gebruikers beperken tot één of meerdere specifieke `warehouseId`'s.
-- [ ] **Audit Trail 2.0**: Logging van *wie* (welke rol) een actie uitvoert voor volledige traceerbaarheid.
-
-### Design Rule
-- Geen "hardcoded" admin-checks. Gebruik een permissie-gebaseerd systeem (bijv. `if (user.hasPermission('EDIT_SLOTS'))`).
+- Geen "hardcoded" admin-checks in de operationele flow. Gebruik `checkRole` in de backend en `canEdit` vlaggen in de frontend.
 
 ---
 
