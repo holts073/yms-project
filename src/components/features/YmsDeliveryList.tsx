@@ -85,6 +85,7 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
                {d.direction || 'IN'}
             </Badge>
             {d.isReefer && <Zap size={10} className="text-blue-500 animate-pulse" />}
+            {d.requiresQA && <AlertCircle size={10} className="text-amber-500 animate-pulse" />}
           </div>
         </div>
       )

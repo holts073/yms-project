@@ -1,15 +1,11 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useYmsData } from '../../hooks/useYmsData';
-import { Truck, MapPin, Clock, AlertTriangle, Snowflake, LayoutGrid } from 'lucide-react';
+import { Truck, MapPin, Clock, Snowflake, LayoutGrid } from 'lucide-react';
 import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
-import { YmsDelivery, YmsDock, YmsWaitingArea } from '../../types';
+import { YmsDelivery } from '../../types';
 import { cn } from '../../lib/utils';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
-import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
 
 interface YmsQueueProps {
   onAssignClick: (d: YmsDelivery) => void;
@@ -72,18 +68,6 @@ interface QueueItemProps {
 }
 
 const QueueItem: React.FC<QueueItemProps> = ({ delivery, onAssignClick, now }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: delivery.id,
-    data: {
-      type: 'arrival',
-      delivery
-    }
-  });
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-  };
-
   const isReefer = delivery.isReefer || delivery.temperature === 'Vries' || delivery.temperature === 'Koel';
   
   // Wait time from metadata (backend)
@@ -99,13 +83,8 @@ const QueueItem: React.FC<QueueItemProps> = ({ delivery, onAssignClick, now }) =
 
   return (
     <div 
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
       className={cn(
-        "bg-card border border-border rounded-2xl p-4 flex flex-col gap-4 group transition-all cursor-grab active:cursor-grabbing relative overflow-hidden",
-        isDragging && "opacity-50 border-indigo-500 ring-4 ring-indigo-500/10",
+        "bg-card border border-border rounded-2xl p-4 flex flex-col gap-4 group transition-all relative overflow-hidden",
         isReefer ? "border-l-4 border-l-blue-500 shadow-[0_0_15px_-5px_rgba(59,130,246,0.3)] dark:shadow-[0_0_20px_-5px_rgba(59,130,246,0.1)] hover:border-blue-400" : "hover:border-indigo-500/50 hover:shadow-lg"
       )}
     >
@@ -131,6 +110,11 @@ const QueueItem: React.FC<QueueItemProps> = ({ delivery, onAssignClick, now }) =
                 {delivery.direction === 'OUTBOUND' ? 'OUTBOUND' : 'INBOUND'}
               </span>
               <p className="font-bold text-foreground text-sm tracking-tight" data-testid="delivery-reference">{delivery.reference}</p>
+              {delivery.requiresQA && (
+                <span className="text-[8px] bg-amber-500 text-white px-1.5 py-0.5 rounded-md font-black tracking-tighter flex items-center gap-1 animate-pulse">
+                  QA
+                </span>
+              )}
             </div>
             <p className="text-[10px] font-mono text-[var(--muted-foreground)] font-bold uppercase mt-0.5">{delivery.licensePlate || 'NR ONBEKEND'}</p>
           </div>
@@ -161,7 +145,7 @@ const QueueItem: React.FC<QueueItemProps> = ({ delivery, onAssignClick, now }) =
           size="sm" 
           variant="secondary"
           leftIcon={<MapPin size={14} />} 
-          className="text-xs h-8 px-4 rounded-xl" 
+          className="text-xs h-8 px-4 rounded-xl shadow-sm" 
           onClick={(e) => {
             e.stopPropagation();
             onAssignClick(delivery);

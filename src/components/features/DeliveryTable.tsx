@@ -45,7 +45,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-border bg-[var(--muted)]/50">
+            <tr className="border-b border-border bg-[var(--muted)]/50 text-left">
               <th className="p-4 w-10">
                 <input 
                   type="checkbox" 
@@ -54,10 +54,13 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                   className="w-4 h-4 rounded border-border text-indigo-600"
                 />
               </th>
-              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Referentie / B/L</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Referentie</th>
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</th>
-              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">ETA</th>
-              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Milestones</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">ETA Magazijn</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Bill of Lading</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallets</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Status / Milestones</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)] text-center">Opmerking</th>
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)] text-right">Actie</th>
             </tr>
           </thead>
@@ -82,39 +85,66 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex flex-col">
-                      <span className="font-bold text-foreground group-hover:text-indigo-600 transition-colors">{d.reference}</span>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400">{d.containerNumber || (d as any).licensePlate || 'GEEN NR'}</span>
-                        {d.billOfLading && (
-                          <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 font-bold">B/L: {d.billOfLading}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground group-hover:text-indigo-600 transition-colors uppercase">{d.reference}</span>
+                        {d.requiresQA && (
+                          <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded-md font-black tracking-tighter flex items-center gap-1 animate-pulse">
+                            QA
+                          </span>
                         )}
                       </div>
+                      <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400">{d.containerNumber || (d as any).licensePlate || 'GEEN NR'}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-3 text-xs font-bold text-[var(--muted-foreground)]">{s?.name || 'Onbekend'}</td>
-                  <td className="px-6 py-3 text-xs font-bold text-foreground">
+                  <td className="px-6 py-3">
+                    <p className="text-xs font-bold text-[var(--muted-foreground)] line-clamp-1">{s?.name || 'Onbekend'}</p>
+                  </td>
+                  <td className="px-6 py-3 text-xs font-bold text-foreground tabular-nums">
                     {d.etaWarehouse ? new Date(d.etaWarehouse).toLocaleDateString('nl-NL') : '-'}
                   </td>
-                  <td className="px-8 py-3">
-                    <div className="min-w-[180px] lg:min-w-[240px]">
+                  <td className="px-6 py-3">
+                    {d.billOfLading ? (
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">{d.billOfLading}</span>
+                    ) : (
+                      <span className="text-[10px] text-slate-300">-</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-foreground">{d.palletCount || 0}</span>
+                      <span className="text-[9px] font-bold text-[var(--muted-foreground)] uppercase">{d.palletType || 'EUR'}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="min-w-[180px] lg:min-w-[220px]">
                       <MilestoneStepper delivery={d} />
                     </div>
                   </td>
+                  <td className="px-6 py-3 text-center" onClick={e => e.stopPropagation()}>
+                    {d.notes ? (
+                      <div className="relative group/note inline-block">
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 hover:scale-110 transition-transform">
+                          <FileText size={16} />
+                        </div>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-3 bg-popover text-popover-foreground text-xs rounded-xl shadow-2xl border border-border hidden group-hover/note:block z-50 leading-relaxed text-left animate-in fade-in slide-in-from-bottom-2">
+                           <p className="font-bold mb-1 uppercase tracking-tighter text-[10px] text-[var(--muted-foreground)] border-b border-border pb-1 mb-2">Opmerkingen:</p>
+                           {d.notes}
+                           <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-popover border-r border-b border-border rotate-45 -mt-1.5" />
+                        </div>
+                      </div>
+                    ) : '-'}
+                  </td>
                   <td className="px-6 py-3 text-right" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
-                       {missingDocs > 0 && <AlertTriangle size={14} className="text-rose-500" />}
-                       {d.notes && (
-                         <div className="relative group/note">
-                            <FileText size={14} className="text-indigo-500 opacity-60 hover:opacity-100" />
-                            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-popover text-popover-foreground text-[10px] rounded-lg shadow-xl border border-border hidden group-hover/note:block z-50">
-                               {d.notes}
-                            </div>
+                       {missingDocs > 0 && (
+                         <div title={`${missingDocs} document(s) missen`}>
+                           <AlertTriangle size={14} className="text-rose-500" />
                          </div>
                        )}
                        {d.status >= 50 && d.status < 100 && (
                          <Button size="xs" onClick={() => onYmsRegister(d)}>YMS</Button>
                        )}
-                       {canEdit && <button onClick={() => confirm('Verwijderen?') && onDelete(d.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-full"><Trash2 size={16} /></button>}
+                       {canEdit && <button onClick={() => confirm('Verwijderen?') && onDelete(d.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-full transition-colors"><Trash2 size={16} /></button>}
                     </div>
                   </td>
                 </tr>

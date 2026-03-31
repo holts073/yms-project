@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal } from '../shared/Modal';
+import { AlertCircle } from 'lucide-react';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { YmsDelivery, YmsTemperature, YmsWarehouse } from '../../types';
@@ -176,6 +177,30 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
             <option value="">Geen</option>
             {waitingAreas.map(wa => <option key={wa.id} value={wa.id}>Wachtplaats {wa.id}</option>)}
           </Input>
+        </div>
+
+        <Input 
+          as="textarea"
+          label="Opmerkingen"
+          data-testid="input-notes"
+          placeholder="Bijzonderheden (code, verzegeling, etc...)"
+          className="min-h-[80px]"
+          value={delivery?.notes || ''}
+          onChange={(e) => onUpdateEditing({...delivery, notes: e.target.value})}
+        />
+
+        <div className="flex items-center gap-3 py-2 px-1">
+          <input 
+            type="checkbox" 
+            id="requiresQA-yms" 
+            checked={!!delivery?.requiresQA} 
+            onChange={(e) => onUpdateEditing({...delivery, requiresQA: e.target.checked})}
+            className="w-5 h-5 rounded border-border text-amber-600 focus:ring-amber-500" 
+          />
+          <label htmlFor="requiresQA-yms" className="text-sm font-bold text-foreground flex items-center gap-2">
+            QA Inspectie benodigd
+            <AlertCircle size={14} className="text-amber-500" />
+          </label>
         </div>
 
         <div className="flex gap-4 pt-4">

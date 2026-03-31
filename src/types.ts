@@ -47,6 +47,7 @@ export interface Delivery {
   weight?: number;
   palletType?: YmsPalletType;
   palletRate?: number;
+  requiresQA?: boolean;
   
   // Container specific
   forwarderId?: string;
@@ -233,6 +234,8 @@ export interface YmsDelivery {
   isReefer?: boolean;
   tempAlertThreshold?: number;
   lastEtaUpdate?: string;
+  notes?: string;
+  requiresQA?: boolean;
 }
 
 export interface YmsAlert {

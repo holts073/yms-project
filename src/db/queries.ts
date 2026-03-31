@@ -28,8 +28,8 @@ const stmts = {
       id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt,
       transportCost, weight, palletType, palletCount, palletRate, cargoType, loadingCountry, loadingCity, palletExchange,
       etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
-      notes, statusHistory, loadingTime, dockId, customsStatus, dischargeTerminal, incoterm, readyForPickupDate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      notes, statusHistory, loadingTime, dockId, customsStatus, dischargeTerminal, incoterm, readyForPickupDate, requiresQA
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
   insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required) VALUES (?, ?, ?, ?, ?)'),
@@ -66,8 +66,8 @@ const stmts = {
       id, warehouseId, reference, licensePlate, supplier, supplierId, mainDeliveryId, temperature, 
       scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
       estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate,
-      direction, palletCount, palletType, palletRate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      direction, palletCount, palletType, palletRate, notes, requiresQA
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteYmsDelivery: db.prepare('DELETE FROM yms_deliveries WHERE id = ?'),
   deleteYmsDock: db.prepare('DELETE FROM yms_docks WHERE id = ? AND warehouseId = ?'),
@@ -190,7 +190,8 @@ export function insertDelivery(d: Delivery) {
       d.transportCost, d.weight, d.palletType || null, d.palletCount || 0, d.palletRate || 0, d.cargoType, d.loadingCountry, d.loadingCity, d.palletExchange ? 1 : 0,
       d.etd, d.etaPort, d.etaWarehouse, d.originalEtaWarehouse, d.portOfArrival, d.billOfLading, d.containerNumber,
       d.notes, d.statusHistory ? JSON.stringify(d.statusHistory) : null, d.loadingTime, d.dockId || null,
-      d.customsStatus || null, d.dischargeTerminal || null, d.incoterm || null, d.readyForPickupDate || null
+      d.customsStatus || null, d.dischargeTerminal || null, d.incoterm || null, d.readyForPickupDate || null,
+      d.requiresQA ? 1 : 0
     );
 
     // Documents
@@ -201,11 +202,16 @@ export function insertDelivery(d: Delivery) {
       }
     }
 
-    // Audit logs - Append instead of replace to preserve history
+    // Audit logs - Append only new entries
     if (d.auditTrail && d.auditTrail.length > 0) {
-      // Only insert the NEW entries (last one usually)
       const lastAudit = d.auditTrail[d.auditTrail.length - 1];
-      stmts.insertAudit.run(Math.random().toString(36).substr(2, 9), d.id, lastAudit.timestamp, lastAudit.user, lastAudit.action, lastAudit.details);
+      
+      // Check if this specific log already exists to prevent duplicates during syncs
+      const existing = db.prepare('SELECT id FROM audit_logs WHERE deliveryId = ? AND timestamp = ? AND action = ?').get(d.id, lastAudit.timestamp, lastAudit.action);
+      
+      if (!existing) {
+        stmts.insertAudit.run(Math.random().toString(36).substr(2, 9), d.id, lastAudit.timestamp, lastAudit.user, lastAudit.action, lastAudit.details);
+      }
     }
   })();
 }
@@ -411,7 +417,9 @@ export function saveYmsDelivery(d: YmsDelivery) {
     d.direction || 'INBOUND',
     d.palletCount || 0,
     d.palletType || 'EUR',
-    d.palletRate || 0
+    d.palletRate || 0,
+    d.notes || null,
+    d.requiresQA ? 1 : 0
   );
 }
 

@@ -92,6 +92,7 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
           icon={<Activity size={18} />} 
           variant="warning"
           description={`${stats.occupiedDocks}/${stats.totalDocks}`}
+          onClick={() => onNavigate('yms-planning')}
           compact
         />
         <StatCard 
@@ -107,6 +108,7 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
           icon={<ParkingSquare size={18} />} 
           variant="warning"
           description={`${stats.occupiedWaitingAreas}/${stats.totalWaitingAreas}`}
+          onClick={() => onNavigate('yms-arrivals')}
           compact
         />
         <StatCard 
@@ -114,6 +116,7 @@ export const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ stats, filterType,
           value={stats.lateArrivals} 
           icon={<AlertTriangle size={18} />} 
           variant="danger"
+          onClick={() => onNavigate('yms-planning')} // Late arrivals usually managed in planning
           compact
         />
       </div>

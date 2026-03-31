@@ -305,25 +305,15 @@ export const setupSocketHandlers = (io: Server) => {
                   activeAlerts.forEach(a => resolveYmsAlert(a.id));
                 }
 
-                // Pallet Logic for Standalone YMS Deliveries (v3.8.1)
-                if (current.status === 'COMPLETED' && existing.status !== 'COMPLETED' && !current.mainDeliveryId && current.isPalletExchangeConfirmed) {
-                  const entityId = current.supplierId || current.transporterId;
-                  if (entityId) {
-                    const sign = current.direction === 'OUTBOUND' ? -1 : 1;
-                    const actualCount = current.palletsExchanged ?? current.palletCount ?? 0;
-                    
-                    if (actualCount !== 0) {
-                      savePalletTransaction({
-                        entityId,
-                        entityType: current.supplierId ? 'supplier' : 'transporter',
-                        deliveryId: current.id,
-                        balanceChange: actualCount * sign,
-                        palletType: current.palletType,
-                        palletRate: current.palletRate
-                      });
-                      logEntry.details = `Palletruil voor ${current.reference} bevestigd: ${actualCount * sign} pallets (${current.palletType || 'EUR'} @ €${current.palletRate || 0}).`;
-                      logEntry.action = "Palletruil Bevestigd";
-                    }
+                // Sync with Main Delivery (v3.10.x Fix)
+                if (current.mainDeliveryId && (current.status === 'COMPLETED' || current.status === 'GATE_OUT')) {
+                  const { deliveries: allDels } = getAllDeliveries();
+                  const mainDel = allDels.find(d => d.id === current.mainDeliveryId);
+                  if (mainDel) {
+                    const updatedMain = { ...mainDel, status: 100, updatedAt: timestamp };
+                    insertDelivery(updatedMain);
+                    addAuditEntry(mainDel.id, user.name, "Systeem Voltooid", `Levering automatisch gearchiveerd via YMS status: ${current.status}`);
+                    broadcastDelta(io, 'DELIVERY_UPDATED', updatedMain);
                   }
                 }
               }
@@ -338,7 +328,7 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.details = `Status voor ${current.reference} gewijzigd naar ${current.status}`;
             logEntry.reference = current.reference;
             
-            broadcastDelta(io, 'YMS_DELIVERY_UPDATED', current);
+            broadcastState(io); // Need full state for slots and synchronized lists
             break;
           }
           
@@ -460,23 +450,33 @@ export const setupSocketHandlers = (io: Server) => {
             const delivery = ymsDeliveries.find(d => d.id === payload);
             if (!delivery) throw new Error("Levering niet gevonden");
             
+            const warehouses = getYmsWarehouses();
+            const warehouse = warehouses.find(w => w.id === delivery.warehouseId);
+            const hasGate = warehouse ? warehouse.hasGate !== false : true;
+            
+            // Task 10: If no gate, skip GATE_IN and go to DOCKED (if planned) or IN_YARD
+            const newStatus: YmsDeliveryStatus = hasGate ? 'GATE_IN' : (delivery.dockId ? 'DOCKED' : 'IN_YARD');
+            const statusKey = hasGate ? 'GATE_IN' : (delivery.dockId ? 'DOCKED' : 'IN_YARD');
+
             const updated = {
               ...delivery,
-              status: 'GATE_IN' as YmsDeliveryStatus,
+              status: newStatus,
               registrationTime: timestamp,
               arrivalTime: timestamp,
               statusTimestamps: {
                 ...(delivery.statusTimestamps || {}),
-                'GATE_IN': timestamp
+                [statusKey]: timestamp
               }
             };
             saveYmsDelivery(updated);
-            syncDockStatus(updated.id, null, updated.status, updated.warehouseId);
+            syncDockStatus(updated.id, updated.dockId || null, updated.status, updated.warehouseId);
             logEntry.action = "Aankomst Geregistreerd";
-            logEntry.details = `Levering ${delivery.reference} is aangemeld bij de gate.`;
+            logEntry.details = hasGate 
+              ? `Levering ${delivery.reference} is aangemeld bij de gate.`
+              : `Levering ${delivery.reference} is direct aangemeld (Geen Gate). Status: ${newStatus}`;
             broadcastDelta(io, 'YMS_DELIVERY_UPDATED', updated);
             io.emit('notification', { 
-              message: `Chauffeur aangemeld bij de gate: ${delivery.reference}`, 
+              message: hasGate ? `Chauffeur aangemeld bij de gate: ${delivery.reference}` : `Direct door naar dock/yard: ${delivery.reference}`, 
               type: 'success',
               timestamp
             });

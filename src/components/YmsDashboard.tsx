@@ -30,14 +30,24 @@ import {
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { Truck } from 'lucide-react';
 
-export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'arrivals' | 'planning', onBack?: () => void }) {
+export default function YmsDashboard({ 
+  view = 'planning', 
+  onBack,
+  initialSearch = '',
+  initialDate = new Date().toISOString().split('T')[0]
+}: { 
+  view?: 'arrivals' | 'planning', 
+  onBack?: () => void,
+  initialSearch?: string,
+  initialDate?: string
+}) {
   const { state, currentUser } = useSocket();
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'staff';
   const { theme, toggleTheme } = useTheme();
   const yms = useYmsData();
   const { deliveries, actions: deliveryActions } = useDeliveries();
   
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
 
   const handleYmsStatusUpdate = (delivery: any, status: any) => {
     // 1. Update YMS record
@@ -86,18 +96,24 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
 
   // Derived state
   const filteredDeliveries = useMemo(() => {
-    return yms.deliveries.filter((d: YmsDelivery) => 
-      d.warehouseId === yms.selectedWarehouseId && 
-      (d.direction === directionFilter || view === 'planning') && 
-      // Planning view shows everything for that date. 
-      // Arrivals view (yard) only shows non-terminal statuses OR today's completed items.
-      (view === 'planning' 
+    const s = searchTerm.toLowerCase();
+    return yms.deliveries.filter((d: YmsDelivery) => {
+      const isCorrectWarehouse = d.warehouseId === yms.selectedWarehouseId;
+      const isCorrectDirection = d.direction === directionFilter || view === 'planning';
+      
+      const matchesView = view === 'planning' 
         ? (d.scheduledTime && d.scheduledTime.startsWith(selectedDate))
         : (['GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING', 'COMPLETED'].includes(d.status) || 
-           (d.status === 'GATE_OUT' && d.statusTimestamps?.GATE_OUT?.startsWith(new Date().toISOString().split('T')[0])))
-      ) &&
-      (d.reference?.toLowerCase().includes(searchTerm.toLowerCase()) || d.supplier?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+           (d.status === 'GATE_OUT' && d.statusTimestamps?.GATE_OUT?.startsWith(new Date().toISOString().split('T')[0])));
+
+      const matchesSearch = !s || d.reference?.toLowerCase().includes(s) || d.supplier?.toLowerCase().includes(s);
+
+      // Task 4: Differentiate status. expected trucks shouldn't clutter the "map" (timeline) 
+      // if they aren't actually planned (dockId) or present (GATE_IN+).
+      const isActuallyRelevant = d.status !== 'EXPECTED' || !!d.dockId;
+
+      return isCorrectWarehouse && isCorrectDirection && matchesView && matchesSearch && (view === 'arrivals' || isActuallyRelevant);
+    });
   }, [yms.deliveries, yms.selectedWarehouseId, selectedDate, searchTerm, directionFilter, view]);
 
   const activeDocks = useMemo(() => {
@@ -230,7 +246,7 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
             />
       ) : (
         <div className="flex flex-col gap-10">
-          <section className="space-y-6 flex flex-col h-[500px]">
+          <section className="space-y-6 flex flex-col h-auto min-h-[600px]">
             <div className="flex items-center justify-between">
               <h3 data-testid="page-title" className="text-2xl font-black text-foreground">Docks & Planning</h3>
               <YmsCapacityStats />
@@ -260,7 +276,9 @@ export default function YmsDashboard({ view = 'planning', onBack }: { view?: 'ar
                   onAssignDock={canEdit ? (d, id) => deliveryActions.assignDock(d.id, Number(id)) : undefined}
                   onAssignWaitingArea={canEdit ? (d, id) => yms.actions.updateDelivery({ ...d, waitingAreaId: Number(id), status: 'IN_YARD' }) : undefined}
                   onRegisterExpected={canEdit ? (d) => {
-                    if (yms.currentWarehouse && !yms.currentWarehouse.hasGate) {
+                    // Task 10: If no gate and no dock assigned, assign first. 
+                    // Otherwise, register arrival directly (backend skips GATE_IN).
+                    if (yms.currentWarehouse && !yms.currentWarehouse.hasGate && !d.dockId) {
                       setAssigningDelivery(d);
                     } else {
                       deliveryActions.registerArrival(d.id);

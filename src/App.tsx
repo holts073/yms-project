@@ -197,8 +197,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       case 'settings-users': return <SettingsPage currentSegment="users" />;
       case 'settings-yms': return <YmsSettings />;
       case 'reports': return <Reporting />;
-      case 'yms-arrivals': return <YmsDashboard view="arrivals" />;
-      case 'yms-planning': return <YmsDashboard view="planning" onBack={() => handleNavigate('dashboard')} />;
+      case 'yms-arrivals': return <YmsDashboard view="arrivals" initialSearch={searchFilter} onBack={() => handleNavigate('dashboard')} />;
+      case 'yms-planning': return <YmsDashboard view="planning" initialSearch={searchFilter} onBack={() => handleNavigate('dashboard')} />;
       case 'yms-public': return <YmsPublic onBack={() => handleNavigate('dashboard')} />;
       case 'pallet-reconciliation': return <Reconciliation />;
       default: return <Dashboard onNavigate={handleNavigate} />;

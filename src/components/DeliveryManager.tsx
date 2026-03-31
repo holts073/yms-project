@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useSocket } from '../SocketContext';
-import { Plus, Search, Download, Truck, LayoutDashboard, List, Package } from 'lucide-react';
+import { Plus, Search, Download, Truck, LayoutDashboard, List, Package, AlertCircle } from 'lucide-react';
 import { useDeliveries } from '../hooks/useDeliveries';
 import { Skeleton, TableSkeleton, GridSkeleton } from './shared/SkeletonLoader';
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
@@ -65,8 +65,10 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
   }
 
   useEffect(() => {
-    if (initialSelectedId && deliveries.length > 0 && lastAutoOpenedId !== initialSelectedId) {
-      const delivery = deliveries.find(d => d.id === initialSelectedId);
+    // FIX: Search all deliveries in state, not just the paginated slice
+    const allDeliveries = state?.deliveries || [];
+    if (initialSelectedId && allDeliveries.length > 0 && lastAutoOpenedId !== initialSelectedId) {
+      const delivery = allDeliveries.find((d: any) => d.id === initialSelectedId);
       if (delivery) {
         setLastAutoOpenedId(initialSelectedId);
         const timer = setTimeout(() => {
@@ -75,7 +77,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         return () => clearTimeout(timer);
       }
     }
-  }, [initialSelectedId, deliveries, lastAutoOpenedId]);
+  }, [initialSelectedId, state?.deliveries, lastAutoOpenedId]);
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
@@ -398,9 +400,26 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3 pt-6 pl-4">
-                   <input type="checkbox" name="palletExchange" id="palletExchange" defaultChecked={editingDelivery?.id ? editingDelivery.palletExchange : true} className="w-5 h-5 rounded border-border" />
-                   <label htmlFor="palletExchange" className="text-sm font-bold text-foreground">Palletruil Toepassen</label>
+                <Input 
+                   as="textarea"
+                   label="Opmerkingen" 
+                   name="notes" 
+                   containerClassName="col-span-2"
+                   defaultValue={editingDelivery?.notes} 
+                   placeholder="Voeg eventuele instructies of bijzonderheden toe..."
+                />
+                <div className="flex items-center gap-6 pt-6 pl-4">
+                   <div className="flex items-center gap-3">
+                      <input type="checkbox" name="palletExchange" id="palletExchange" defaultChecked={editingDelivery?.id ? editingDelivery.palletExchange : true} className="w-5 h-5 rounded border-border text-indigo-600 focus:ring-indigo-500" />
+                      <label htmlFor="palletExchange" className="text-sm font-bold text-foreground">Palletruil Toepassen</label>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <input type="checkbox" name="requiresQA" id="requiresQA" defaultChecked={editingDelivery?.requiresQA} className="w-5 h-5 rounded border-border text-amber-600 focus:ring-amber-500" />
+                      <label htmlFor="requiresQA" className="text-sm font-bold text-foreground flex items-center gap-2">
+                        QA Inspectie benodigd
+                        <AlertCircle size={14} className="text-amber-500" />
+                      </label>
+                   </div>
                 </div>
              </div>
 
@@ -416,8 +435,19 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
                              checked={doc.status === 'received'} 
                              onChange={() => {
                                const newDocs = [...editingDelivery.documents];
-                               newDocs[idx] = { ...newDocs[idx], status: newDocs[idx].status === 'received' ? 'pending' : 'received' };
-                               setEditingDelivery({ ...editingDelivery, documents: newDocs });
+                               const wasReceived = newDocs[idx].status === 'received';
+                               newDocs[idx] = { ...newDocs[idx], status: wasReceived ? 'pending' : 'received' };
+                               
+                               // Milestone Reset Logic (v3.10.x): 
+                               // If a required document is removed, downgrade the milestone to prevent invalid completion.
+                               let currentStatus = editingDelivery.status;
+                               if (wasReceived && doc.required) {
+                                  if (currentStatus === 100) currentStatus = 75;
+                                  else if (currentStatus >= 75) currentStatus = 50;
+                                  else if (currentStatus >= 50) currentStatus = 25;
+                               }
+                               
+                               setEditingDelivery({ ...editingDelivery, documents: newDocs, status: currentStatus });
                              }}
                              className="w-5 h-5 rounded border-border text-emerald-600 focus:ring-emerald-500"
                            />

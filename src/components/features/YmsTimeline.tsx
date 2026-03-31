@@ -23,7 +23,7 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
   isToday = false,
   selectedDate
 }) => {
-  const { docks } = useYmsData();
+  const { docks, currentWarehouse } = useYmsData();
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const startHour = 7;
   const totalHours = 16;
@@ -33,11 +33,30 @@ export const YmsTimeline: React.FC<YmsTimelineProps> = ({
   React.useEffect(() => {
     if (isToday && scrollContainerRef.current) {
       const now = new Date();
-      const currentMinutes = (now.getHours() - startHour) * 60 + now.getMinutes();
-      const scrollPos = (currentMinutes / (totalHours * 60)) * timelineWidth - 400; // Center it a bit
+      let targetHour = now.getHours();
+      let targetMinutes = now.getMinutes();
+
+      // Opening hours logic for auto-scroll
+      const openingStr = currentWarehouse?.openingTime || "07:00";
+      const [openH, openM] = openingStr.split(':').map(Number);
+      const closingStr = currentWarehouse?.closingTime || "19:00";
+      const [closeH, closeM] = closingStr.split(':').map(Number);
+
+      const nowVal = now.getHours() * 60 + now.getMinutes();
+      const openVal = openH * 60 + openM;
+      const closeVal = closeH * 60 + closeM;
+
+      // If outside opening hours, scroll to opening time
+      if (nowVal < openVal || nowVal > closeVal) {
+        targetHour = openH;
+        targetMinutes = openM;
+      }
+
+      const minutesFromStart = (targetHour - startHour) * 60 + targetMinutes;
+      const scrollPos = (minutesFromStart / (totalHours * 60)) * timelineWidth - 400; // Center it a bit
       scrollContainerRef.current.scrollLeft = Math.max(0, scrollPos);
     }
-  }, [isToday, selectedDate]);
+  }, [isToday, selectedDate, currentWarehouse]);
 
   return (
     <div className="flex-1 bg-card rounded-[2.5rem] border border-border overflow-hidden flex flex-col shadow-2xl relative">
@@ -343,6 +362,7 @@ const TimelineDraggableItem: React.FC<{
                     {delivery.direction === 'OUTBOUND' ? 'OUT' : 'IN'}
                 </span>
                 <p className="font-bold text-[11px] truncate leading-tight">{delivery.reference}</p>
+                {delivery.requiresQA && <AlertCircle size={12} className="text-amber-500 animate-pulse ml-auto" />}
             </div>
             <p className="text-[9px] text-slate-400 font-mono font-bold mt-0.5">{delivery.licensePlate || 'NR ONBEKEND'}</p>
             <div className="mt-auto flex items-center justify-between pt-1">
