@@ -1,8 +1,8 @@
 # ARCHITECTUUR: ILG Foodgroup Control Tower
-*Versie: v3.7.5 — Bijgewerkt: 2026-03-29 door @System-Architect*
+*Versie: v3.10.5 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 > [!NOTE]
-> Bijgewerkt na v3.7.5 release: High-Density Table layouts, Multi-Theme Synchronization en volledige Type-Safety audit.
+> Bijgewerkt na v3.10.2 UI & Navigation Refactor: Direct Dashboard Editing, Shared Modal Pattern en Gecentraliseerde Capaciteitsinstellingen.
 
 Dit document beschrijft de technische blauwdruk van het ILG Foodgroup YMS, ontworpen voor maximale schaalbaarheid, data-integriteit en een superieure gebruikerservaring.
 

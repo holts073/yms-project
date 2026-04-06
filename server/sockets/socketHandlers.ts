@@ -5,7 +5,7 @@ import {
   getYmsDeliveries, saveYmsDelivery, deleteYmsDelivery, deleteYmsDock, deleteYmsWaitingArea, saveYmsWarehouse, getYmsWarehouses, 
   deleteYmsWarehouse, saveYmsDockOverride, deleteYmsDockOverride, 
   saveYmsAlert, deleteYmsAlert, resolveYmsAlert, saveLog, getYmsDocks, getYmsAlerts, savePalletTransaction, addAuditEntry,
-  getYmsSlots, saveYmsSlot, deleteYmsSlotByDelivery
+  getYmsSlots, saveYmsSlot, deleteYmsSlotByDelivery, initializeWarehouseInfrastructure
 } from '../../src/db/queries';
 import { saveSetting, getSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
@@ -591,7 +591,6 @@ export const setupSocketHandlers = (io: Server) => {
              }
              case "YMS_INITIALIZE_INFRASTRUCTURE": {
                if (!isAdmin) throw new Error("Alleen admins kunnen infrastructuur herstellen");
-               const { initializeWarehouseInfrastructure } = require('../../src/db/queries');
                initializeWarehouseInfrastructure(payload);
                broadcastState(io);
                logEntry.action = "Infrastructuur Hersteld";

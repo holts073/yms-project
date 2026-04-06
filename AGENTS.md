@@ -1,5 +1,5 @@
 # AGENT ORCHESTRATION: ILG Control Tower
-*Versie: v3.7.5 — Bijgewerkt: 2026-03-29 door @System-Architect*
+*Versie: v3.10.5 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 ## I. Algemene Richtlijnen (Global Strategy)
 * **Taal:** Alle communicatie, code-documentatie en UI-teksten zijn in het **Nederlands**.
@@ -18,7 +18,7 @@
     * **Router-rol:** Analyseert prompts en delegeert taken naar de juiste gespecialiseerde agents.
     * **Smart State:** Beheert de `buildStaticState` logica en zorgt dat de Priority Queue, Slots en Pallet-saldo's correct worden meegestuurd in de state.
     * **Error Handling:** Koppelt backend exceptions direct aan Sonner-toasts via `error_message` events.
-    * **Architecture Owner:** Onderhoudt de `ARCHITECTURE.md`, bewaakt Mermaid diagrams en borgt de Design Rules uit `ROADMAPv3.md`.
+    * **Architecture Owner:** Onderhoudt de `ARCHITECTURE.md`, bewaakt Mermaid diagrams en borgt de Design Rules uit `ROADMAPv3.md`. Voert verplicht `npm run version:sync` uit na elke wijziging in deze bestanden.
     * **Slot Guard:** Valideert backend-side dat een nieuw slot geen bestaand slot overlapt voordat een write plaatsvindt.
     * **RBAC Guard (v3.10.0):** Implementeert de middleware die elke socket-actie valideert tegen de permissies van de gebruiker.
 
@@ -103,6 +103,7 @@
 | **Audit Trail** | Elke financiële mutatie heeft een entry in `audit_logs`. | @Data-Specialist |
 | **Milestone Intact** | De operationele Yard milestones zijn ongewijzigd na de Pallet-module. | @Yard-Strategist |
 | **Ledger UI** | Overzicht is scanbaar, theme-aware en toont 'Openstaand' vs 'Verrekend'. | @UX-Visual-Director |
+| **Version Consistency** | `npm run version:sync` is uitgevoerd na documentatie-updates. | @System-Architect |
 
 ### v3.9.0 — Intern Slot Management
 | Check | Criterium | Verantwoordelijke Agent |
@@ -111,6 +112,7 @@
 | **Slot-Milestone Sync** | `scheduledTime` op een levering is leidend; slot-data is planning-harnas. | @Yard-Strategist |
 | **D&D Stability** | Drag & Drop op de timeline veroorzaakt geen `undefined` errors of stale state. | @Frontend-Specialist |
 | **Internal-Only** | Geen enkel slot-endpoint is bereikbaar zonder geldige interne authenticatie. | @System-Architect |
+| **Version Consistency** | `npm run version:sync` is uitgevoerd na documentatie-updates. | @System-Architect |
 
 ### v3.10.0 — RBAC & Security Hardening
 | Check | Criterium | Verantwoordelijke Agent |
@@ -119,6 +121,7 @@
 | **UI Adapativity** | Knoppen en menu's voor beheer zijn niet zichtbaar/klikbaar voor 'Viewer' of 'Operator' rollen. | @UX-Visual-Director |
 | **Audit Traceability** | De `audit_logs` bevatten de `userId` en `role` van de uitvoerder van elke wijziging. | @Data-Specialist |
 | **Security Validation** | Handmatige socket-injectie met een lage-rechten token wordt geblokkeerd door de server. | @QA-Automator |
+| **Version Consistency** | `npm run version:sync` is uitgevoerd na documentatie-updates. | @System-Architect |
 
 ### Permanente (Alle Sprints)
 | Check | Criterium | Verantwoordelijke Agent |

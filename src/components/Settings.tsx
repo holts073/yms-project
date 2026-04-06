@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../SocketContext';
-import { Building2, Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { Building2, Plus, Trash2, Settings as SettingsIcon, AlertCircle, CheckCircle } from 'lucide-react';
 import UserManagement from './UserManagement';
 import { Input } from './shared/Input';
 import { Button } from './shared/Button';
@@ -64,6 +65,7 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
   });
 
   const [docSettings, setDocSettings] = useState(state?.settings?.shipment_settings || { container: [], exworks: [] });
+  const [newDoc, setNewDoc] = useState<{ name: string; required: boolean; blocksMilestone: number; type: 'container' | 'exworks' | null }>({ name: '', required: false, blocksMilestone: 100, type: null });
 
   useEffect(() => {
     if (state?.companySettings) setLocalSettings(state.companySettings);
@@ -77,11 +79,16 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
 
   const handleSaveDocuments = () => {
     dispatch('UPDATE_SETTINGS', { ...state?.settings, shipment_settings: docSettings });
+    toast.success('Documentinstellingen opgeslagen');
   };
 
   const addDocument = (type: 'container' | 'exworks') => {
-    const name = window.prompt('Documentnaam:');
-    if (name) setDocSettings({ ...docSettings, [type]: [...docSettings[type], { name, required: false }] });
+    if (!newDoc.name) return;
+    setDocSettings({ 
+      ...docSettings, 
+      [type]: [...docSettings[type], { name: newDoc.name, required: newDoc.required, blocksMilestone: newDoc.blocksMilestone }] 
+    });
+    setNewDoc({ name: '', required: false, blocksMilestone: 100, type: null });
   };
 
   const toggleRequired = (type: 'container' | 'exworks', index: number) => {
@@ -91,11 +98,24 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
   };
 
   const removeDoc = (type: 'container' | 'exworks', index: number) => {
-    if (confirm('Verwijderen?')) {
-      const newList = [...docSettings[type]];
-      newList.splice(index, 1);
-      setDocSettings({ ...docSettings, [type]: newList });
-    }
+    const newList = [...docSettings[type]];
+    newList.splice(index, 1);
+    setDocSettings({ ...docSettings, [type]: newList });
+  };
+
+  const MILESTONE_OPTIONS = {
+    container: [
+      { label: 'DOUANE (40)', value: 40 },
+      { label: 'In Transit (50)', value: 50 },
+      { label: 'Aankomst (75)', value: 75 },
+      { label: 'Ingecheckt (100)', value: 100 },
+    ],
+    exworks: [
+      { label: 'Transport Order (25)', value: 25 },
+      { label: 'In Transit (50)', value: 50 },
+      { label: 'Aankomst (75)', value: 75 },
+      { label: 'Ingecheckt (100)', value: 100 },
+    ]
   };
 
   return (
@@ -175,8 +195,44 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
                 <h3 className="text-xl font-black text-foreground uppercase tracking-tight">
                   {type === 'container' ? 'Zeevracht' : 'Wegtransport'}
                 </h3>
-                <Button size="sm" variant="secondary" leftIcon={<Plus size={14} />} onClick={() => addDocument(type)}>Document</Button>
               </div>
+
+              {/* Add Document Inline Form */}
+              <div className="bg-card/50 border border-indigo-500/20 p-4 rounded-2xl space-y-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                   <Input 
+                     placeholder="Documentnaam (bijv. ATR)" 
+                     value={newDoc.type === type ? newDoc.name : ''} 
+                     onChange={e => setNewDoc({ ...newDoc, name: e.target.value, type })}
+                     containerClassName="flex-1"
+                   />
+                   <Button size="sm" onClick={() => addDocument(type)} disabled={newDoc.type !== type || !newDoc.name}>Toevoegen</Button>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                     <input 
+                       type="checkbox" 
+                       id={`req-${type}`}
+                       checked={newDoc.type === type ? newDoc.required : false} 
+                       onChange={e => setNewDoc({ ...newDoc, required: e.target.checked, type })}
+                       className="w-4 h-4 rounded border-border text-indigo-600"
+                     />
+                     <label htmlFor={`req-${type}`} className="text-xs font-bold text-foreground">Verplicht</label>
+                  </div>
+                  <div className="flex-1">
+                    <select 
+                      className="w-full p-2 bg-[var(--muted)] border-border rounded-xl text-[10px] font-bold"
+                      value={newDoc.type === type ? newDoc.blocksMilestone : 100}
+                      onChange={e => setNewDoc({ ...newDoc, blocksMilestone: parseInt(e.target.value), type })}
+                    >
+                      {MILESTONE_OPTIONS[type].map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 {docSettings[type]?.map((doc: any, i: number) => (
                   <div key={i} className="flex items-center justify-between bg-card border border-border p-4 rounded-2xl group hover:shadow-md transition-all">
@@ -184,11 +240,20 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
                       <div className="w-10 h-10 bg-[var(--muted)] rounded-xl flex items-center justify-center text-indigo-600 font-bold text-xs">{i + 1}</div>
                       <div>
                         <p className="font-bold text-foreground">{doc.name}</p>
-                        <Badge variant={doc.required ? 'warning' : 'info'} size="xs">{doc.required ? 'Verplicht' : 'Optioneel'}</Badge>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={doc.required ? 'warning' : 'info'} size="xs">{doc.required ? 'Verplicht' : 'Optioneel'}</Badge>
+                          {doc.required && (
+                            <span className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-tighter">
+                              Blokkeert {MILESTONE_OPTIONS[type].find(o => o.value === doc.blocksMilestone)?.label || doc.blocksMilestone}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                       <button onClick={() => toggleRequired(type, i)} className="p-2 text-[var(--muted-foreground)] hover:text-indigo-600 transition-colors"><Plus size={16} /></button>
+                       <button onClick={() => toggleRequired(type, i)} className={cn("p-2 transition-colors", doc.required ? "text-amber-500" : "text-[var(--muted-foreground)] hover:text-indigo-600")}>
+                         {doc.required ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
+                       </button>
                        <button onClick={() => removeDoc(type, i)} className="p-2 text-[var(--muted-foreground)] hover:text-rose-600 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
                     </div>
                   </div>

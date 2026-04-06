@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts, getPalletBalances, getYmsSlots } from '../../src/db/queries';
+import { getAllDeliveries, getAddressBook, getLogs, getUsers, getYmsWarehouses, getYmsDocks, getYmsWaitingAreas, getYmsDeliveries, getYmsDockOverrides, getYmsAlerts, getPalletBalances, getYmsSlots, getYmsPerformance } from '../../src/db/queries';
 import { getSetting } from '../../src/db/sqlite';
 import nodemailer from 'nodemailer';
 import { generateTransportOrderPDF } from '../services/pdfService';
@@ -118,6 +118,16 @@ router.post("/deliveries/:id/send-transport-order", async (req, res) => {
   } catch (error) {
     console.error("PDF/Mail Error:", error);
     res.status(500).json({ error: "Fout bij genereren of verzenden van PDF" });
+  }
+});
+
+router.get("/yms/performance", (req, res) => {
+  const warehouseId = req.query.warehouseId as string;
+  try {
+    const data = getYmsPerformance(warehouseId);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: (err as any).message });
   }
 });
 

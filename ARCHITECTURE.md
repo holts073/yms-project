@@ -1,5 +1,8 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.10.2 — Bijgewerkt: 2026-03-31 door @System-Architect*
+*Versie: v3.10.5 — Bijgewerkt: 2026-03-31 door @System-Architect*
+
+> [!IMPORTANT]
+> Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.
 
 > [!NOTE]
 > Bijgewerkt na v3.10.2 UI & Navigation Refactor: Direct Dashboard Editing, Shared Modal Pattern en Gecentraliseerde Capaciteitsinstellingen.
@@ -98,11 +101,11 @@ Het systeem hanteert een strikte flow om race-conditions te vermijden:
 
 ## 5. Database Architectuur (SQLite via better-sqlite3)
 
-### Tabelstructuur — Kern (Global Pipeline)
+### Tabelstructuur — Kern (v3.10.5)
 ```
 users          (id PK, name, email, passwordHash, role, permissions JSON)
 deliveries     (id PK, type, reference, billOfLading, supplierId, status, eta, requiresQA, ...)
-documents      (id PK, deliveryId FK, name, status, required)
+documents      (id PK, deliveryId FK, name, status, required, blocksMilestone)
 address_book   (id PK, type, name, contact, email, ...)
 logs           (id PK, timestamp, user, action, details)
 audit_logs     (id PK, deliveryId FK, timestamp, user, action, details)

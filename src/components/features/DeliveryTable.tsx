@@ -87,7 +87,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-foreground group-hover:text-indigo-600 transition-colors uppercase">{d.reference}</span>
-                        {d.requiresQA && (
+                        {!!d.requiresQA && (
                           <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded-md font-black tracking-tighter flex items-center gap-1 animate-pulse">
                             QA
                           </span>
@@ -141,8 +141,11 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                            <AlertTriangle size={14} className="text-rose-500" />
                          </div>
                        )}
-                       {d.status >= 50 && d.status < 100 && (
-                         <Button size="xs" onClick={() => onYmsRegister(d)}>YMS</Button>
+                       {d.status >= 50 && d.status < 75 && (
+                         <Button size="xs" variant="secondary" onClick={() => onUpdateStatus(d, 75)}>Aanmelden</Button>
+                       )}
+                       {d.status === 75 && (
+                         <Button size="xs" onClick={() => onYmsRegister(d)}>YMS Gate-In</Button>
                        )}
                        {canEdit && <button onClick={() => confirm('Verwijderen?') && onDelete(d.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-full transition-colors"><Trash2 size={16} /></button>}
                     </div>

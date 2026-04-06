@@ -57,7 +57,16 @@ export const DashboardTable: React.FC<DashboardTableProps> = ({
           {d.documents.some(doc => doc.required && doc.status === 'missing') && (
             <Badge variant="warning" size="xs" leftIcon={<FileText size={10} />}>Docs</Badge>
           )}
-          {d.notes && <MessageSquare size={14} className="text-indigo-500 opacity-50" />}
+          {d.notes && (
+            <div className="relative group/note inline-block">
+              <MessageSquare size={14} className="text-indigo-500 opacity-50 hover:opacity-100 transition-opacity cursor-help" />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-[10px] rounded-lg shadow-xl border border-border hidden group-hover/note:block z-50 leading-tight animate-in fade-in slide-in-from-bottom-1">
+                 <p className="font-bold mb-1 uppercase tracking-tighter text-[9px] text-[var(--muted-foreground)] border-b border-border pb-1 mb-1">Opmerking:</p>
+                 {d.notes}
+                 <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-popover border-r border-b border-border rotate-45 -mt-1" />
+              </div>
+            </div>
+          )}
         </div>
       )
     },
@@ -99,8 +108,11 @@ export const DashboardTable: React.FC<DashboardTableProps> = ({
            {d.type === 'exworks' && d.status >= 25 && d.status < 50 && canEdit && (
              <Button size="xs" variant="secondary" leftIcon={<FileText size={12} />} onClick={() => onMailTransport(d)}>Order</Button>
            )}
-           {d.status >= 50 && d.status < 100 && (
-             <Button size="xs" leftIcon={<MapPin size={12} />} onClick={() => onYmsRegister(d)}>Aanmelden</Button>
+           {d.status >= 50 && d.status < 75 && (
+             <Button size="xs" variant="secondary" onClick={() => onUpdateStatus(d, 75)}>Aankomst</Button>
+           )}
+           {d.status === 75 && (
+             <Button size="xs" leftIcon={<MapPin size={12} />} onClick={() => onYmsRegister(d)}>Gate-In</Button>
            )}
            <button className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"><ChevronRight size={18} /></button>
         </div>

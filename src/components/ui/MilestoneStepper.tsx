@@ -90,10 +90,6 @@ export const MilestoneStepper: React.FC<MilestoneStepperProps> = ({ delivery, cl
                 </span>
               </div>
 
-              {/* Tooltip on hover */}
-              <div className="absolute -top-8 scale-0 group-hover:scale-100 transition-transform origin-bottom bg-slate-900 text-white text-[10px] px-2 py-1 rounded-lg pointer-events-none z-20 whitespace-nowrap font-bold">
-                {m.label} {isActive ? '(Bereikt)' : '(In afwachting)'}
-              </div>
             </div>
           );
         })}

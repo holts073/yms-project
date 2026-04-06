@@ -9,10 +9,12 @@ import { cn } from '../../lib/utils';
 
 interface YmsQueueProps {
   onAssignClick: (d: YmsDelivery) => void;
+  selectedDate?: string;
 }
 
 export const YmsQueue: React.FC<YmsQueueProps> = ({
-  onAssignClick
+  onAssignClick,
+  selectedDate
 }) => {
   const { priorityQueue } = useYmsData();
   // Update wait times every minute
@@ -23,7 +25,13 @@ export const YmsQueue: React.FC<YmsQueueProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const queueDeliveries = priorityQueue;
+  const queueDeliveries = useMemo(() => {
+    if (!selectedDate) return priorityQueue;
+    return priorityQueue.filter(d => {
+      const schedDate = d.scheduledTime?.split('T')[0];
+      return !schedDate || schedDate <= selectedDate;
+    });
+  }, [priorityQueue, selectedDate]);
 
   return (
     <Card className="flex-1 overflow-hidden flex flex-col" padding="lg" data-testid="yms-queue">

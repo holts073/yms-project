@@ -5,6 +5,7 @@ export interface Document {
   name: string;
   status: 'pending' | 'received' | 'missing';
   required: boolean;
+  blocksMilestone?: number;
 }
 
 export interface AddressEntry {

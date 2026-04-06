@@ -73,13 +73,20 @@ const seedDatabase = async () => {
     const id = `del-${i}-${Math.random().toString(36).substr(2, 5)}`;
     
     const docs = [
-      { id: `doc-${id}-1`, name: isContainer ? 'Seaway Bill / B/L' : 'CMR / Vrachtbrief', status: status >= 25 ? 'received' : 'pending', required: true },
-      { id: `doc-${id}-2`, name: 'Commercial Invoice', status: status >= 25 ? 'received' : 'pending', required: true },
-      { id: `doc-${id}-3`, name: 'Packing List', status: status >= 25 ? 'received' : (Math.random() > 0.7 ? 'missing' : 'pending'), required: true },
+      { id: `doc-${id}-1`, name: isContainer ? 'Seaway Bill / B/L' : 'CMR / Vrachtbrief', status: status >= 25 ? 'received' : 'pending', required: true, blocksMilestone: isContainer ? 40 : 50 },
+      { id: `doc-${id}-2`, name: 'Commercial Invoice', status: status >= 25 ? 'received' : 'pending', required: true, blocksMilestone: 100 },
+      { id: `doc-${id}-3`, name: 'Packing List', status: status >= 25 ? 'received' : (Math.random() > 0.7 ? 'missing' : 'pending'), required: true, blocksMilestone: 100 },
     ];
 
+    // Add ATR or EUR1 specifically for some suppliers to show the "Suppliers specific doc" reality
+    if (i % 3 === 0) {
+      docs.push({ id: `doc-${id}-5`, name: 'ATR Document', status: status >= 40 ? 'received' : 'pending', required: true, blocksMilestone: 40 });
+    } else if (i % 5 === 0) {
+      docs.push({ id: `doc-${id}-6`, name: 'EUR1 Certificaat', status: status >= 40 ? 'received' : 'pending', required: true, blocksMilestone: 40 });
+    }
+
     if (isContainer && status >= 50) {
-      docs.push({ id: `doc-${id}-4`, name: 'Notification of Arrival', status: 'received', required: true });
+      docs.push({ id: `doc-${id}-4`, name: 'Notification of Arrival', status: 'received', required: true, blocksMilestone: 50 });
     }
 
     const audit: AuditEntry[] = [
@@ -198,6 +205,23 @@ const seedDatabase = async () => {
     
     saveYmsDelivery(ymsDel);
   });
+
+  console.log("Seeding Document Templates (Settings)...");
+  const defaultShipmentSettings = {
+    container: [
+      { name: 'Seaway Bill / B/L', required: true, blocksMilestone: 40 },
+      { name: 'Commercial Invoice', required: true, blocksMilestone: 100 },
+      { name: 'Packing List', required: true, blocksMilestone: 100 },
+      { name: 'ATR Document', required: false, blocksMilestone: 40 },
+      { name: 'Notification of Arrival', required: true, blocksMilestone: 50 },
+    ],
+    exworks: [
+      { name: 'CMR / Vrachtbrief', required: true, blocksMilestone: 50 },
+      { name: 'Commercial Invoice', required: true, blocksMilestone: 100 },
+      { name: 'Transport Order', required: true, blocksMilestone: 25 },
+    ]
+  };
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('settings', JSON.stringify({ shipment_settings: defaultShipmentSettings }));
 
   console.log("Database seeded successfully with HIGH FIDELITY demo data!");
 };

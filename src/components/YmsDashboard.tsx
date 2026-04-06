@@ -95,14 +95,23 @@ export default function YmsDashboard({
   // Derived state
   const filteredDeliveries = useMemo(() => {
     const s = searchTerm.toLowerCase();
+    const todayStr = new Date().toISOString().split('T')[0];
+    
     return yms.deliveries.filter((d: YmsDelivery) => {
       const isCorrectWarehouse = d.warehouseId === yms.selectedWarehouseId;
       const isCorrectDirection = d.direction === directionFilter || view === 'planning';
       
+      const schedDate = d.scheduledTime?.split('T')[0];
+      const isFuture = schedDate && schedDate > selectedDate;
+
+      // Rule: Never show future deliveries if they haven't arrived yet OR 
+      // even if they have arrived, hide them if scheduled for later (as requested).
+      if (isFuture) return false;
+
       const matchesView = view === 'planning' 
-        ? (d.scheduledTime && d.scheduledTime.startsWith(selectedDate))
+        ? (schedDate === selectedDate)
         : (['GATE_IN', 'IN_YARD', 'DOCKED', 'UNLOADING', 'LOADING', 'COMPLETED'].includes(d.status) || 
-           (d.status === 'GATE_OUT' && d.statusTimestamps?.GATE_OUT?.startsWith(new Date().toISOString().split('T')[0])));
+           (d.status === 'GATE_OUT' && d.statusTimestamps?.GATE_OUT?.startsWith(selectedDate)));
 
       const matchesSearch = !s || d.reference?.toLowerCase().includes(s) || d.supplier?.toLowerCase().includes(s);
 
@@ -240,6 +249,7 @@ export default function YmsDashboard({
       {view === 'arrivals' ? (
             <YmsQueue 
               onAssignClick={setAssigningDelivery} 
+              selectedDate={selectedDate}
             />
       ) : (
         <div className="flex flex-col gap-10">

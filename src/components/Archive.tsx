@@ -16,6 +16,8 @@ const Archive = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'container' | 'exworks'>('all');
   const [supplierFilter, setSupplierFilter] = useState<string>('all');
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
   
   const { deliveries = [] } = useDeliveries(1, 1000, '', 'all', 'updatedAt', false);
 
@@ -40,6 +42,18 @@ const Archive = () => {
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [deliveries, searchTerm, selectedDate, typeFilter, supplierFilter, addressBook]);
+
+  // Handle page reset on filter change
+  useMemo(() => {
+    setCurrentPage(1);
+    return null;
+  }, [searchTerm, selectedDate, typeFilter, supplierFilter]);
+
+  const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredList.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredList, currentPage]);
 
   const suppliers = useMemo(() => {
     if (!addressBook?.suppliers) return [];
@@ -167,7 +181,7 @@ const Archive = () => {
                   </td>
                 </tr>
               ) : (
-                filteredList.map((d: Delivery) => {
+                paginatedList.map((d: Delivery) => {
                   const supplier = addressBook?.suppliers.find((s: any) => s.id === d.supplierId);
                   return (
                     <tr key={d.id} className="hover:bg-[var(--muted)]/20 transition-colors group">
@@ -179,7 +193,12 @@ const Archive = () => {
                            )}>
                               {d.type === 'container' ? <Package size={16} /> : <TruckIcon size={16} />}
                            </div>
-                           <span className="font-black text-foreground text-sm uppercase tracking-tight">{d.reference}</span>
+                           <span 
+                             onClick={() => setSelectedDelivery(d)}
+                             className="font-black text-foreground text-sm uppercase tracking-tight hover:text-indigo-600 cursor-pointer transition-colors"
+                           >
+                             {d.reference}
+                           </span>
                         </div>
                       </td>
                       <td className="p-3 px-6">
@@ -218,6 +237,58 @@ const Archive = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination UI */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-6 bg-[var(--muted)]/30 border-t border-border">
+            <div className="text-xs font-bold text-[var(--muted-foreground)]">
+              Pagina <span className="text-foreground">{currentPage}</span> van <span className="text-foreground">{totalPages}</span> 
+              <span className="mx-2 opacity-30">|</span> 
+              Totaal <span className="text-foreground">{filteredList.length}</span> resultaten
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Vorige
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                  let pageNum = i + 1;
+                  if (totalPages > 5 && currentPage > 3) {
+                    pageNum = currentPage - 2 + i;
+                    if (pageNum + 2 > totalPages) pageNum = totalPages - 4 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "w-8 h-8 rounded-lg text-xs font-black transition-all",
+                        currentPage === pageNum 
+                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
+                          : "bg-card border border-border text-[var(--muted-foreground)] hover:border-indigo-500"
+                      )}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Volgende
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <AuditLogModal 

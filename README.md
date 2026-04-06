@@ -1,4 +1,4 @@
-# ILG Foodgroup — Supply Chain | YMS Control Tower v3.10.2
+# ILG Foodgroup — Supply Chain | YMS Control Tower v3.10.5
 *Versie: v3.10.2 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 Het ILG Yard Management Systeem (YMS) orkestreert de volledige supply chain flow: van de initiële ex-works order bij de leverancier tot het moment dat de vrachtwagen de yard verlaat. Sinds v3.7.5 is het systeem 100% type-safe en geoptimaliseerd voor high-density monitoring.
@@ -51,6 +51,17 @@ UI Action → socket.emit('action') → Server validatie → SQLite write
 ```
 
 Zie `ARCHITECTURE.md` voor de volledige blauwdruk, inclusief Folder Tree en Mermaid diagrammen.
+
+## 🆕 Changelog v3.10.5 (Document Milestone Enforcement)
+- **✅ Dynamic Document Blocking**: Documenten (zoals ATR/EUR1) kunnen nu specifieke milestones (DOUANE) blokkeren via `blocksMilestone`.
+- **✅ Milestone-Aware UI**: Rode waarschuwingen in de checklist UI voor documenten die de *huidige* volgende stap blokkeren.
+- **✅ Pre-populated Checklists**: Documenten worden automatisch klaargezet bij het aanmaken van een nieuwe vracht op basis van de settings.
+- **✅ High-Fidelity Seed**: `seed.ts` uitgebreid met realistische document-scenario's en milestone-constraints.
+
+## 🆕 Changelog v3.10.4 (Logistics Analytics & Performance)
+- **✅ Carrier Performance Monitoring**: Introductie van de `Reliability Index` (0-100 score) op basis van ETA-afwijkingen.
+- **✅ Performance Dashboard**: Nieuwe interactieve module in de statistieken voor transporteur- en leverancier-beoordeling.
+- **✅ Backend Analytics**: `getYmsPerformance` query voor real-time berekening van stiptheid en lostijd-afwijkingen.
 
 ## 🆕 Changelog v3.10.2 (UI/UX & Navigation Refactor)
 - **✅ Direct Dashboard Editing**: Gebruik van de gedeelde `DeliveryDetailModal` voor CRUD-acties direct vanaf het dashboard.

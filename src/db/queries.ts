@@ -32,7 +32,7 @@ const stmts = {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
-  insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required) VALUES (?, ?, ?, ?, ?)'),
+  insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required, blocksMilestone) VALUES (?, ?, ?, ?, ?, ?)'),
   deleteAudit: db.prepare('DELETE FROM audit_logs WHERE deliveryId = ?'),
   insertAudit: db.prepare('INSERT INTO audit_logs (id, deliveryId, timestamp, user, action, details) VALUES (?, ?, ?, ?, ?, ?)'),
   deleteDelivery: db.prepare('DELETE FROM deliveries WHERE id = ?'),
@@ -149,7 +149,8 @@ export function getAllDeliveries(page: number = 1, limit: number = 1000, search:
       id: d.id,
       name: d.name,
       status: d.status,
-      required: d.required === 1 
+      required: d.required === 1,
+      blocksMilestone: d.blocksMilestone 
     });
     return acc;
   }, {} as Record<string, Document[]>);
@@ -198,7 +199,7 @@ export function insertDelivery(d: Delivery) {
     stmts.deleteDocs.run(d.id);
     if (d.documents) {
       for (const doc of d.documents) {
-        stmts.insertDoc.run(doc.id, d.id, doc.name, doc.status, doc.required ? 1 : 0);
+        stmts.insertDoc.run(doc.id, d.id, doc.name, doc.status, doc.required ? 1 : 0, doc.blocksMilestone || 100);
       }
     }
 
@@ -542,4 +543,48 @@ export function deleteYmsSlot(id: string) {
 
 export function deleteYmsSlotByDelivery(deliveryId: string) {
   stmts.deleteYmsSlotByDelivery.run(deliveryId);
+}
+
+export function getYmsPerformance(warehouseId?: string) {
+  let query = "SELECT * FROM yms_deliveries WHERE status IN ('COMPLETED', 'GATE_OUT')";
+  const params: any[] = [];
+  if (warehouseId) {
+    query += " AND warehouseId = ?";
+    params.push(warehouseId);
+  }
+  
+  const rows = db.prepare(query).all(...params) as Record<string, any>[];
+  
+  return rows.map(r => {
+    const timestamps = r.statusTimestamps ? JSON.parse(r.statusTimestamps) : {};
+    
+    // Arrival Delay (Actual vs Scheduled)
+    let arrivalDelay = 0;
+    if (r.registrationTime && r.scheduledTime) {
+      const actual = new Date(r.registrationTime).getTime();
+      const planned = new Date(r.scheduledTime).getTime();
+      arrivalDelay = Math.round((actual - planned) / 60000); // Minutes
+    }
+
+    // Unloading Performance (Actual vs Estimated)
+    let unloadingDeviation = 0;
+    if (timestamps.DOCKED && timestamps.COMPLETED && r.estimatedDuration) {
+      const start = new Date(timestamps.DOCKED).getTime();
+      const end = new Date(timestamps.COMPLETED).getTime();
+      const actualDur = Math.round((end - start) / 60000);
+      unloadingDeviation = actualDur - r.estimatedDuration;
+    }
+
+    return {
+      id: r.id,
+      reference: r.reference,
+      supplier: r.supplier,
+      supplierId: r.supplierId,
+      transporterId: r.transporterId,
+      arrivalDelay,
+      unloadingDeviation,
+      palletCount: r.palletCount || 0,
+      timestamp: r.scheduledTime
+    };
+  });
 }

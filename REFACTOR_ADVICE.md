@@ -1,7 +1,16 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.10.2 — Bijgewerkt: 2026-03-31 door @System-Architect*
+*Versie: v3.10.5 — Bijgewerkt: 2026-03-31 door @System-Architect*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
+
+## ✅ Opgelost in v3.10.5 (Document Milestone Enforcement)
+- **Dynamic Document Blocking** ✅: Gebruik van `blocksMilestone` in de `documents` tabel vervangt hardcoded logica in `logistics.ts`.
+- **Red-Alert UI** ✅: `DeliveryDetailModal` toont nu rode waarschuwingen voor ontbrekende documenten die de *huidige* volgende stap blokkeren.
+- **High-Fidelity Seed** ✅: `seed.ts` bevat nu realistische document-trajecten (ATR, EUR1, NOA).
+
+## ✅ Opgelost in v3.10.4 (Logistics Analytics)
+- **Carrier Performance Monitoring** ✅: `getYmsPerformance` query en `CarrierPerformance.tsx` component voor real-time stiptheidsmeting.
+- **Reliability Scoring** ✅: Automatische 0-100 score op basis van ETA-afwijkingen.
 
 ## 🛠️ Nieuwe Adviezen: UI & UX Consistency (v3.11.0)
 

@@ -46,17 +46,25 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
       setEditingDelivery(initialDelivery);
       setFormType(initialDelivery.type || 'container');
     } else {
+      // Get default documents based on type
+      const defaultDocs = (state.settings?.shipment_settings?.[formType || 'container'] || []).map((d: any) => ({
+        id: Math.random().toString(36).substring(2, 11),
+        name: d.name,
+        status: 'pending',
+        required: d.required,
+        blocksMilestone: d.blocksMilestone || 100
+      }));
+
       setEditingDelivery({
-        type: 'container',
+        type: formType || 'container',
         status: 0,
-        documents: [],
+        documents: defaultDocs,
         palletExchange: true,
         palletType: 'EUR',
         palletRate: state.settings?.pallet_rates?.EUR || 13
       });
-      setFormType('container');
     }
-  }, [initialDelivery, state.settings?.pallet_rates?.EUR]);
+  }, [initialDelivery, formType, state.settings?.shipment_settings, state.settings?.pallet_rates?.EUR]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -221,45 +229,62 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
              </div>
          </div>
 
-         {/* Document Checklist */}
-         {editingDelivery.id && (
-           <div className="border-t border-border pt-6 mt-6">
-              <h4 className="text-sm font-black uppercase tracking-widest text-[var(--muted-foreground)] mb-4">Documenten Checklist</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 {(editingDelivery.documents || []).map((doc: any, idx: number) => (
-                   <div key={doc.id} className="flex items-center justify-between p-3 bg-[var(--muted)]/50 rounded-xl border border-border/50">
-                      <div className="flex items-center gap-3">
-                         <input 
-                           type="checkbox" 
-                           checked={doc.status === 'received'} 
-                           onChange={() => {
-                             const newDocs = [...(editingDelivery.documents || [])];
-                             const wasReceived = newDocs[idx].status === 'received';
-                             newDocs[idx] = { ...newDocs[idx], status: wasReceived ? 'pending' : 'received' };
-                             
-                             let currentStatus = editingDelivery.status || 0;
-                             if (wasReceived && doc.required) {
-                                if (currentStatus === 100) currentStatus = 75;
-                                else if (currentStatus >= 75) currentStatus = 50;
-                                else if (currentStatus >= 50) currentStatus = 25;
-                             }
-                             
-                             setEditingDelivery({ ...editingDelivery, documents: newDocs, status: currentStatus });
-                           }}
-                           className="w-5 h-5 rounded border-border text-emerald-600 focus:ring-emerald-500"
-                         />
-                         <span className={cn("text-sm font-bold", doc.required ? "text-foreground" : "text-[var(--muted-foreground)]")}>
-                           {doc.name} {doc.required && <span className="text-rose-500">*</span>}
-                         </span>
-                      </div>
-                      <Badge variant={doc.status === 'received' ? 'success' : 'warning'} size="xs">
-                         {doc.status === 'received' ? 'Gereed' : 'Wachtend'}
-                      </Badge>
-                   </div>
-                 ))}
+          {/* Document Checklist */}
+          <div className="border-t border-border pt-6 mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-black uppercase tracking-tight text-foreground flex items-center gap-2">
+                  <FileText size={16} className="text-indigo-600" />
+                  Documenten Checklist
+                </h4>
+                <Badge variant="outline" size="xs" className="font-bold border-indigo-500/20 text-indigo-600 uppercase">Verplicht gemarkeerd met *</Badge>
               </div>
-           </div>
-         )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {(editingDelivery.documents || []).map((doc: any, idx: number) => {
+                   const tM = doc.blocksMilestone || 100;
+                   const milestones = editingDelivery.type === 'container' ? [0, 25, 40, 50, 75, 100] : [0, 25, 50, 75, 100];
+                   const currentStatus = editingDelivery.status || 0;
+                   const nextMilestone = milestones.find(m => m > currentStatus) || 100;
+                   
+                   const isCritical = doc.required && doc.status !== 'received' && tM <= nextMilestone;
+                   const milestoneLabel = tM === 100 ? 'Inchecken' : (tM === 40 ? 'DOUANE' : (tM === 25 ? 'Transport' : (tM === 50 ? 'In Transit' : (tM === 75 ? 'Aankomst' : 'Volgende Stap'))));
+
+                   return (
+                    <div key={doc.id} className={cn(
+                      "flex items-center justify-between p-4 rounded-2xl border transition-all",
+                      doc.status === 'received' ? "bg-emerald-50/10 border-emerald-500/20" : "bg-[var(--muted)]/50 border-border/50",
+                      isCritical && "border-rose-500/30 bg-rose-50/5 shadow-sm"
+                    )}>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="checkbox" 
+                            checked={doc.status === 'received'} 
+                            onChange={() => {
+                              const newDocs = [...(editingDelivery.documents || [])];
+                              const wasReceived = newDocs[idx].status === 'received';
+                              newDocs[idx] = { ...newDocs[idx], status: wasReceived ? 'pending' : 'received' };
+                              setEditingDelivery({ ...editingDelivery, documents: newDocs });
+                            }}
+                            className="w-5 h-5 rounded border-border text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <div>
+                            <p className={cn("text-sm font-bold", isCritical ? "text-rose-600" : "text-foreground")}>
+                               {doc.name} {doc.required && '*'}
+                            </p>
+                            {doc.required && (
+                              <p className={cn("text-[10px] font-bold uppercase tracking-tight", isCritical ? "text-rose-500/80" : "text-[var(--muted-foreground)]")}>
+                                Benodigd voor {milestoneLabel}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant={doc.status === 'received' ? 'success' : (isCritical ? 'danger' : (doc.required ? 'warning' : 'info'))} size="xs">
+                          {doc.status === 'received' ? 'Gereed' : (doc.required ? 'Verplicht' : 'Optioneel')}
+                        </Badge>
+                    </div>
+                   );
+                 })}
+              </div>
+          </div>
 
          <div className="flex gap-4 pt-6 border-t border-border">
             <Button variant="secondary" className="flex-1" onClick={onClose}>Annuleren</Button>

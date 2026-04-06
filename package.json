@@ -1,10 +1,12 @@
 {
   "name": "ilg-control-tower",
   "private": true,
-  "version": "3.10.2",
+  "version": "3.10.5",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "seed": "tsx seed.ts",
+    "version:sync": "tsx server/scripts/sync-version.ts",
     "build": "vite build",
     "start": "node server.ts",
     "preview": "vite preview",
@@ -18,7 +20,6 @@
     "test:health": "tsx server/scripts/db-health.ts",
     "test:full": "npm run test:integration && npm run test:health && npm run test:e2e",
     "db:setup": "tsx src/db/sqlite.ts",
-    "db:seed": "tsx server/scripts/seed-test-data.ts",
     "bump:patch": "npm version patch --no-git-tag-version"
   },
   "dependencies": {

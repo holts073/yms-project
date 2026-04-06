@@ -11,15 +11,16 @@ export const CONTAINER_MILESTONES: Milestone[] = [
   { key: 'in_transit', label: 'In Transit', status: 25 },
   { key: 'customs', label: 'DOUANE', status: 40 },
   { key: 'on_route', label: 'Onderweg naar Magazijn', status: 50 },
-  { key: 'warehouse', label: 'Warehouse Arrival', status: 75 },
-  { key: 'checkin', label: 'Ingecheckt', status: 100 },
+  { key: 'arrival', label: 'Aangemeld bij Poort', status: 75 },
+  { key: 'warehouse', label: 'Ingecheckt', status: 100 },
 ];
 
 export const EXWORKS_MILESTONES: Milestone[] = [
   { key: 'order', label: 'Order', status: 0 },
   { key: 'transport', label: 'Transport Order', status: 25 },
   { key: 'in_transit', label: 'In Transit', status: 50 },
-  { key: 'warehouse', label: 'Warehouse Arrival', status: 100 },
+  { key: 'arrival', label: 'Aankomst Magazijn', status: 75 },
+  { key: 'warehouse', label: 'Ingecheckt', status: 100 },
 ];
 
 /**
@@ -29,7 +30,19 @@ export const EXWORKS_MILESTONES: Milestone[] = [
 export function gatekeeperCheck(delivery: Delivery, targetStatus: number): string | null {
   const docs = delivery.documents || [];
 
-  // Helper to check if a document is received by name (case-insensitive)
+  // 1. Dynamic Milestone Check (Universal)
+  const missingRequired = docs.filter(d => 
+    d.required && 
+    (d.blocksMilestone || 100) <= targetStatus && 
+    d.status !== 'received'
+  );
+
+  if (missingRequired.length > 0) {
+    const names = missingRequired.map(d => d.name).join(', ');
+    return `Niet alle verplichte documenten voor deze stap zijn aanwezig: ${names}`;
+  }
+
+  // 2. Legacy / Special Pattern Checks (Optional Fallbacks)
   const isDocReceived = (namePatterns: string[]) => {
     return docs.some(d => 
       namePatterns.some(pattern => d.name.toLowerCase().includes(pattern.toLowerCase())) && 
@@ -37,46 +50,12 @@ export function gatekeeperCheck(delivery: Delivery, targetStatus: number): strin
     );
   };
 
-  // 1. Ex-works: Transport Order check for In Transit
-  if (delivery.type === 'exworks' && targetStatus >= 50 && targetStatus < 100) {
-    if (!isDocReceived(['transport order'])) {
-      return 'Document "Transport Order" is verplicht om de status op "In Transit" te zetten.';
-    }
-  }
-
-  // 2. Container: Milestone Specific Checks
-  if (delivery.type === 'container') {
-    // To move to DOUANE (50)
-    // To move to DOUANE (40)
-    if (targetStatus >= 40 && targetStatus < 50) {
-      if (!isDocReceived(['swb', 'bill of lading', 'bol', 'b/l'])) {
-        return 'Een verplicht vervoersdocument (SWB of Bill of Lading) is vereist om naar de DOUANE stap te gaan.';
-      }
-    }
-
-    // To move to Onderweg naar Magazijn (50)
-    if (targetStatus >= 50 && targetStatus < 75) {
-      // Check for NOA
-      if (!isDocReceived(['noa', 'notification of arrival'])) {
-        return 'De NOA (Notification of Arrival) is verplicht om de container vrij te geven voor transport naar het magazijn.';
-      }
-    }
-
-    // To move to Warehouse Arrival (75)
-    if (targetStatus >= 75 && targetStatus < 100) {
-      // NEW: Scan Logic check
-      const scanDoc = docs.find(d => d.name.toLowerCase().includes('scan') && d.required);
-      if (scanDoc && scanDoc.status !== 'received') {
-        return 'Deze container staat gemarkeerd voor een scan. "Scan Release" documentatie is verplicht voor aankomst bij het magazijn.';
-      }
-    }
-  }
-
-  // 3. Final Check: Warehouse Arrival (100)
-  if (targetStatus >= 100) {
-    const missingRequired = docs.filter(d => d.required && d.status !== 'received');
-    if (missingRequired.length > 0) {
-      return `Niet alle verplichte documenten zijn aanwezig: ${missingRequired.map(d => d.name).join(', ')}`;
+  // Keep specific patterns for specialized logic not covered by simple naming
+  if (delivery.type === 'container' && targetStatus >= 40 && targetStatus < 50) {
+    if (!isDocReceived(['swb', 'bill of lading', 'bol', 'b/l'])) {
+      // If we don't have a document specifically marked for 40, check for the pattern
+      const hasSpecific40 = docs.some(d => d.blocksMilestone === 40);
+      if (!hasSpecific40) return 'Een verplicht vervoersdocument (SWB of Bill of Lading) is vereist voor de DOUANE stap.';
     }
   }
 

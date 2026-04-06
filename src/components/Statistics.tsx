@@ -10,6 +10,7 @@ import { useYmsData } from '../hooks/useYmsData';
 import { StatCard } from './shared/StatCard';
 import { Card } from './shared/Card';
 import { isRegisteredOnTime } from '../lib/logistics';
+import { CarrierPerformance } from './features/CarrierPerformance';
 
 const Statistics = () => {
   const { state, currentUser } = useSocket();
@@ -237,6 +238,10 @@ const Statistics = () => {
             </div>
           </div>
         </Card>
+      </div>
+
+      <div className="pt-8 border-t border-border">
+        <CarrierPerformance />
       </div>
     </div>
   );
