@@ -48,37 +48,74 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const SidebarItem = ({ icon: Icon, label, active, onClick, color = "text-indigo-600" }: any) => (
+const getColorStyles = (colorClass: string) => {
+  const colorMap: Record<string, any> = {
+    'text-blue-500': { bg: 'bg-blue-500/10', border: 'border-blue-500/20', pill: 'bg-blue-500' },
+    'text-amber-500': { bg: 'bg-amber-500/10', border: 'border-amber-500/20', pill: 'bg-amber-500' },
+    'text-emerald-500': { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', pill: 'bg-emerald-500' },
+    'text-indigo-500': { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', pill: 'bg-indigo-500' },
+    'text-rose-500': { bg: 'bg-rose-500/10', border: 'border-rose-500/20', pill: 'bg-rose-500' },
+    'text-violet-500': { bg: 'bg-violet-500/10', border: 'border-violet-500/20', pill: 'bg-violet-500' },
+    'text-slate-500': { bg: 'bg-slate-500/10', border: 'border-slate-500/20', pill: 'bg-slate-500' },
+    'text-indigo-600': { bg: 'bg-indigo-600/10', border: 'border-indigo-500/20', pill: 'bg-indigo-600' },
+  };
+  return colorMap[colorClass] || colorMap['text-indigo-600'];
+};
+
+const SidebarItem = ({ icon: Icon, label, active, onClick, color = "text-indigo-600" }: any) => {
+  const styles = getColorStyles(color);
+  
+  return (
     <button
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-5 py-3 w-full transition-all duration-300 rounded-2xl relative group",
         active 
-          ? "bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm border border-indigo-500/20" 
+          ? cn(styles.bg, "font-bold shadow-sm border", styles.border) 
           : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]/50"
       )}
     >
-      {active && <motion.div layoutId="active-pill" className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full" />}
+      {active && (
+        <motion.div 
+          layoutId="active-pill" 
+          className={cn("absolute left-0 w-1.5 h-6 rounded-r-full shadow-[0_0_8px_rgba(0,0,0,0.1)]", styles.pill)} 
+          initial={{ x: -5, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      )}
       <Icon 
         size={20} 
         className={cn(
-          "transition-transform group-hover:scale-110", 
-          active ? color : `${color} opacity-40 group-hover:opacity-100`
+          "transition-transform duration-300", 
+          active ? cn(color, "scale-110") : `${color} opacity-40 group-hover:opacity-100 group-hover:scale-110`
         )} 
       />
-      <span className="text-sm tracking-tight">{label}</span>
+      <span className={cn(
+        "text-sm tracking-tight transition-colors",
+        active ? "text-foreground" : ""
+      )}>{label}</span>
+      {active && (
+        <motion.div 
+          layoutId="active-glow"
+          className={cn("absolute inset-0 rounded-2xl -z-10 blur-xl opacity-20", styles.bg)}
+        />
+      )}
     </button>
-);
+  );
+};
 
 const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, onToggle, color = "text-indigo-600" }: any) => {
+  const styles = getColorStyles(color);
+
   return (
     <div className="w-full">
       <button
         onClick={onToggle}
         className={cn(
-          "flex items-center justify-between gap-3 px-5 py-3 w-full transition-all duration-300 rounded-2xl group",
+          "flex items-center justify-between gap-3 px-5 py-3 w-full transition-all duration-300 rounded-2xl group relative",
           active 
-            ? "bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20" 
+            ? cn(styles.bg, "font-bold border shadow-sm", styles.border) 
             : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]/50"
         )}
       >
@@ -86,13 +123,22 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           <Icon 
             size={20} 
             className={cn(
-              "transition-transform group-hover:scale-110", 
-              active ? color : `${color} opacity-40 group-hover:opacity-100`
+              "transition-transform duration-300", 
+              active ? cn(color, "scale-110") : `${color} opacity-40 group-hover:opacity-100 group-hover:scale-110`
             )} 
           />
-          <span className="text-sm tracking-tight">{label}</span>
+          <span className={cn(
+            "text-sm tracking-tight transition-colors",
+            active ? "text-foreground" : ""
+          )}>{label}</span>
         </div>
         <ChevronRight size={14} className={cn("transition-transform duration-300 opacity-50", isOpen && "rotate-90")} />
+        {active && (
+          <motion.div 
+            layoutId="active-glow-dropdown"
+            className={cn("absolute inset-0 rounded-2xl -z-10 blur-xl opacity-10", styles.bg)}
+          />
+        )}
       </button>
       <AnimatePresence>
         {isOpen && (

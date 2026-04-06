@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.10.5 — Bijgewerkt: 2026-03-31 door @System-Architect*
+*Versie: v3.10.5 — Bijgewerkt: 2026-04-06 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.
@@ -15,27 +15,43 @@ We hanteren een strikte scheiding tussen de frontend (React) en backend (Node.js
 
 ```text
 .
-├── src/                    # Frontend (React 19)
-│   ├── components/
-│   │   ├── shared/         # Atoms & Molecules: Button, Modal, Badge, Card (Context-vrij)
-│   │   ├── features/       # Organisms: Timeline, DeliveryTable, DeliveryDetailModal (Business Logic)
-│   │   ├── ui/             # UI-specifieke hulpcomponenten
-│   │   └── ...             # Pagina's: YmsDashboard, Statistics, Archive, Settings
-│   ├── hooks/              # Custom Hooks: useYmsData, useDeliveries, useSocket
-│   ├── lib/                # Utilities: logistics.ts (validatie), utils.ts (styling)
-│   ├── db/                 # Client-side DB toegang (queries.ts, sqlite.ts)
-│   ├── types.ts            # Centrale TypeScript-interfaces (Single Source of Truth)
-│   └── main.tsx            # React Entry point
 ├── server/                 # Backend (Node.js, Express, Socket.io)
-│   ├── routes/             # REST API Router (authenticatie, bulk-acties)
-│   ├── sockets/            # socketHandlers.ts (Centrale Action-Router)
-│   ├── services/           # Services: pdfService, queueService (Logistieke algoritmes)
-│   ├── db/                 # Database: Migraties, Migrator-logic
-│   ├── middleware/         # Auth Middleware (JWT validatie)
-│   └── scripts/            # Database Health Checks en Fix-scripts
-├── database.sqlite         # Productie-data (SQLite)
-├── server.ts               # Backend Entry point (Express + Socket.io Server)
-└── package.json            # Afhankelijkheden en build-scripts
+│   ├── db/                 # Database logica & SQLite opslag
+│   │   ├── migrations/     # SQL- en TS-migratiebestanden (v3.10.x compliant)
+│   │   ├── database.db     # Lokale ontwikkelingsdatabase
+│   │   └── migrator.ts     # Handelt de uitvoering van migraties af
+│   ├── middleware/         # Express middleware (bv. auth.ts voor JWT)
+│   ├── routes/             # REST API endpoints (auth.ts, deliveries.ts)
+│   ├── scripts/            # Backend onderhoud scripts (db-health, sync-version)
+│   ├── services/           # Business logic (pdfService, queueService)
+│   ├── sockets/            # socketHandlers.ts (Centrale real-time router)
+│   └── workers/            # Achtergrondtaken (bv. inventory-worker)
+├── src/                    # Frontend (React 19, Vite)
+│   ├── components/
+│   │   ├── features/       # Business-specifieke componenten (o.a. Timeline, PalletLedger)
+│   │   ├── shared/         # Herbruikbare Atomic componenten (Button, Modal, Table)
+│   │   ├── ui/             # UI-hulpcomponenten (Combobox, MilestoneStepper)
+│   │   ├── AddressBook.tsx # Adresboek beheer
+│   │   ├── Dashboard.tsx   # Hoofddashboard view
+│   │   ├── YmsDashboard.tsx# Operationele Yard view
+│   │   └── ...             # Overige (UserManagement, Settings, Statistics)
+│   ├── db/                 # Client-side DB toegang (sqlite.ts, queries.ts)
+│   ├── hooks/              # Custom React hooks (useDeliveries, useYmsData)
+│   ├── lib/                # Utility functies en validatieregels (logistics.ts, ymsRules.ts)
+│   ├── services/           # Interne frontend services
+│   ├── test/               # Frontend test setup
+│   ├── types.ts            # Centrale TypeScript-interfaces
+│   ├── SocketContext.tsx   # Context voor real-time socket communicatie
+│   ├── ThemeContext.tsx    # Context voor Dark/Light/ILG thema's
+│   └── main.tsx            # App entry point
+├── tests/                  # Test Suite (Playwright & Vitest)
+│   ├── e2e/                # End-to-end tests (o.a. dock_occupancy, finance, rbac)
+│   └── integration/        # Integratietesten voor auth en sockets
+├── scripts/                # Root-level scripts (reset_db, seed_demo)
+├── public/                 # Statische assets (logo's, achtergronden)
+├── database.sqlite         # Hoofd SQLite database bestand
+├── server.ts               # Backend Entry point
+└── AGENTS.md, ARCHITECTURE.md, ROADMAPv3.md # Kern documentatie
 ```
 
 ## 2. Systeem Blauwdruk (Dataflow)

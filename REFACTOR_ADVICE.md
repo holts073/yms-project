@@ -1,5 +1,5 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.10.5 — Bijgewerkt: 2026-03-31 door @System-Architect*
+*Versie: v3.10.5 — Bijgewerkt: 2026-04-06 door @System-Architect*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
 
@@ -14,8 +14,8 @@ Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moet
 
 ## 🛠️ Nieuwe Adviezen: UI & UX Consistency (v3.11.0)
 
-### 1. Dynamic Sidebar Themes
-Nu de sidebar iconen kleurgecodeerd zijn, kunnen we `motion` gebruiken om de actieve achtergrondkleur (de "glow") dynamisch te laten matchen met de kleur van het icoon in plaats van altijd indigo.
+### 1. Dynamic Sidebar Themes ✅
+Nu de sidebar iconen kleurgecodeerd zijn, gebruiken we `motion` om de actieve achtergrondkleur (de "glow") dynamisch te laten matchen met de kleur van het icoon in plaats van altijd indigo. Toegevoegd in v3.11.0.
 
 ### 2. Form State Persistence
 Onderzoek of we de edit-form state in de `DeliveryDetailModal` kunnen bufferen in `localStorage` om dataverlies bij incidentele socket-disconnects te voorkomen.
