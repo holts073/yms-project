@@ -14,7 +14,7 @@ const AuditLog = ({ onNavigate }: { onNavigate?: (tab: string, reference?: strin
 
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
-      const searchStr = `${log.timestamp} ${log.user} ${log.action} ${log.details} ${log.reference || ''}`.toLowerCase();
+      const searchStr = `${log.timestamp} ${log.user} ${log.action} ${log.details} ${log.reference || ''} ${log.warehouseId || ''}`.toLowerCase();
       return searchStr.includes(searchTerm.toLowerCase());
     });
   }, [logs, searchTerm]);
@@ -55,6 +55,14 @@ const AuditLog = ({ onNavigate }: { onNavigate?: (tab: string, reference?: strin
           {log.action}
         </Badge>
       )
+    },
+    {
+      header: 'Magazijn',
+      accessor: (log: any) => log.warehouseId ? (
+        <Badge variant="outline" size="xs" className="font-mono tracking-tighter">
+          {log.warehouseId}
+        </Badge>
+      ) : <span className="text-xs text-[var(--muted-foreground)] italic lowercase">Systeem</span>
     },
     {
       header: 'Referentie',

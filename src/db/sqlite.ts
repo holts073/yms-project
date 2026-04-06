@@ -21,6 +21,10 @@ db.pragma('journal_mode = WAL');
 
 // Helper for settings
 export function getSetting(key: string, defaultValue: any = null) {
+  // Migrations (v3.14.0 - Security)
+  try { db.prepare("ALTER TABLE users ADD COLUMN twoFactorSecret TEXT").run(); } catch(e) {}
+  try { db.prepare("ALTER TABLE users ADD COLUMN twoFactorEnabled INTEGER DEFAULT 0").run(); } catch(e) {}
+  try { db.prepare("ALTER TABLE logs ADD COLUMN warehouseId TEXT").run(); } catch(e) {}
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
   return row ? JSON.parse(row.value) : defaultValue;
 }

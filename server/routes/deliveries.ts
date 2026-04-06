@@ -11,7 +11,7 @@ import { Server } from "socket.io";
 import { sortPriorityQueue } from '../services/queueService';
 
 // Function to build standard static state for Socket sync (also used via API)
-export const buildStaticState = (io?: Server, selectedWarehouseId?: string) => {
+export const buildStaticState = (io?: Server, selectedWarehouseId?: string, user?: any) => {
   const activeUsers = io ? io.sockets.sockets.size : 0;
   const ymsDeliveries = getYmsDeliveries(selectedWarehouseId);
   
@@ -19,9 +19,13 @@ export const buildStaticState = (io?: Server, selectedWarehouseId?: string) => {
     deliveries: getAllDeliveries().deliveries,
     addressBook: getAddressBook(),
     palletBalances: getPalletBalances(),
-    logs: getLogs(),
+    logs: getLogs().filter((l: any) => !selectedWarehouseId || l.warehouseId === selectedWarehouseId || !l.warehouseId),
     users: getUsers().map((u: any) => {
-      const { passwordHash, ...safeUser } = u;
+      const { passwordHash, twoFactorSecret, ...safeUser } = u;
+      // GDPR: Only admins see emails of other users
+      if (user?.role !== 'admin' && safeUser.id !== user?.id) {
+        return { id: safeUser.id, name: safeUser.name, role: safeUser.role };
+      }
       return safeUser;
     }),
     companySettings: getSetting('companySettings', {}),

@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.10.5 — Bijgewerkt: 2026-04-06 door @System-Architect*
+*Versie: v3.13.2 — Bijgewerkt: 2026-04-06 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.
@@ -82,7 +82,8 @@ graph TD
 Sinds v3.9.1 hanteert de `SocketContext` een **Upsert-patroon** voor real-time updates:
 1. **`state_update`**: Volledige reconciliatie van de warehouse-state bij verbinding of selectie.
 2. **`state_patch`**: Delta-updates voor bestaande records.
-3. **`state_upsert`**: Indien een patch een onbekend ID bevat (bijv. een nieuwe test-levering), wordt deze direct toegevoegd aan de lokale cache. Dit voorkomt 'ghost data' tijdens snelle E2E-sequenties.
+3. **state_upsert**: Indien een patch een onbekend ID bevat (bijv. een nieuwe test-levering), wordt deze direct toegevoegd aan de lokale cache. Dit voorkomt 'ghost data' tijdens snelle E2E-sequenties.
+4. **Feature Flags**: Sinds v3.12.0 ondersteunt de state `featureFlags` in `settings`. De vlag `enableFinance` regelt de zichtbaarheid van het pallet-grootboek en financiële kostenvelden in de UI.
 
 ## 4. Logistieke Levenscyclus (State Machine)
 
@@ -120,7 +121,7 @@ Het systeem hanteert een strikte flow om race-conditions te vermijden:
 ### Tabelstructuur — Kern (v3.10.5)
 ```
 users          (id PK, name, email, passwordHash, role, permissions JSON)
-deliveries     (id PK, type, reference, billOfLading, supplierId, status, eta, requiresQA, ...)
+deliveries     (id PK, type, reference, billOfLading, supplierId, status, eta, requiresQA, incoterm, demurrageDailyRate, ...)
 documents      (id PK, deliveryId FK, name, status, required, blocksMilestone)
 address_book   (id PK, type, name, contact, email, ...)
 logs           (id PK, timestamp, user, action, details)
@@ -133,30 +134,43 @@ settings       (key PK, value JSON)
 yms_warehouses (id PK, name, descriptor, address, hasGate)
 yms_docks      (id, warehouseId — composite PK)
 yms_waiting_areas (id, warehouseId — composite PK)
-yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, ...)
-pallet_transactions (id PK, entityId, balanceChange, createdAt)
+yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, incoterm, demurrageDailyRate, standingTimeCost, thcCost, customsCost, ...)
+pallet_transactions (id PK, entityId, balanceChange, createdAt, palletType, palletRate)
 ```
 
 ## 6. Multi-Warehouse Isolatie
-Isolatie## 🔐 Security & RBAC (v3.10.0)
+Isolatie## 6. Gecentraliseerd Rechtenbeheer (Dynamic RBAC) (v3.13.0)
 
-Sinds v3.10.0 hanteert het systeem een strikt **Role-Based Access Control** (RBAC) model, zowel in de UI als op de Sockets:
+Om flexibiliteit te bieden zonder de code te vervuilen met `if (role === '...')`, hanteert het systeem een **Capability-Based** model. Rechten worden niet langer hardcoded gecontroleerd op rol-naam, maar op specifieke actie-keys (**Capabilities**).
 
-| Rol | Rechten | Beperkingen |
+### 6.1 De Capability Matrix
+Alle mogelijke acties zijn gedefinieerd als unieke keys. Rollen zijn simpelweg templates die een set van deze keys bevatten.
+
+| Categorie | Capability Key | Omschrijving |
 | :--- | :--- | :--- |
-| **Admin** | Volledige toegang (CRUD op alles, inclusief settings en users). | Geen. |
-| **Manager** | CRUD op alle logistieke entiteiten. Kan geen configuraties wijzigen. | Geen toegang tot `YMS_SAVE_WAREHOUSE` of `YMS_SAVE_USER`. |
-| **Staff** | CRUD op leveringen en YMS status updates. | Kan geen entiteiten verwijderen (Geen `DELETE`). |
-| **Viewer** | Read-only toegang tot alle dashboards en tabellen. | Geen enkele `dispatch` actie toegestaan. Knoppen worden verborgen in de UI. |
+| **Logistiek** | `LOGISTICS_DELIVERY_CRUD` | Aanmaken, wijzigen en inzien van basis vrachten. |
+| **Yard** | `YMS_STATUS_UPDATE` | Wijzigen van YMS statussen (Docken, Lossen, etc.). |
+| **Yard** | `YMS_PRIORITY_OVERRIDE` | Handmatig overriden van de wachtrij-prioriteit. |
+| **Yard** | `YMS_DOCK_MANAGE` | Beheren van dock-capaciteit en overrides. |
+| **Financiën** | `FINANCE_LEDGER_VIEW` | Inzien van pallet-saldo's en kostenvelden. |
+| **Financiën** | `FINANCE_SETTLE_TRANSACTION` | Verrekenen van transacties en matchen van creditnota's. |
+| **Beheer** | `ADDR_BOOK_CRUD` | Volledig beheer van het Adresboek (PII). |
+| **Beheer** | `SYSTEM_SETTINGS_EDIT` | Wijzigen van magazijn-instellingen en systeem-flags. |
+| **Beheer** | `SYSTEM_USER_MANAGE` | Aanmaken en beheren van gebruikers en hun rollen. |
 
-### Socket Guarding
-Elke socket-actie wordt gevalideerd in `server/sockets/socketHandlers.ts` middels de `checkRole` helper:
+### 6.2 Role Templates in Settings
+De mapping van rollen naar capabilities is opgeslagen in de `settings` tabel onder de key `role_permissions`. Dit stelt beheerders in staat om per magazijn de rechten van een 'Staff' of 'Operator' aan te passen zonder code-wijzigingen.
+
+### 6.3 Socket & UI Enforcement
+De controle vindt plaats op twee niveaus:
+1. **Frontend**: Componenten gebruiken de `hasPermission(key)` helper om knoppen of velden te verbergen.
+2. **Backend**: De `hasPermission` helper in `server/sockets/socketHandlers.ts` valideert elke inkomende actie tegen de rechten van de gebruiker (inclusief individuele user-overrides).
+
 ```typescript
-const checkRole = (required: string) => {
-  if (user.role === 'admin') return true;
-  if (user.role === required) return true;
-  return false;
-};
+// Voorbeeld van de nieuwe validatie
+if (!hasPermission(user, 'YMS_PRIORITY_OVERRIDE')) {
+  throw new Error("Onvoldoende rechten voor deze actie");
+}
 ```
 
 ## 7. UI & UX Patterns (v3.10.2)

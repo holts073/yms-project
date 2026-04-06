@@ -1,5 +1,5 @@
 # ROADMAP v3 - ILG Foodgroup YMS Control Tower
-*Versie: v3.10.5 — Bijgewerkt: 2026-04-06 door @System-Architect*
+*Versie: v3.14.2 — Bijgewerkt: 2026-04-06 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.
@@ -19,7 +19,7 @@
 | **v3.7.0** | Infrastructuur Beheer (Dock & WA verwijderen) | ✅ Gereleased |
 | **v3.7.1** | Container Milestones & Magazijn Openingstijden | ✅ Gereleased |
 | **v3.7.2** | UI Flow & Responsiviteit (MilestoneStepper) | ✅ Gereleased |
-| **v3.7.3** | Theme & UI Polish (Branding ILG/Meledi) | ✅ Gereleased |
+| **v3.7.3** | Theme & UI Polish (Branding Enterprise/Modern) | ✅ Gereleased |
 | **v3.7.4** | Layout Consolidation (Tabellen & Stuck Fix) | ✅ Gereleased |
 | **v3.7.5** | Type-Safety Audit & Documentation Update | ✅ Gereleased |
 | **v3.8.0** | Pallet Administratie & Financiën | ✅ Gereleased |
@@ -28,7 +28,9 @@
 | **v3.10.2** | UI/UX & Navigation Refactor | ✅ Gereleased |
 | **v3.10.4** | Logistics Analytics & Performance | ✅ Gereleased |
 | **v3.10.5** | Document Milestone Enforcement | ✅ Gereleased |
-| **v3.11.0** | Advanced Seeding & Validation | 🔮 In Progress |
+| **v3.12.0** | Modular Finance & Incoterm History | ✅ Gereleased |
+| **v3.13.0** | Predictive Yard Analytics | ✅ Gereleased |
+| **v3.14.0** | Security & AVG Hardening | ✅ Gereleased |
 
 ---
 
@@ -68,24 +70,76 @@
 
 ---
 
-## ✅ Voltooide Sprint: v3.10.5 — Document Milestone Enforcement
-*Verantwoordelijke agent: @System-Architect, @QA-Automator, @Text-Director*
-
-### Scope
-- [x] **Dynamic Document Blocking**: Documenten (zoals ATR/EUR1) kunnen nu specifieke milestones (DOUANE) blokkeren via `blocksMilestone`.
-- [x] **Milestone-Aware UI**: Rode waarschuwingen in de checklist UI voor documenten die de *huidige* volgende stap blokkeren.
-- [x] **Pre-populated Checklists**: Documenten worden automatisch klaargezet bij het aanmaken van een nieuwe vracht op basis van de settings.
-- [x] **High-Fidelity Seed**: `seed.ts` uitgebreid met realistische document-scenario's en milestone-constraints.
 - [x] **Inline Document Settings**: Gecentraliseerd beheer van document-templates met milestone-koppeling.
 
-## 🔮 Toekomstige Sprint: v3.11.0 — Advanced Seeding & Validation
-*Verantwoordelijke agent: @QA-Automator, @Data-Specialist*
+---
+
+## ✅ Voltooide Sprint: v3.12.0 — Modular Finance & Incoterm History
+*Verantwoordelijke agent: @System-Architect, @Finance-Auditor, @Yard-Strategist*
 
 ### Scope
-- [ ] **Extended `seed.ts`**: Willekeurige documentstroom-simulatie en realistische vrachtpayloads.
-- [ ] **Stress Testing**: Validatie van de state-manager bij 1000+ actieve leveringen.
-- [ ] **Opening Hours Logic**: Koppeling van "Now" navigatie aan magazijn-tijden.
-- [ ] **Audit Trail Export**: PDF/CSV rapportages voor management.
+- [x] **Feature Flag `enable_finance`**: Centrale schakelaar in de instellingen om de financiële module (palletruil, kosten) volledig te verbergen.
+- [x] **Incoterm History Logic**: Automatisch ophalen van de laatst gebruikte Incoterm per leverancier (`GET_LAST_INCOTERM`) om data-invoer te versnellen.
+- [x] **Advanced Logistics Costs**: Toevoegen van velden voor Demurrage Daily Rate, Standing Time (€/u), THC en Douanekosten.
+- [x] **Conditional Finance UI**: Financiële velden in de `DeliveryDetailModal` worden alleen getoond als `enable_finance` actief is.
+- [x] **Persistence Layer Update**: Database schema uitbreiding (`010_add_advanced_logistics_costs.sql`) met volledige ondersteuning in `queries.ts`.
+
+### Design Rule
+- Financiële data is optioneel voor de operatie. De yard-planning (slots, alerts) blijft altijd functioneel, ongeacht de financiële status-vlag.
+
+---
+
+## ✅ Voltooide Sprint: v3.14.0 — Security & AVG Hardening
+*Verantwoordelijke agent: @Security-Auditor, @System-Architect*
+
+### Scope
+- [x] **Socket Isolation**: Handhaving van `warehouseId` op alle real-time broadcasts.
+- [x] **Two-Factor Authentication (TOTP)**: Implementatie van 2FA via Google Authenticator/Authpoint.
+- [x] **PII Redaction**: Contextuele gegevensminimalisatie in `buildStaticState` (GDPR-compliant).
+- [x] **Admin Recovery**: Mogelijkheid voor beheerders om 2FA van gebruikers te resetten.
+- [x] **Security Audit Table**: Uitbreiding Audit Log met Magazijn-isolatie en PII-bewaking.
+
+---
+
+## 🔮 Volgende Sprint: v3.15.0 — Predictive Yard Analytics
+*Verantwoordelijke agent: @Yard-Strategist, @UX-Visual-Director*
+
+### Scope
+- [ ] **Arrival Prognosis**: 7-daagse werklastvoorspelling op basis van de pipeline (ETA's).
+- [ ] **Dock Heatmap 2.0**: Verbeterde visualisatie van dock-efficiëntie en knelpunten.
+- [ ] **Smart Slot Recommender**: Automatische suggesties voor optimale lostijden op basis van vracht-type.
+
+---
+
+## 🛠️ Toekomstige Backlog / Lage Prioriteit (Toekomstdromen)
+*Deze items zijn geparteerd tot de AVG-compliance volledig gewaarborgd is.*
+
+### Professional GUI Reconstructie (High-Density)
+- [ ] **Full Screen Optimization**: Optimalisatie van de interface voor standaard (niet-curved) monitoren; eliminatie van "whitespace" bij hoge resoluties.
+- [ ] **Compact Mode Toggle**: Mogelijkheid voor gevorderde gebruikers om te schakelen naar een extra compacte weergave voor data-intensieve taken.
+- [ ] **Modern Professional Aesthetics**: Verfijning van contrast, typografie en spacing voor een meer industriële en minder speelse uitstraling.
+
+### Enterprise Integraties (SAP Readiness)
+- [ ] **Bi-directional API Framework**: Ondersteuning voor zowel *Inbound* (SAP stuurt data) als *Outbound* (YMS haalt data) patronen.
+- [ ] **Encrypted Secret Storage**: Veilig beheer van externe API sleutels en OAuth2 credentials in de kluis.
+- [ ] **Integration Dashboard**: Centraal paneel voor het monitoren van synchronisaties en API-gezondheid.
+- [ ] **Unified Data Mapping**: Universele transformatie-laag om SAP-velden te vertalen naar YMS-leveringen.
+
+### Geavanceerde Automatisering
+- [ ] **Drones for Automated Inventory**: Periodieke scans van het terrein om trailerlocaties te verifiëren zonder menselijke tussenkomst.
+- [ ] **Computer Vision (Seal & Damage)**: AI-camera's bij de gate die automatisch controleren of containerzegels intact zijn en schades detecteren.
+- [ ] **Ambient IoT / BLE High-Accuracy Tracking**: Real-time locatiebepaling van trailers op 1 meter nauwkeurig via sensoren.
+- [ ] **Task Interleaving**: Algoritme dat yard-bewegingen koppelt aan magazijn-orders voor maximale efficiëntie.
+- [ ] **Voice-Guided Terminal**: Chauffeurs en medewerkers aansturen via voice-to-text (AVG-gevoelig).
+
+### Externe Koppelingen
+- [ ] **Driver Self-Service Portal**: Aanmeldportaal voor externe transporteurs.
+- [ ] **Mobile App (Carrier)**: Native app voor real-time status-updates door chauffeurs.
+- [ ] **LPR Integration**: AI-gedreven kentekenherkenning aan de gate.
+
+### Advanced Seeding
+- [ ] **Stress Testing (1000+ Records)**: Validatie van de state-manager bij zeer grote datasets.
+- [ ] **Willekeurige Lifecycle Simulatie**: Volledig geautomatiseerde flow-simulatie in `seed.ts`.
 *Verantwoordelijke agent: Alle agents*
 
 - [ ] Leveranciers-prestatierapport (stiptheid, afwijkingen, pallet-gedrag)

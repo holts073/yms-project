@@ -10,7 +10,7 @@ import {
 import { saveSetting, getSetting } from '../../src/db/sqlite';
 import { isValidTransition } from '../../src/lib/ymsRules';
 import { buildStaticState } from '../routes/deliveries';
-import { YmsDeliveryStatus, YmsDelivery, YmsTemperature } from '../../src/types';
+import { YmsDeliveryStatus, YmsDelivery, YmsTemperature, AppCapability } from '../../src/types';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
@@ -26,8 +26,16 @@ const broadcastState = (io: any) => {
   });
 };
 
-const broadcastDelta = (io: any, type: string, payload: any) => {
-  io.emit("state_patch", { type, payload });
+const broadcastDelta = (io: any, type: string, payload: any, warehouseId?: string) => {
+  if (warehouseId) {
+    io.sockets.sockets.forEach((s: any) => {
+      if (s.data.selectedWarehouseId === warehouseId) {
+        s.emit("state_patch", { type, payload });
+      }
+    });
+  } else {
+    io.emit("state_patch", { type, payload });
+  }
 };
 
 export const setupSocketHandlers = (io: Server) => {
@@ -84,7 +92,7 @@ export const setupSocketHandlers = (io: Server) => {
       }
     };
 
-    socket.emit("init", buildStaticState(io, socket.data.selectedWarehouseId));
+    socket.emit("init", buildStaticState(io, socket.data.selectedWarehouseId, socket.data.user));
 
     socket.on("action", (data) => {
       const { type, payload } = data;
@@ -95,10 +103,27 @@ export const setupSocketHandlers = (io: Server) => {
       }
       const timestamp = new Date().toISOString();
 
-      const checkRole = (required: string) => {
+      const hasPermission = (required: AppCapability) => {
         if (user.role === 'admin') return true;
-        if (user.role === required) return true;
-        return false;
+        
+        // 1. Check individual user overrides
+        if (user.permissions && user.permissions[required] === true) return true;
+        if (user.permissions && user.permissions[required] === false) return false;
+
+        // 2. Check role-based templates from settings
+        const settings = getSetting('settings');
+        const roleTemplates: Record<string, AppCapability[]> = settings?.role_permissions || {
+          'manager': ['LOGISTICS_DELIVERY_CRUD', 'YMS_STATUS_UPDATE', 'YMS_DOCK_MANAGE', 'FINANCE_LEDGER_VIEW', 'ADDR_BOOK_CRUD'],
+          'staff': ['LOGISTICS_DELIVERY_CRUD', 'YMS_STATUS_UPDATE'],
+          'lead_operator': ['YMS_STATUS_UPDATE', 'YMS_PRIORITY_OVERRIDE'],
+          'operator': ['YMS_STATUS_UPDATE'],
+          'gate_guard': ['YMS_STATUS_UPDATE', 'YMS_PRIORITY_OVERRIDE'],
+          'finance_auditor': ['FINANCE_LEDGER_VIEW', 'FINANCE_SETTLE_TRANSACTION'],
+          'viewer': []
+        };
+
+        const capabilities = roleTemplates[user.role] || [];
+        return capabilities.includes(required);
       };
 
       const isAdmin = user.role === 'admin';
@@ -115,7 +140,7 @@ export const setupSocketHandlers = (io: Server) => {
       try {
         switch (type) {
           case "ADD_DELIVERY": {
-            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
+            if (!hasPermission('LOGISTICS_DELIVERY_CRUD')) throw new Error("Onvoldoende rechten");
             const newDelivery = { 
               ...payload, 
               auditTrail: [{
@@ -132,8 +157,9 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.action = "Created Delivery";
             logEntry.details = `Added ${payload.type} delivery: ${payload.reference}`;
             logEntry.reference = payload.reference;
+            logEntry.warehouseId = newDelivery.warehouseId || socket.data.selectedWarehouseId;
             
-            broadcastDelta(io, 'DELIVERY_ADDED', newDelivery);
+            broadcastDelta(io, 'DELIVERY_ADDED', newDelivery, logEntry.warehouseId);
             io.emit('notification', { 
               message: `Nieuwe vracht aangemaakt: ${payload.reference}`, 
               type: 'info',
@@ -142,7 +168,7 @@ export const setupSocketHandlers = (io: Server) => {
             break;
           }
           case "UPDATE_DELIVERY": {
-            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
+            if (!hasPermission('LOGISTICS_DELIVERY_CRUD')) throw new Error("Onvoldoende rechten");
             const { deliveries: allDels } = getAllDeliveries();
             const existing = allDels.find(d => d.id === payload.id);
             
@@ -205,23 +231,28 @@ export const setupSocketHandlers = (io: Server) => {
 
             // Pallet Exchange Logic (v3.8.1: Requirement for explicit confirmation)
             if (newPayload.status === 100 && existing?.status !== 100 && newPayload.isPalletExchangeConfirmed) {
-              const entityId = newPayload.supplierId || newPayload.transporterId || newPayload.customerId;
-              if (entityId) {
-                const isOutbound = newPayload?.type === 'exworks' || newPayload?.direction === 'OUTBOUND';
-                const sign = isOutbound ? -1 : 1;
-                const actualCount = newPayload.palletsExchanged ?? newPayload.palletCount ?? 0;
-                
-                if (actualCount !== 0) {
-                  savePalletTransaction({
-                    entityId,
-                    entityType: newPayload.supplierId ? 'supplier' : (newPayload.transporterId ? 'transporter' : 'customer'),
-                    deliveryId: newPayload.id,
-                    balanceChange: actualCount * sign,
-                    palletType: newPayload.palletType,
-                    palletRate: newPayload.palletRate
-                  });
-                  logEntry.details += ` | Palletruil bevestigd: ${actualCount * sign} pallets (${newPayload.palletType || 'EUR'} @ €${newPayload.palletRate || 0}).`;
+              const settings = getSetting('feature_flags', { enableFinance: true });
+              if (settings.enableFinance) {
+                const entityId = newPayload.supplierId || newPayload.transporterId || newPayload.customerId;
+                if (entityId) {
+                  const isOutbound = newPayload?.type === 'exworks' || newPayload?.direction === 'OUTBOUND';
+                  const sign = isOutbound ? -1 : 1;
+                  const actualCount = newPayload.palletsExchanged ?? newPayload.palletCount ?? 0;
+                  
+                  if (actualCount !== 0) {
+                    savePalletTransaction({
+                      entityId,
+                      entityType: newPayload.supplierId ? 'supplier' : (newPayload.transporterId ? 'transporter' : 'customer'),
+                      deliveryId: newPayload.id,
+                      balanceChange: actualCount * sign,
+                      palletType: newPayload.palletType,
+                      palletRate: newPayload.palletRate
+                    });
+                    logEntry.details += ` | Palletruil bevestigd: ${actualCount * sign} pallets (${newPayload.palletType || 'EUR'} @ €${newPayload.palletRate || 0}).`;
+                  }
                 }
+              } else {
+                logEntry.details += ` | Palletruil overgeslagen (Financiële module uitgeschakeld).`;
               }
             }
 
@@ -229,7 +260,8 @@ export const setupSocketHandlers = (io: Server) => {
             addAuditEntry(newPayload.id, user.name, logEntry.action || "Bijgewerkt", logEntry.details || `Details bijgewerkt voor ${newPayload.reference}`);
             
             logEntry.reference = newPayload.reference;
-            broadcastDelta(io, 'DELIVERY_UPDATED', newPayload);
+            logEntry.warehouseId = newPayload.warehouseId || socket.data.selectedWarehouseId;
+            broadcastDelta(io, 'DELIVERY_UPDATED', newPayload, logEntry.warehouseId);
 
             // Auto-YMS Creation Logic
             const isAtLastStep = (newPayload.type === 'container' && newPayload.status >= 75 && newPayload.status < 100) ||
@@ -273,6 +305,11 @@ export const setupSocketHandlers = (io: Server) => {
                   palletCount: newPayload.palletCount || 0,
                   palletType: newPayload.palletType || 'EUR',
                   palletRate: newPayload.palletRate || 0,
+                  incoterm: newPayload.incoterm || 'EXW',
+                  demurrageDailyRate: newPayload.demurrageDailyRate || 0,
+                  standingTimeCost: newPayload.standingTimeCost || 0,
+                  thcCost: newPayload.thcCost || 0,
+                  customsCost: newPayload.customsCost || 0,
                   statusTimestamps: { 'EXPECTED': timestamp }
                 };
                 saveYmsDelivery(newYmsDelivery as YmsDelivery);
@@ -282,13 +319,20 @@ export const setupSocketHandlers = (io: Server) => {
             break;
           }
           case "YMS_SAVE_DELIVERY": {
-            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
+            if (!hasPermission('YMS_STATUS_UPDATE')) throw new Error("Onvoldoende rechten");
             const current = payload;
             const ymsDeliveries = getYmsDeliveries();
             const existing = ymsDeliveries.find(d => d.id === current.id);
             
             if (existing && current.status && existing.status !== current.status) {
               if (isValidTransition(existing.status, current.status)) {
+                // Priority Lock (v3.13.1): Use hasPermission for override
+                if (current.priority !== undefined && current.priority !== existing.priority) {
+                  if (!hasPermission('YMS_PRIORITY_OVERRIDE')) {
+                    throw new Error("Alleen gebruikers met de 'YMS_PRIORITY_OVERRIDE' capability kunnen de prioriteit handmatig wijzigen");
+                  }
+                }
+
                 current.statusTimestamps = {
                   ...(existing.statusTimestamps || {}),
                   [current.status]: timestamp
@@ -333,7 +377,7 @@ export const setupSocketHandlers = (io: Server) => {
           }
           
           case "YMS_ASSIGN_DOCK": {
-            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
+            if (!hasPermission('YMS_DOCK_MANAGE')) throw new Error("Onvoldoende rechten");
             const { deliveryId, dockId, scheduledTime } = payload;
             
             console.log(`[YMS_ASSIGN_DOCK] Assigning delivery ${deliveryId} to dock ${dockId} at ${scheduledTime}`);
@@ -445,7 +489,7 @@ export const setupSocketHandlers = (io: Server) => {
           }
 
           case "YMS_REGISTER_ARRIVAL": {
-            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
+            if (!hasPermission('YMS_STATUS_UPDATE')) throw new Error("Onvoldoende rechten");
             const ymsDeliveries = getYmsDeliveries();
             const delivery = ymsDeliveries.find(d => d.id === payload);
             if (!delivery) throw new Error("Levering niet gevonden");
@@ -487,7 +531,7 @@ export const setupSocketHandlers = (io: Server) => {
             // Only emit back to the requesting socket to confirm selection, 
             // or broadcast if selection should be global (usually not).
             // Here we emit back to keep the client in sync.
-            socket.emit("state_update", buildStaticState(io, payload));
+            socket.emit("state_update", buildStaticState(io, payload, user));
             break;
           }
           case "DELETE_DELIVERY":
@@ -509,7 +553,7 @@ export const setupSocketHandlers = (io: Server) => {
 
           case "ADD_ADDRESS":
           case "UPDATE_ADDRESS":
-            if (!checkRole('staff') && !isAdmin) throw new Error("Onvoldoende rechten");
+            if (!hasPermission('ADDR_BOOK_CRUD')) throw new Error("Onvoldoende rechten");
             saveAddressBookEntry(payload.entry);
             logEntry.action = type === "ADD_ADDRESS" ? "Toegevoegd Adres" : "Gewijzigd Adres";
             logEntry.details = `Adres ${payload.entry.name} succesvol ${type === "ADD_ADDRESS" ? "toegevoegd" : "gewijzigd"} in ${payload.category}.`;
@@ -597,6 +641,19 @@ export const setupSocketHandlers = (io: Server) => {
                logEntry.details = `Standaard docks/wachtruimtes aangemaakt voor magazijn ${payload}`;
                break;
              }
+             case "GET_LAST_INCOTERM": {
+                const { supplierId } = payload;
+                const { deliveries } = getAllDeliveries(1, 10, '', 'all', 'createdAt', false);
+                const last = deliveries
+                  .filter(d => d.supplierId === supplierId && d.incoterm)
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+                
+                socket.emit("last_incoterm_result", { 
+                  supplierId, 
+                  incoterm: last?.incoterm || 'EXW' 
+                });
+                break;
+              }
          }
 
         if (logEntry.action) {

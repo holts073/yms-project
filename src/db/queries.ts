@@ -28,8 +28,9 @@ const stmts = {
       id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt,
       transportCost, weight, palletType, palletCount, palletRate, cargoType, loadingCountry, loadingCity, palletExchange,
       etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
-      notes, statusHistory, loadingTime, dockId, customsStatus, dischargeTerminal, incoterm, readyForPickupDate, requiresQA
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      notes, statusHistory, loadingTime, dockId, customsStatus, dischargeTerminal, incoterm, readyForPickupDate, requiresQA,
+      demurrageDailyRate, standingTimeCost, thcCost, customsCost
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
   insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required, blocksMilestone) VALUES (?, ?, ?, ?, ?, ?)'),
@@ -38,13 +39,13 @@ const stmts = {
   deleteDelivery: db.prepare('DELETE FROM deliveries WHERE id = ?'),
   getUsers: db.prepare('SELECT * FROM users'),
   getUserPassword: db.prepare('SELECT passwordHash FROM users WHERE id = ?'),
-  insertUser: db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions, requiresReset) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  insertUser: db.prepare('INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, permissions, requiresReset, twoFactorSecret, twoFactorEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'),
   deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
   getAddressBook: db.prepare('SELECT * FROM address_book ORDER BY name ASC'),
   insertAddressBook: db.prepare('INSERT OR REPLACE INTO address_book (id, type, name, contact, email, address, pickupAddress, otif, remarks, supplier_number, customer_number, pallet_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
   deleteAddressBook: db.prepare('DELETE FROM address_book WHERE id = ?'),
   getLogs: db.prepare('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 100'),
-  insertLog: db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference) VALUES (?, ?, ?, ?, ?, ?)'),
+  insertLog: db.prepare('INSERT INTO logs (id, timestamp, user, action, details, reference, warehouseId) VALUES (?, ?, ?, ?, ?, ?, ?)'),
   getYmsDocks: db.prepare('SELECT * FROM yms_docks'),
   getYmsDocksByWarehouse: db.prepare('SELECT * FROM yms_docks WHERE warehouseId = ? ORDER BY name ASC'),
   saveYmsDock: db.prepare(`
@@ -66,8 +67,9 @@ const stmts = {
       id, warehouseId, reference, licensePlate, supplier, supplierId, mainDeliveryId, temperature, 
       scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
       estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate,
-      direction, palletCount, palletType, palletRate, notes, requiresQA
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      direction, palletCount, palletType, palletRate, notes, requiresQA,
+      incoterm, demurrageDailyRate, standingTimeCost, thcCost, customsCost
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteYmsDelivery: db.prepare('DELETE FROM yms_deliveries WHERE id = ?'),
   deleteYmsDock: db.prepare('DELETE FROM yms_docks WHERE id = ? AND warehouseId = ?'),
@@ -192,7 +194,8 @@ export function insertDelivery(d: Delivery) {
       d.etd, d.etaPort, d.etaWarehouse, d.originalEtaWarehouse, d.portOfArrival, d.billOfLading, d.containerNumber,
       d.notes, d.statusHistory ? JSON.stringify(d.statusHistory) : null, d.loadingTime, d.dockId || null,
       d.customsStatus || null, d.dischargeTerminal || null, d.incoterm || null, d.readyForPickupDate || null,
-      d.requiresQA ? 1 : 0
+      d.requiresQA ? 1 : 0,
+      d.demurrageDailyRate || 0, d.standingTimeCost || 0, d.thcCost || 0, d.customsCost || 0
     );
 
     // Documents
@@ -236,7 +239,7 @@ export function saveUser(u: User) {
   const passwordHash = u.passwordHash || existing?.passwordHash || null;
   const requiresReset = u.requiresReset !== undefined ? (u.requiresReset ? 1 : 0) : (existing?.requiresReset || 0);
   
-  stmts.insertUser.run(u.id, u.name, u.email, passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null, requiresReset);
+  stmts.insertUser.run(u.id, u.name, u.email, passwordHash, u.role, u.permissions ? JSON.stringify(u.permissions) : null, requiresReset, u.twoFactorSecret || null, u.twoFactorEnabled ? 1 : 0);
 }
 
 export function deleteUser(id: string) {
@@ -306,7 +309,7 @@ export function getLogs() {
 
 
 export function saveLog(log: Omit<LogEntry, 'id'>) {
-  stmts.insertLog.run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details, log.reference || null);
+  stmts.insertLog.run(Math.random().toString(36).substr(2, 9), log.timestamp, log.user, log.action, log.details, log.reference || null, log.warehouseId || null);
 }
 
 export const addLog = (log: Omit<LogEntry, 'id'>) => saveLog(log);
@@ -420,7 +423,12 @@ export function saveYmsDelivery(d: YmsDelivery) {
     d.palletType || 'EUR',
     d.palletRate || 0,
     d.notes || null,
-    d.requiresQA ? 1 : 0
+    d.requiresQA ? 1 : 0,
+    d.incoterm || 'EXW',
+    d.demurrageDailyRate || 0,
+    d.standingTimeCost || 0,
+    d.thcCost || 0,
+    d.customsCost || 0
   );
 }
 

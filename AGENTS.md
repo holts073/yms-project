@@ -1,5 +1,5 @@
 # AGENT ORCHESTRATION: ILG Control Tower
-*Versie: v3.10.5 — Bijgewerkt: 2026-04-06 door @System-Architect*
+*Versie: v3.13.2 — Bijgewerkt: 2026-04-06 door @System-Architect*
 
 ## I. Algemene Richtlijnen (Global Strategy)
 * **Taal:** Alle communicatie, code-documentatie en UI-teksten zijn in het **Nederlands**.
@@ -68,7 +68,7 @@
 * **Verantwoordelijkheden:**
     * **Visual Hierarchy:** Zorgt dat kritieke informatie (bijv. een 'Late' status of Reefer-prioriteit) direct opvalt zonder ruis.
     * **Z-Index Mastery:** Garandeert dat Sonner-toasts en modals altijd bovenop de sidebar en navigatie verschijnen.
-    * **Multi-Theme Guard:** Bewaakt dat alle nieuwe componenten theme-aware zijn (Light, Dark, ILG, Meledi) met CSS-variabelen — geen hardcoded kleuren.
+    * **Multi-Theme Guard:** Bewaakt dat alle nieuwe componenten theme-aware zijn (Light, Dark, Enterprise, Modern) met CSS-variabelen — geen hardcoded kleuren.
     * **Finance UX (v3.8.0):** Ontwerpt de Pallet Ledger en Creditnota-matching views: overzichtelijk, scanbaar, duidelijke 'Verrekend' vs 'Openstaand' statussen.
     * **Timeline UX (v3.9.0):** Definieert de visuele taal voor de slot-timeline: kleurcodes voor bezet/vrij/conflict, snap-feedback en drag-animaties.
     * **Protected UI UX (v3.10.0):** Garandeert dat de interface zich elegant aanpast aan de rechten van de gebruiker (bijv. 'Read-only' modus voor viewers).
@@ -90,6 +90,22 @@
     * **Error Messaging:** Vertaalt technische backend-fouten naar begrijpelijke, behulpzame actie-teksten in de UI.
     * **Email Templates:** Beheert de tekstuele inhoud van automatisch gegenereerde e-mails (zoals Transport Orders) voor een professionele uitstraling.
     * **Branding:** Bewaakt dat alle teksten aansluiten bij de premium-positionering van het YMS Control Tower portaal.
+
+### 9. @Security-Auditor (The Gatekeeper & AVG Guardian)
+* **Focus:** Cybersecurity, Data-integriteit, AVG-compliance en Penetratie-testen (mock).
+* **Verantwoordelijkheden:**
+    * **Socket Audit:** Controleert socket-acties op RBAC-lekkage en ongeautoriseerde data-blootstelling.
+    * **Encryption Guard:** Valideert de correcte implementatie van `bcrypt` en beveiligde opslag van gevoelige identifiers.
+    * **Privacy-by-Design:** Adviseert over data-minimalisatie in nieuwe features (zoals de toekomstige portal) om AVG-risico's te beperken.
+    * **Isolation Audit:** Garandeert dat de scheiding tussen interne yard-data en toekomstige publieke endpoints architecturaal gewaarborgd is.
+
+### 10. @Growth-Strategist (The Conversion Specialist)
+* **Focus:** Monetisatie, Upselling, Modulaire Retentie en "Access Denied" Experience.
+* **Verantwoordelijkheden:**
+    * **Upsell Logic:** Ontwerpt de triggers voor gebruikers die tegen een beperking van hun huidige abonnement aanlopen.
+    * **Conversion UI:** Verantwoordelijk voor de 'Access Denied' en 'Upgrade Required' schermen; deze moeten prikkelen om meer functionaliteit te ontsluiten.
+    * **Feature Discovery:** Zorgt dat nieuwe of premium features zichtbaar (maar vergrendeld) zijn voor basis-gebruikers om nieuwsgierigheid te wekken.
+    * **Retention Guard:** Bewaakt dat de betaalmuur de operationele workflow niet hindert, maar wel de waarde van extra modules benadrukt.
 
 ---
 
@@ -133,5 +149,33 @@
 
 ---
 
+## IV. Gebruikersrollen & Capabilities (Dynamic RBAC)
+
+Sinds v3.13.0 hanteert het systeem een dynamisch model waarbij rollen slechts templates zijn voor een set van **Capabilities**. Deze mapping is instelbaar via de Systeeminstellingen.
+
+### 1. Actie Capabilities (Matrix)
+- `LOGISTICS_DELIVERY_CRUD`: Beheer van basis vrachten (Inbound/Ex-works).
+- `YMS_STATUS_UPDATE`: Statuswijzigingen op de yard (Docken → Lossen → Gereed).
+- `YMS_PRIORITY_OVERRIDE`: Handmatige override van de wachtrij-prioriteit.
+- `YMS_DOCK_MANAGE`: Blokkeren/beheren van dock-beschikbaarheid.
+- `FINANCE_LEDGER_VIEW`: Inzien van Pallet Ledger en financiële velden.
+- `FINANCE_SETTLE_TRANSACTION`: Verrekenen van saldo's en creditnota-matching.
+- `ADDR_BOOK_CRUD`: Beheer van Adresboek en contactgegevens (PII).
+- `SYSTEM_SETTINGS_EDIT`: Configuratie van magazijn-parameters en openingstijden.
+- `SYSTEM_USER_MANAGE`: Gebruikersbeheer en aanpassen van rol-permissies.
+
+### 2. Standaard Templates (Defaults)
+Hoewel volledig instelbaar, hanteren we de volgende standaard verdeling:
+- **Admin**: Alle capabilities.
+- **Manager**: `LOGISTICS_DELIVERY_CRUD`, `YMS_STATUS_UPDATE`, `YMS_DOCK_MANAGE`, `FINANCE_LEDGER_VIEW`, `ADDR_BOOK_CRUD`.
+- **Staff**: `LOGISTICS_DELIVERY_CRUD`, `YMS_STATUS_UPDATE`.
+- **Lead-Operator**: `YMS_STATUS_UPDATE`, `YMS_PRIORITY_OVERRIDE`.
+- **Operator**: `YMS_STATUS_UPDATE`.
+- **Poortwachter (Nieuw)**: `YMS_STATUS_UPDATE`, `YMS_PRIORITY_OVERRIDE` (Beperkt tot Gate-In/Out en Spoed-prioriteit).
+- **Financieel Auditeur (Nieuw)**: `FINANCE_LEDGER_VIEW`, `FINANCE_SETTLE_TRANSACTION`.
+- **Viewer**: Read-only (Geen capabilities).
+
+---
+
 > [!CAUTION]
-> **Kritieke Herinnering:** De `FOREIGN KEY` op `dockId` in `yms_deliveries` blijft uitgeschakeld om crashes te voorkomen. Validatie van dock-bestaan moet door de backend logica (@System-Architect) worden afgehandeld voordat een write plaatsvindt.
+> **Kritieke Herinnering:** De `FOREIGN KEY` op `dockId` in `yms_deliveries` blijft uitgeschakeld om crashes te voorkomen. Validatie van dock-bestaan en permissies wordt door de backend logica (@System-Architect) afgehandeld middels de `hasPermission` helper.

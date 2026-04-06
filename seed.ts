@@ -22,18 +22,22 @@ const seedDatabase = async () => {
   // 1. Users
   const staffPwd = process.env.INITIAL_STAFF_PASSWORD || 'welkom123';
   const managerPwd = process.env.INITIAL_MANAGER_PASSWORD || 'manager123';
-  const adminPwd = process.env.INITIAL_ADMIN_PASSWORD || 'admin123';
+  const adminPwd = process.env.INITIAL_ADMIN_PASSWORD || 'ilg2026!';
 
   const staffHash = await bcrypt.hash(staffPwd, 10);
   const managerHash = await bcrypt.hash(managerPwd, 10);
   const adminHash = await bcrypt.hash(adminPwd, 10);
   const viewerHash = await bcrypt.hash('viewer123', 10);
+  const gateHash = await bcrypt.hash('poort123', 10);
+  const financeHash = await bcrypt.hash('finance123', 10);
 
   const users: User[] = [
     { id: 'u1', name: 'Admin User', email: 'admin@ilgfood.com', role: 'admin', passwordHash: adminHash },
-    { id: 'u2', name: 'Logistics Manager', email: 'manager@ilgfood.com', role: 'manager', passwordHash: managerHash, permissions: { sendTransportOrder: true, manageDeliveries: true } },
+    { id: 'u2', name: 'Logistics Manager', email: 'manager@ilgfood.com', role: 'manager', passwordHash: managerHash, permissions: { LOGISTICS_DELIVERY_CRUD: true, YMS_STATUS_UPDATE: true } },
     { id: 'u3', name: 'Staff User', email: 'staff@ilgfood.com', role: 'staff', passwordHash: staffHash },
-    { id: 'u4', name: 'Viewer User', email: 'viewer@ilgfood.com', role: 'viewer', passwordHash: viewerHash }
+    { id: 'u4', name: 'Viewer User', email: 'viewer@ilgfood.com', role: 'viewer', passwordHash: viewerHash },
+    { id: 'u5', name: 'Poortwachter', email: 'gate@ilgfood.com', role: 'gate_guard', passwordHash: gateHash },
+    { id: 'u6', name: 'Financieel Auditeur', email: 'finance@ilgfood.com', role: 'finance_auditor', passwordHash: financeHash }
   ];
   users.forEach(saveUser);
 

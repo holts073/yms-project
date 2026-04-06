@@ -229,7 +229,6 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         delivery={editingDelivery}
-        state={state}
         onSave={(data) => {
           let documents = [...(data.documents || [])];
           

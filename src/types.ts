@@ -72,8 +72,12 @@ export interface Delivery {
   dockId?: number;
   delayRisk?: 'low' | 'medium' | 'high';
   predictionReason?: string;
-  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'DAP';
+  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'CIF' | 'DDP' | 'DAP';
   readyForPickupDate?: string;
+  demurrageDailyRate?: number;
+  standingTimeCost?: number;
+  thcCost?: number;
+  customsCost?: number;
 }
 
 export interface LogEntry {
@@ -83,15 +87,24 @@ export interface LogEntry {
   action: string;
   details: string;
   reference?: string;
+  warehouseId?: string;
 }
 
-export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer' | 'tablet';
+// Action Capabilities for dynamic RBAC (v3.13.1)
+export type AppCapability = 
+  | 'LOGISTICS_DELIVERY_CRUD' 
+  | 'YMS_STATUS_UPDATE' 
+  | 'YMS_PRIORITY_OVERRIDE' 
+  | 'YMS_DOCK_MANAGE' 
+  | 'FINANCE_LEDGER_VIEW' 
+  | 'FINANCE_SETTLE_TRANSACTION' 
+  | 'ADDR_BOOK_CRUD' 
+  | 'SYSTEM_SETTINGS_EDIT' 
+  | 'SYSTEM_USER_MANAGE';
 
-export interface UserPermissions {
-  manageDeliveries?: boolean;
-  manageAddressBook?: boolean;
-  sendTransportOrder?: boolean;
-}
+export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer' | 'operator' | 'lead_operator' | 'gate_guard' | 'finance_auditor';
+
+export type UserPermissions = Partial<Record<AppCapability, boolean>>;
 
 export interface User {
   id: string;
@@ -101,6 +114,8 @@ export interface User {
   passwordHash?: string;
   permissions?: UserPermissions;
   requiresReset?: boolean;
+  twoFactorSecret?: string;
+  twoFactorEnabled?: boolean;
 }
 
 export interface AppSettings {
@@ -117,6 +132,10 @@ export interface AppSettings {
     auto_archive_days?: number;
   };
   pallet_rates?: Record<string, number>;
+  featureFlags?: {
+    enableFinance: boolean;
+  };
+  role_permissions?: Record<UserRole, AppCapability[]>;
 }
 
 export interface CompanySettings {
@@ -229,6 +248,11 @@ export interface YmsDelivery {
   palletRate?: number;
   palletsExchanged?: number;
   isPalletExchangeConfirmed?: boolean;
+  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'CIF' | 'DDP' | 'DAP';
+  demurrageDailyRate?: number;
+  standingTimeCost?: number;
+  thcCost?: number;
+  customsCost?: number;
   
   // Reefer Features
   estimatedDuration?: number;
@@ -237,6 +261,7 @@ export interface YmsDelivery {
   lastEtaUpdate?: string;
   notes?: string;
   requiresQA?: boolean;
+  priority?: number; // v3.12.1 Manual Priority (higher = more urgent)
 }
 
 export interface YmsAlert {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User as UserIcon, Shield, ShieldAlert, ShieldCheck, Eye, Trash2 } from 'lucide-react';
+import { User as UserIcon, Shield, ShieldAlert, ShieldCheck, Eye, Trash2, KeyRound } from 'lucide-react';
 import { Badge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { User, UserRole } from '../../types';
@@ -25,7 +25,10 @@ export const UserTable: React.FC<UserTableProps> = ({
       case 'admin': return <ShieldAlert size={18} className="text-rose-600" />;
       case 'manager': return <ShieldCheck size={18} className="text-indigo-600" />;
       case 'staff': return <Shield size={18} className="text-emerald-600" />;
+      case 'gate_guard': return <Shield size={18} className="text-amber-500" />;
+      case 'finance_auditor': return <Shield size={18} className="text-rose-400" />;
       case 'viewer': return <Eye size={18} className="text-[var(--muted-foreground)]" />;
+      default: return <Shield size={18} className="text-emerald-600" />;
     }
   };
 
@@ -70,8 +73,39 @@ export const UserTable: React.FC<UserTableProps> = ({
                       <option value="admin" className="bg-white dark:bg-slate-800">Admin</option>
                       <option value="manager" className="bg-white dark:bg-slate-800">Manager</option>
                       <option value="staff" className="bg-white dark:bg-slate-800">Staff</option>
+                      <option value="gate_guard" className="bg-white dark:bg-slate-800">Poortwachter</option>
+                      <option value="finance_auditor" className="bg-white dark:bg-slate-800">Finance</option>
+                      <option value="operator" className="bg-white dark:bg-slate-800">Operator</option>
+                      <option value="lead_operator" className="bg-white dark:bg-slate-800">Lead Operator</option>
                       <option value="viewer" className="bg-white dark:bg-slate-800">Viewer</option>
                     </select>
+                    
+                    {user.twoFactorEnabled && currentUser?.role === 'admin' && (
+                      <button 
+                        onClick={async () => {
+                          if (confirm(`Weet u zeker dat u de 2FA voor ${user.name} wilt resetten?`)) {
+                            try {
+                              const res = await fetch('/api/admin/reset-2fa', {
+                                method: 'POST',
+                                headers: { 
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ userId: user.id })
+                              });
+                              if (res.ok) alert('2FA succesvol gereset');
+                              else alert('Fout bij resetten');
+                            } catch (e) {
+                              alert('Netwerkfout');
+                            }
+                          }
+                        }}
+                        title="Reset 2FA"
+                        className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full transition-all"
+                      >
+                        <KeyRound size={16} />
+                      </button>
+                    )}
                     
                     {user.id !== currentUser?.id && (
                       <Button variant="ghost" size="sm" onClick={() => onEdit(user)} className="text-xs">

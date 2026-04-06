@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'ilg' | 'meledi';
+type Theme = 'light' | 'dark' | 'enterprise' | 'modern';
 
 interface ThemeContextType {
   theme: Theme;
@@ -13,13 +13,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || saved === 'light' || saved === 'ilg' || saved === 'meledi') return saved as Theme;
+    if (saved === 'dark' || saved === 'light' || saved === 'enterprise' || saved === 'modern') return saved as Theme;
     return 'light';
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark', 'ilg', 'meledi');
+    root.classList.remove('light', 'dark', 'enterprise', 'modern');
     root.classList.add(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
@@ -27,8 +27,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleTheme = () => {
     setThemeState(prev => {
       if (prev === 'light') return 'dark';
-      if (prev === 'dark') return 'ilg';
-      if (prev === 'ilg') return 'meledi';
+      if (prev === 'dark') return 'enterprise';
+      if (prev === 'enterprise') return 'modern';
       return 'light';
     });
   };

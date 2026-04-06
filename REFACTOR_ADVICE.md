@@ -1,7 +1,20 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.10.5 — Bijgewerkt: 2026-04-06 door @System-Architect*
+*Versie: v3.13.2 — Bijgewerkt: 2026-04-06 door @System-Architect*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
+
+## ✅ Opgelost in v3.12.0 (Modular Finance & Incoterm History)
+- **Financial Modularization** ✅: Introductie van de `enable_finance` vlag in `AppSettings`. Alle financiële UI en backend transacties zijn nu conditioneel.
+- **Incoterm UX** ✅: Automatische geschiedenis-ondersteuning (`GET_LAST_INCOTERM`) verwijdert handmatige invoer-frictie voor herhalende leveranciers.
+- **Advanced Cost Tracking** ✅: Database ondersteunt nu Demurrage, Standgeld en THC zonder de operationele kern te belasten.
+
+## 🛠️ Prioriteit: Security & AVG Compliance (v3.12.x)
+*Verantwoordelijke agent: @Security-Auditor*
+
+- **Socket Handler Audit**: Handmatige controle van alle socket acties op RBAC-doorbraken. 
+- **Data Minimalisatie**: Inspecteer `deliveries` en `address_book` op overbodige BSN of andere privacy-gevoelige data.
+- **Port Isolation**: Garanderen dat de API-endpoints niet direct van buitenaf bereikbaar zijn zonder proxy/firewall (voorbereiding op portal).
+- **Audit Logs Encryption**: Onderzoek de haalbaarheid van versleutelde opslag voor de `audit_logs` tabel.
 
 ## ✅ Opgelost in v3.10.5 (Document Milestone Enforcement)
 - **Dynamic Document Blocking** ✅: Gebruik van `blocksMilestone` in de `documents` tabel vervangt hardcoded logica in `logistics.ts`.

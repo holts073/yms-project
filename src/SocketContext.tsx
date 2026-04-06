@@ -8,7 +8,8 @@ interface SocketContextType {
   state: AppState | null;
   currentUser: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; twoFactorRequired?: boolean; tempToken?: string; error?: string }>;
+  verify2FA: (code: string, tempToken: string) => Promise<boolean>;
   logout: () => void;
   dispatch: (type: string, payload: any) => void;
 }
@@ -147,7 +148,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Activity timeout logic (60 minutes) - Disabled for Tablet role
     let inactivityTimer: NodeJS.Timeout;
     const resetTimer = () => {
-      if (currentUser?.role === 'tablet') return;
+      if (currentUser?.role === 'operator' || currentUser?.role === 'lead_operator' || currentUser?.role === 'gate_guard') return;
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
         logout();
@@ -165,12 +166,38 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [isAuthenticated]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; twoFactorRequired?: boolean; tempToken?: string; error?: string }> => {
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        if (data.twoFactorRequired) {
+          return { success: false, twoFactorRequired: true, tempToken: data.tempToken };
+        }
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setCurrentUser(data.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      return { success: false, error: data.error || 'Identificatie mislukt' };
+    } catch (err) {
+      console.error('Login error:', err);
+      return { success: false, error: 'Systeemfout' };
+    }
+  };
+
+  const verify2FA = async (code: string, tempToken: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, tempToken })
       });
       
       if (response.ok) {
@@ -183,7 +210,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       return false;
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('2FA verification error:', err);
       return false;
     }
   };
@@ -234,7 +261,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <SocketContext.Provider value={{ 
-socket, state, currentUser, isAuthenticated, login, logout, dispatch }}>
+      socket, state, currentUser, isAuthenticated, login, logout, dispatch, verify2FA }}>
       {children}
     </SocketContext.Provider>
   );

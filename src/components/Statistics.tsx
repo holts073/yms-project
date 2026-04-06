@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { useSocket } from '../SocketContext';
+import { usePermissions } from '../hooks/usePermissions';
+import { AccessDenied } from './shared/AccessDenied';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
   ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area, LineChart, Line 
@@ -11,9 +13,13 @@ import { StatCard } from './shared/StatCard';
 import { Card } from './shared/Card';
 import { isRegisteredOnTime } from '../lib/logistics';
 import { CarrierPerformance } from './features/CarrierPerformance';
+import { cn } from '../lib/utils';
 
 const Statistics = () => {
   const { state, currentUser } = useSocket();
+  const { canAccess } = usePermissions();
+  const { granted: isAuthorized } = canAccess('FINANCE_LEDGER_VIEW');
+
   const { addressBook } = state || {};
   const { deliveries } = useDeliveries(1, 1000, '', 'all', 'eta', false);
 
@@ -92,7 +98,18 @@ const Statistics = () => {
   const formatCurrency = (val: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
   return (
-    <div className="space-y-10 pb-20">
+    <div className="relative">
+      {!isAuthorized && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/20 backdrop-blur-sm rounded-[3rem] p-10">
+           <AccessDenied 
+             title="Premium Analytics Ontwikkelen?" 
+             description="Krijg real-time inzicht in OTIF-scores, lead times en dock-bezetting. Deze data helpt u uw operatie te optimaliseren en kosten te verlagen."
+             feature="Advanced Analytics"
+           />
+        </div>
+      )}
+      
+      <div className={cn("space-y-10 pb-20 transition-all duration-700", !isAuthorized && "blur-md pointer-events-none select-none opacity-40")}>
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/20">
@@ -239,12 +256,12 @@ const Statistics = () => {
           </div>
         </Card>
       </div>
-
       <div className="pt-8 border-t border-border">
         <CarrierPerformance />
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default Statistics;

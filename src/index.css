@@ -46,7 +46,7 @@
     --ring: #4f46e5;
   }
 
-  .ilg {
+  .enterprise {
     --background: #fdf2f2;
     --foreground: #1e1b4b; /* dark blue text */
     --card: #ffffff;
@@ -60,7 +60,7 @@
     --ring: #ef4444;
   }
 
-  .meledi {
+  .modern {
     --background: #f8fafc;
     --foreground: #0f172a; 
     --card: #ffffff;

@@ -13,7 +13,7 @@ import { YmsWarehouse } from '../types';
 
 export default function YmsSettings() {
   const { state, dispatch } = useSocket();
-  const [activeTab, setActiveTab] = useState<'warehouses' | 'capacity' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets'>('warehouses');
+  const [activeTab, setActiveTab] = useState<'warehouses' | 'capacity' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets' | 'modules'>('warehouses');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('W01');
   const [editingWarehouse, setEditingWarehouse] = useState<Partial<YmsWarehouse> | null>(null);
   const [palletRates, setPalletRates] = useState<Record<string, number>>(state.settings?.pallet_rates || { EUR: 13, DPD: 22.5, CHEP: 0, BLOK: 15 });
@@ -42,7 +42,8 @@ export default function YmsSettings() {
             { id: 'docks', label: 'Docks' },
             { id: 'waitingAreas', label: 'Wachtruimtes' },
             { id: 'overrides', label: 'Overrides' },
-            { id: 'pallets', label: 'Pallets' }
+            { id: 'pallets', label: 'Pallets' },
+            { id: 'modules', label: 'Modules' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -283,6 +284,45 @@ export default function YmsSettings() {
                     >
                       Tarieven Opslaan
                     </Button>
+                  </div>
+               </div>
+            </div>
+          )}
+          
+          {activeTab === 'modules' && (
+            <div className="max-w-2xl space-y-8">
+               <header>
+                 <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Systeem Modules</h3>
+                 <p className="text-[var(--muted-foreground)] text-sm">Schakel specifieke functionaliteiten in of uit om de interface en logica te stroomlijnen.</p>
+               </header>
+               
+               <div className="bg-card border border-border p-8 rounded-3xl shadow-sm space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-[var(--muted)]/50 rounded-2xl border border-border">
+                    <div className="space-y-1">
+                      <p className="font-black text-foreground uppercase tracking-tight text-sm">Financiële Module</p>
+                      <p className="text-xs text-[var(--muted-foreground)] font-medium">Activeert pallet-reconciliatie, transportkosten en financiële demurrage-berekeningen.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={state.settings?.featureFlags?.enableFinance !== false} 
+                        onChange={e => {
+                          const currentFlags = state.settings?.featureFlags || { enableFinance: true };
+                          dispatch('SAVE_SETTING', { 
+                            key: 'feature_flags', 
+                            value: { ...currentFlags, enableFinance: e.target.checked } 
+                          });
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+                  
+                  <div className="p-4 bg-amber-50/10 border border-amber-500/20 rounded-2xl">
+                    <p className="text-xs text-amber-600 font-bold leading-relaxed">
+                      LATER: Hier kunnen aanvullende modules zoals "Personeelsplanning" of "Leveranciersportaal" worden toegevoegd zodra deze beschikbaar zijn.
+                    </p>
                   </div>
                </div>
             </div>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, AlertCircle, FileText, Save, X } from 'lucide-react';
+import { Package, Truck, AlertCircle, FileText, Save, X, BadgeEuro } from 'lucide-react';
+import { useSocket } from '../../SocketContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import { Modal } from '../shared/Modal';
+import { FeatureGate } from '../shared/FeatureGate';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { Badge } from '../shared/Badge';
@@ -12,8 +15,7 @@ interface DeliveryDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   delivery: Partial<Delivery> | null;
-  onSave: (delivery: any) => void;
-  state: any; // Context state for suppliers/transporters/settings
+  onSave: (delivery: Partial<Delivery>) => void;
 }
 
 const ComboboxWrapper = ({ name, options, defaultValue, placeholder }: any) => {
@@ -35,11 +37,13 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
   isOpen,
   onClose,
   delivery: initialDelivery,
-  onSave,
-  state
+  onSave
 }) => {
   const [editingDelivery, setEditingDelivery] = useState<Partial<Delivery> | null>(null);
   const [formType, setFormType] = useState<'container' | 'exworks'>('container');
+  const { socket, state, dispatch, currentUser } = useSocket();
+  const { hasCapability, canAccess } = usePermissions();
+  const [lastIncoterm, setLastIncoterm] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialDelivery) {
@@ -64,7 +68,23 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
         palletRate: state.settings?.pallet_rates?.EUR || 13
       });
     }
-  }, [initialDelivery, formType, state.settings?.shipment_settings, state.settings?.pallet_rates?.EUR]);
+
+    const handleIncotermResult = (data: { supplierId: string, incoterm: string }) => {
+      if (editingDelivery?.supplierId === data.supplierId) {
+        setLastIncoterm(data.incoterm);
+      }
+    };
+
+    socket?.on("last_incoterm_result", handleIncotermResult);
+    return () => {
+      socket?.off("last_incoterm_result", handleIncotermResult);
+    };
+  }, [initialDelivery, formType, state.settings?.shipment_settings, state.settings?.pallet_rates?.EUR, socket, editingDelivery?.supplierId]);
+
+  const handleSupplierChange = (supplierId: string) => {
+    setEditingDelivery(prev => prev ? ({ ...prev, supplierId }) : null);
+    dispatch("GET_LAST_INCOTERM", { supplierId });
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,6 +100,10 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
       palletCount: parseInt(data.palletCount as string) || 0,
       weight: parseInt(data.weight as string) || 0,
       palletRate: parseFloat(data.palletRate as string) || 0,
+      demurrageDailyRate: parseFloat(data.demurrageDailyRate as string) || 0,
+      standingTimeCost: parseFloat(data.standingTimeCost as string) || 0,
+      thcCost: parseFloat(data.thcCost as string) || 0,
+      customsCost: parseFloat(data.customsCost as string) || 0,
       documents: editingDelivery?.documents || []
     };
 
@@ -113,15 +137,23 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
                <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Referentie</label>
                <Input name="reference" defaultValue={editingDelivery.reference} placeholder="Bestelnummer / Ref" required />
             </div>
-            <div className="space-y-2">
-               <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</label>
-               <ComboboxWrapper 
-                 name="supplierId" 
-                 defaultValue={editingDelivery.supplierId} 
-                 options={(state.addressBook?.suppliers || []).map((s:any) => ({ value: s.id, label: s.name }))}
-                 placeholder="Zoek leverancier..." 
-               />
-            </div>
+             <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</label>
+                <div className="flex flex-col gap-1">
+                  <Combobox 
+                    options={(state.addressBook?.suppliers || []).map((s:any) => ({ value: s.id, label: s.name }))}
+                    value={editingDelivery.supplierId || ''}
+                    onChange={handleSupplierChange}
+                    placeholder="Zoek leverancier..." 
+                  />
+                  <input type="hidden" name="supplierId" value={editingDelivery.supplierId || ''} />
+                  {lastIncoterm && (
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight ml-2">
+                      Laatst gebruikt: {lastIncoterm}
+                    </p>
+                  )}
+                </div>
+             </div>
             <div className="space-y-2">
                <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Transporteur</label>
                <ComboboxWrapper 
@@ -134,16 +166,35 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
             <Input label="ETA Magazijn" name="etaWarehouse" type="date" defaultValue={editingDelivery.etaWarehouse?.split('T')[0]} />
             
              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Incoterms</label>
-                <select name="incoterm" defaultValue={editingDelivery.incoterm || 'EXW'} className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold">
-                   <option value="EXW">EXW</option>
-                   <option value="FCA">FCA</option>
-                   <option value="FOB">FOB</option>
-                   <option value="CIF">CIF</option>
-                   <option value="DDP">DDP</option>
-                   <option value="DAP">DAP</option>
-                </select>
-             </div>
+                 <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)] flex justify-between">
+                    Incoterms
+                    {lastIncoterm && (
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const select = document.getElementById('incoterm-select') as HTMLSelectElement;
+                          if (select) select.value = lastIncoterm;
+                        }}
+                        className="text-[9px] text-indigo-600 hover:underline"
+                      >
+                        Gebruik {lastIncoterm}
+                      </button>
+                    )}
+                 </label>
+                 <select 
+                   id="incoterm-select"
+                   name="incoterm" 
+                   defaultValue={editingDelivery.incoterm || lastIncoterm || 'EXW'} 
+                   className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold"
+                 >
+                    <option value="EXW">EXW</option>
+                    <option value="FCA">FCA</option>
+                    <option value="FOB">FOB</option>
+                    <option value="CIF">CIF</option>
+                    <option value="DDP">DDP</option>
+                    <option value="DAP">DAP</option>
+                 </select>
+              </div>
 
              {formType === 'container' && (
                <>
@@ -175,36 +226,63 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
              </div>
              <Input label="Gewicht (kg)" name="weight" type="number" defaultValue={editingDelivery.weight} />
              
-             <div className="space-y-4 bg-card/50 p-4 rounded-2xl border border-border mt-4">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallet Type</label>
-                    <select 
-                      name="palletType" 
-                      defaultValue={editingDelivery.palletType || 'EUR'} 
-                      className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold"
-                      onChange={(e) => {
-                        const rates: any = state.settings?.pallet_rates || { 'EUR': 13, 'DPD': 22.5, 'CHEP': 0, 'BLOK': 15 };
-                        const rateInput = document.getElementById('palletRate-modal') as HTMLInputElement;
-                        if (rateInput) rateInput.value = rates[e.target.value] || '0';
-                      }}
-                    >
-                       <option value="EUR">EUR (€{(state.settings?.pallet_rates?.EUR || 13).toFixed(2)})</option>
-                       <option value="DPD">DPD (€{(state.settings?.pallet_rates?.DPD || 22.5).toFixed(2)})</option>
-                       <option value="CHEP">CHEP (€{(state.settings?.pallet_rates?.CHEP || 0).toFixed(2)})</option>
-                       <option value="BLOK">BLOK (€{(state.settings?.pallet_rates?.BLOK || 15).toFixed(2)})</option>
-                    </select>
-                 </div>
-                 <Input 
-                   label="Tarief (€)" 
-                   name="palletRate" 
-                   id="palletRate-modal"
-                   type="number" 
-                   step="0.01" 
-                   defaultValue={editingDelivery.palletRate || 13} 
-                 />
-               </div>
-             </div>
+              <FeatureGate capability="FINANCE_LEDGER_VIEW" feature="enableFinance" mode="gate" compact>
+                <div className="md:col-span-2 space-y-6 pt-4 border-t border-border mt-4">
+                  <h4 className="text-xs font-black uppercase tracking-tight text-foreground flex items-center gap-2">
+                    <BadgeEuro size={14} className="text-rose-500" />
+                    Financiële Details & Kosten
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-rose-50/5 p-6 rounded-3xl border border-rose-500/10">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallet Type</label>
+                           <select 
+                             name="palletType" 
+                             defaultValue={editingDelivery.palletType || 'EUR'} 
+                             className="w-full p-3 bg-[var(--muted)] border-border rounded-xl text-sm font-bold"
+                             onChange={(e) => {
+                               const rates: any = state.settings?.pallet_rates || { 'EUR': 13, 'DPD': 22.5, 'CHEP': 0, 'BLOK': 15 };
+                               const rateInput = document.getElementById('palletRate-modal') as HTMLInputElement;
+                               if (rateInput) rateInput.value = rates[e.target.value] || '0';
+                             }}
+                           >
+                              <option value="EUR">EUR (€{(state.settings?.pallet_rates?.EUR || 13).toFixed(2)})</option>
+                              <option value="DPD">DPD (€{(state.settings?.pallet_rates?.DPD || 22.5).toFixed(2)})</option>
+                              <option value="CHEP">CHEP (€{(state.settings?.pallet_rates?.CHEP || 0).toFixed(2)})</option>
+                              <option value="BLOK">BLOK (€{(state.settings?.pallet_rates?.BLOK || 15).toFixed(2)})</option>
+                           </select>
+                        </div>
+                        <Input 
+                          label="Pallet Tarief (€)" 
+                          name="palletRate" 
+                          id="palletRate-modal"
+                          type="number" 
+                          step="0.01" 
+                          defaultValue={editingDelivery.palletRate || 13} 
+                        />
+                      </div>
+                      
+                      <Input 
+                        label="Demurrage Dagtarief (€)" 
+                        name="demurrageDailyRate" 
+                        type="number" 
+                        step="0.01" 
+                        defaultValue={editingDelivery.demurrageDailyRate || 0} 
+                      />
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="Standgeld/u (€)" name="standingTimeCost" type="number" step="0.01" defaultValue={editingDelivery.standingTimeCost || 0} />
+                        <Input label="THC Kosten (€)" name="thcCost" type="number" step="0.01" defaultValue={editingDelivery.thcCost || 0} />
+                      </div>
+                      <Input label="Douanekosten (€)" name="customsCost" type="number" step="0.01" defaultValue={editingDelivery.customsCost || 0} />
+                    </div>
+                  </div>
+                </div>
+              </FeatureGate>
 
              <Input 
                 as="textarea"

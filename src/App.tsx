@@ -19,9 +19,12 @@ import {
   ClipboardList,
   Zap,
   Calendar,
-  BadgeEuro
+  BadgeEuro,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePermissions } from './hooks/usePermissions';
+import { FeatureGate } from './components/shared/FeatureGate';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Sun, Moon, Palette } from 'lucide-react';
@@ -41,6 +44,7 @@ import YmsDashboard from './components/YmsDashboard';
 import YmsSettings from './components/YmsSettings';
 import YmsPublic from './components/YmsPublic';
 import { Reconciliation } from './components/features/Reconciliation';
+import { AccountSettings } from './components/AccountSettings';
 
 import { Toaster } from 'sonner';
 
@@ -62,17 +66,19 @@ const getColorStyles = (colorClass: string) => {
   return colorMap[colorClass] || colorMap['text-indigo-600'];
 };
 
-const SidebarItem = ({ icon: Icon, label, active, onClick, color = "text-indigo-600" }: any) => {
+const SidebarItem = ({ icon: Icon, label, active, onClick, color = "text-indigo-600", locked = false }: any) => {
   const styles = getColorStyles(color);
   
   return (
     <button
       onClick={onClick}
+      disabled={locked && active} // Don't allow clicking the locked item if it's already "active" (e.g. by deep link)
       className={cn(
-        "flex items-center gap-3 px-5 py-3 w-full transition-all duration-300 rounded-2xl relative group",
+        "flex items-center gap-3 px-5 py-3 w-full transition-all duration-300 rounded-2xl relative group mb-1",
         active 
           ? cn(styles.bg, "font-bold shadow-sm border", styles.border) 
-          : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]/50"
+          : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]/50",
+        locked && !active && "opacity-60 grayscale-[0.5] hover:grayscale-0"
       )}
     >
       {active && (
@@ -84,17 +90,29 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, color = "text-indigo-
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         />
       )}
-      <Icon 
-        size={20} 
-        className={cn(
-          "transition-transform duration-300", 
-          active ? cn(color, "scale-110") : `${color} opacity-40 group-hover:opacity-100 group-hover:scale-110`
-        )} 
-      />
+      <div className="relative">
+        <Icon 
+          size={20} 
+          className={cn(
+            "transition-transform duration-300", 
+            active ? cn(color, "scale-110") : `${color} opacity-40 group-hover:opacity-100 group-hover:scale-110`
+          )} 
+        />
+        {locked && (
+          <div className="absolute -top-1 -right-1 bg-white dark:bg-slate-900 rounded-full p-0.5 shadow-sm border border-border">
+            <Lock size={8} className="text-rose-500" />
+          </div>
+        )}
+      </div>
       <span className={cn(
-        "text-sm tracking-tight transition-colors",
+        "text-sm tracking-tight transition-colors flex-1 text-left",
         active ? "text-foreground" : ""
       )}>{label}</span>
+      {locked && (
+        <span className="text-[9px] font-black uppercase tracking-tight text-rose-500/60 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10">
+          PRO
+        </span>
+      )}
       {active && (
         <motion.div 
           layoutId="active-glow"
@@ -105,34 +123,49 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, color = "text-indigo-
   );
 };
 
-const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, onToggle, color = "text-indigo-600" }: any) => {
+const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, onToggle, color = "text-indigo-600", locked = false }: any) => {
   const styles = getColorStyles(color);
 
   return (
-    <div className="w-full">
+    <div className="w-full mb-1">
       <button
         onClick={onToggle}
         className={cn(
           "flex items-center justify-between gap-3 px-5 py-3 w-full transition-all duration-300 rounded-2xl group relative",
           active 
             ? cn(styles.bg, "font-bold border shadow-sm", styles.border) 
-            : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]/50"
+            : "text-slate-500 dark:text-slate-400 hover:bg-[var(--muted)]/50",
+          locked && !active && "opacity-60"
         )}
       >
         <div className="flex items-center gap-3">
-          <Icon 
-            size={20} 
-            className={cn(
-              "transition-transform duration-300", 
-              active ? cn(color, "scale-110") : `${color} opacity-40 group-hover:opacity-100 group-hover:scale-110`
-            )} 
-          />
+          <div className="relative">
+            <Icon 
+              size={20} 
+              className={cn(
+                "transition-transform duration-300", 
+                active ? cn(color, "scale-110") : `${color} opacity-40 group-hover:opacity-100 group-hover:scale-110`
+              )} 
+            />
+            {locked && (
+              <div className="absolute -top-1 -right-1 bg-white dark:bg-slate-900 rounded-full p-0.5 shadow-sm border border-border">
+                <Lock size={8} className="text-rose-500" />
+              </div>
+            )}
+          </div>
           <span className={cn(
             "text-sm tracking-tight transition-colors",
             active ? "text-foreground" : ""
           )}>{label}</span>
         </div>
-        <ChevronRight size={14} className={cn("transition-transform duration-300 opacity-50", isOpen && "rotate-90")} />
+        <div className="flex items-center gap-2">
+          {locked && (
+            <span className="text-[9px] font-black uppercase tracking-tight text-rose-500/60 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10">
+              PRO
+            </span>
+          )}
+          <ChevronRight size={14} className={cn("transition-transform duration-300 opacity-50", isOpen && "rotate-90")} />
+        </div>
         {active && (
           <motion.div 
             layoutId="active-glow-dropdown"
@@ -154,14 +187,19 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
                     key={item.id}
                     onClick={() => onSelect(item.id)}
                     className={cn(
-                      "flex items-center gap-3 w-full px-6 py-3 rounded-full text-sm transition-all",
+                      "flex items-center gap-3 w-full px-6 py-3 rounded-full text-sm transition-all group/sub",
                       item.active 
                         ? "text-[var(--accent-foreground)] font-bold bg-[var(--accent)]/50" 
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-[var(--muted)]/50"
                     )}
                   >
-                    <span className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-[var(--accent-foreground)]" : "bg-border")} />
-                    {item.label}
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-[var(--accent-foreground)]" : "bg-border group-hover/sub:bg-indigo-400")} />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.locked && (
+                         <Lock size={10} className="text-rose-500 opacity-60" />
+                      )}
+                    </div>
                   </button>
               ))}
             </div>
@@ -179,12 +217,13 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const { state, currentUser, isAuthenticated, logout } = useSocket();
     const { theme, toggleTheme } = useTheme();
+    const { canAccess: checkAccess } = usePermissions();
 
     const getThemeIcon = () => {
       switch(theme) {
         case 'dark': return <Moon size={16} />;
-        case 'ilg': return <div className="w-4 h-4 rounded-full bg-gradient-to-br from-rose-500 to-indigo-800" />;
-        case 'meledi': return <div className="w-4 h-4 rounded-full bg-gradient-to-br from-orange-500 to-stone-900" />;
+        case 'enterprise': return <div className="w-4 h-4 rounded-full bg-gradient-to-br from-rose-500 to-indigo-800" />;
+        case 'modern': return <div className="w-4 h-4 rounded-full bg-gradient-to-br from-orange-500 to-stone-900" />;
         default: return <Sun size={16} />;
       }
     };
@@ -246,20 +285,76 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard onNavigate={handleNavigate} />;
-      case 'deliveries': return <DeliveryManager initialFilter={searchFilter} initialSelectedId={selectedId || undefined} />;
-      case 'archive': return <Archive />;
-      case 'addressbook': return <AddressBook />;
-      case 'statistics': return <Statistics />;
-      case 'logs': return <AuditLog onNavigate={handleNavigate} />;
-      case 'settings-company': return <SettingsPage currentSegment="company" />;
-      case 'settings-documents': return <SettingsPage currentSegment="documents" />;
-      case 'settings-users': return <SettingsPage currentSegment="users" />;
-      case 'settings-yms': return <YmsSettings />;
-      case 'reports': return <Reporting />;
-      case 'yms-arrivals': return <YmsDashboard view="arrivals" initialSearch={searchFilter} onBack={() => handleNavigate('dashboard')} />;
-      case 'yms-planning': return <YmsDashboard view="planning" initialSearch={searchFilter} onBack={() => handleNavigate('dashboard')} />;
+      case 'deliveries': 
+        return (
+          <FeatureGate capability="LOGISTICS_DELIVERY_CRUD" mode="gate">
+            <DeliveryManager initialFilter={searchFilter} initialSelectedId={selectedId || undefined} />
+          </FeatureGate>
+        );
+      case 'archive': 
+        return (
+          <FeatureGate capability="LOGISTICS_DELIVERY_CRUD" mode="gate">
+            <Archive />
+          </FeatureGate>
+        );
+      case 'addressbook': 
+        return (
+          <FeatureGate capability="ADDR_BOOK_CRUD" mode="gate">
+            <AddressBook />
+          </FeatureGate>
+        );
+      case 'statistics': 
+        return (
+          <FeatureGate capability="FINANCE_LEDGER_VIEW" mode="gate">
+            <Statistics />
+          </FeatureGate>
+        );
+      case 'logs': 
+        return (
+          <FeatureGate capability="SYSTEM_SETTINGS_EDIT" mode="gate">
+            <AuditLog onNavigate={handleNavigate} />
+          </FeatureGate>
+        );
+      case 'settings-company': 
+      case 'settings-documents': 
+      case 'settings-users': 
+        return (
+          <FeatureGate capability="SYSTEM_SETTINGS_EDIT" mode="gate">
+            <SettingsPage currentSegment={activeTab.split('-')[1] as any} />
+          </FeatureGate>
+        );
+      case 'settings-yms': 
+        return (
+          <FeatureGate capability="SYSTEM_SETTINGS_EDIT" mode="gate">
+            <YmsSettings />
+          </FeatureGate>
+        );
+      case 'settings-account': return <AccountSettings />;
+      case 'reports': 
+        return (
+          <FeatureGate capability="SYSTEM_SETTINGS_EDIT" mode="gate">
+            <Reporting />
+          </FeatureGate>
+        );
+      case 'yms-arrivals': 
+        return (
+          <FeatureGate capability="YMS_STATUS_UPDATE" mode="gate">
+            <YmsDashboard view="arrivals" initialSearch={searchFilter} onBack={() => handleNavigate('dashboard')} />
+          </FeatureGate>
+        );
+      case 'yms-planning': 
+        return (
+          <FeatureGate capability="YMS_STATUS_UPDATE" mode="gate">
+            <YmsDashboard view="planning" initialSearch={searchFilter} onBack={() => handleNavigate('dashboard')} />
+          </FeatureGate>
+        );
       case 'yms-public': return <YmsPublic onBack={() => handleNavigate('dashboard')} />;
-      case 'pallet-reconciliation': return <Reconciliation />;
+      case 'pallet-reconciliation': 
+        return (
+          <FeatureGate feature="enableFinance" capability="FINANCE_SETTLE_TRANSACTION" mode="gate">
+            <Reconciliation />
+          </FeatureGate>
+        );
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };
@@ -323,17 +418,22 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             onClick={() => handleSidebarClick('dashboard')} 
           />
           
-          <div className="pt-4 pb-1 px-6">
-            <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Logistieke Flow</p>
-          </div>
-          
-          <SidebarItem 
-            icon={Truck} 
-            label="Inkomend (Pipeline)" 
-            color="text-amber-500"
-            active={activeTab === 'deliveries'} 
-            onClick={() => handleSidebarClick('deliveries')} 
-          />
+          {currentUser.role !== 'operator' && currentUser.role !== 'lead_operator' && (
+            <>
+              <div className="pt-4 pb-1 px-6">
+                <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Logistieke Flow</p>
+              </div>
+              
+              <SidebarItem 
+                icon={Truck} 
+                label="Inkomend (Pipeline)" 
+                color="text-amber-500"
+                active={activeTab === 'deliveries'} 
+                onClick={() => handleSidebarClick('deliveries')} 
+                locked={!checkAccess('LOGISTICS_DELIVERY_CRUD').granted}
+              />
+            </>
+          )}
           
           <div className="pt-4 pb-1 px-6">
             <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Yard Management</p>
@@ -345,6 +445,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             color="text-emerald-500"
             active={activeTab === 'yms-arrivals'} 
             onClick={() => handleSidebarClick('yms-arrivals')} 
+            locked={!checkAccess('YMS_STATUS_UPDATE').granted}
           />
 
           <SidebarItem 
@@ -353,6 +454,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             color="text-emerald-500"
             active={activeTab === 'yms-planning'} 
             onClick={() => handleSidebarClick('yms-planning')} 
+            locked={!checkAccess('YMS_DOCK_MANAGE').granted}
           />
           
           <SidebarItem 
@@ -361,19 +463,25 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             color="text-emerald-500"
             active={activeTab === 'archive'} 
             onClick={() => handleSidebarClick('archive')} 
+            locked={!checkAccess('LOGISTICS_DELIVERY_CRUD').granted}
           />
 
-          <div className="pt-6 pb-2 px-6">
-            <p className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-[0.2em] opacity-60">Overig</p>
-          </div>
-          
-          <SidebarItem 
-            icon={BookUser} 
-            label="Adressenboek" 
-            color="text-indigo-500"
-            active={activeTab === 'addressbook'} 
-            onClick={() => handleSidebarClick('addressbook')} 
-          />
+          {currentUser.role !== 'operator' && currentUser.role !== 'lead_operator' && (
+            <>
+              <div className="pt-6 pb-2 px-6">
+                <p className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-[0.2em] opacity-60">Overig</p>
+              </div>
+              
+              <SidebarItem 
+                icon={BookUser} 
+                label="Adressenboek" 
+                color="text-indigo-500"
+                active={activeTab === 'addressbook'} 
+                onClick={() => handleSidebarClick('addressbook')} 
+                locked={!checkAccess('ADDR_BOOK_CRUD').granted}
+              />
+            </>
+          )}
           
           <SidebarItem 
             icon={Zap} 
@@ -383,17 +491,23 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             onClick={() => handleSidebarClick('yms-public')} 
           />
 
-          <div className="pt-4 pb-1 px-6">
-            <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Financiën</p>
-          </div>
+          {currentUser.role !== 'operator' && 
+           currentUser.role !== 'lead_operator' && (
+            <>
+              <div className="pt-4 pb-1 px-6">
+                <p className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Financiën</p>
+              </div>
 
-          <SidebarItem 
-            icon={BadgeEuro} 
-            label="Pallet Reconciliatie" 
-            color="text-rose-500"
-            active={activeTab === 'pallet-reconciliation'} 
-            onClick={() => handleSidebarClick('pallet-reconciliation')} 
-          />
+              <SidebarItem 
+                icon={BadgeEuro} 
+                label="Pallet Reconciliatie" 
+                color="text-rose-500"
+                active={activeTab === 'pallet-reconciliation'} 
+                onClick={() => handleSidebarClick('pallet-reconciliation')} 
+                locked={!checkAccess('FINANCE_SETTLE_TRANSACTION', 'enableFinance').granted}
+              />
+            </>
+          )}
 
           <SidebarDropdown 
             icon={BarChart3} 
@@ -402,11 +516,12 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
             active={['statistics', 'reports', 'logs'].includes(activeTab)} 
             isOpen={openDropdown === 'analysis'}
             onToggle={() => toggleDropdown('analysis')}
+            locked={!checkAccess('SYSTEM_SETTINGS_EDIT').granted && !checkAccess('FINANCE_LEDGER_VIEW').granted} // Prikkeling voor viewer
             items={[
-              { id: 'statistics', label: 'Statistieken', active: activeTab === 'statistics' },
-              ...(currentUser.role === 'admin' || currentUser.role === 'manager' ? [
-                { id: 'reports', label: 'Rapportages', active: activeTab === 'reports' },
-                { id: 'logs', label: 'Logboek', active: activeTab === 'logs' }
+              { id: 'statistics', label: 'Statistieken', active: activeTab === 'statistics', locked: !checkAccess('FINANCE_LEDGER_VIEW').granted },
+              ...(currentUser.role === 'admin' || currentUser.role === 'manager' || true ? [ // Always show for upsells
+                { id: 'reports', label: 'Rapportages', active: activeTab === 'reports', locked: !checkAccess('SYSTEM_SETTINGS_EDIT').granted },
+                { id: 'logs', label: 'Logboek', active: activeTab === 'logs', locked: !checkAccess('SYSTEM_SETTINGS_EDIT').granted }
               ] : [])
             ]}
             onSelect={handleSidebarClick}
@@ -440,13 +555,25 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
               <p className="text-sm font-semibold text-foreground truncate">{currentUser.name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate capitalize">{currentUser.role}</p>
             </div>
-            <button 
-              onClick={toggleTheme}
-              className="p-2 hover:bg-slate-200 hover:dark:bg-[var(--muted)] rounded-full transition-colors text-slate-500 dark:text-slate-400 flex items-center justify-center"
-              title={`Huidig thema: ${theme}`}
-            >
-              {getThemeIcon()}
-            </button>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => handleNavigate('settings-account')}
+                className={cn(
+                  "p-2 hover:bg-slate-200 hover:dark:bg-slate-700 rounded-full transition-colors",
+                  activeTab === 'settings-account' ? "text-indigo-600 bg-indigo-500/10" : "text-slate-500 dark:text-slate-400"
+                )}
+                title="Account Beveiliging"
+              >
+                <Shield size={16} />
+              </button>
+              <button 
+                onClick={toggleTheme}
+                className="p-2 hover:bg-slate-200 hover:dark:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-slate-400 flex items-center justify-center"
+                title={`Huidig thema: ${theme}`}
+              >
+                {getThemeIcon()}
+              </button>
+            </div>
           </div>
           <button 
             onClick={logout}
@@ -458,7 +585,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           
           <div className="px-6 pb-2 pt-2 border-t border-border/50 flex justify-between items-center opacity-40">
             <span className="text-[10px] font-black tracking-widest uppercase italic">YMS Control Tower</span>
-            <span className="text-[10px] font-bold tracking-widest">v3.10.5</span>
+            <span className="text-[10px] font-bold tracking-widest">v3.13.2</span>
           </div>
         </div>
       </aside>
@@ -498,6 +625,6 @@ export default function App() {
 
 const ThemeAwareToaster = () => {
   const { theme } = useTheme();
-  const toasterTheme = (theme === 'ilg' || theme === 'meledi') ? 'dark' : (theme as 'light' | 'dark' | 'system');
+  const toasterTheme = (theme === 'enterprise' || theme === 'modern') ? 'dark' : (theme as 'light' | 'dark' | 'system');
   return <Toaster position="top-right" richColors theme={toasterTheme} className="pointer-events-none" toastOptions={{ className: 'pointer-events-auto' }} style={{ zIndex: 9999 }} />;
 };

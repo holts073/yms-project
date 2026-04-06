@@ -28,6 +28,11 @@ export const sortPriorityQueue = (deliveries: YmsDelivery[]): YmsDeliveryWithMet
       };
     })
     .sort((a, b) => {
+      // 0. Manual Priority (v3.12.1) - Highest weight
+      const aPrio = a.priority || 0;
+      const bPrio = b.priority || 0;
+      if (aPrio !== bPrio) return bPrio - aPrio;
+
       // 1. Temperature Priority (Vries/Koel > Droog)
       const aTempPrio = (a.temperature === 'Vries' || a.temperature === 'Koel' || a.isReefer) ? 1 : 0;
       const bTempPrio = (b.temperature === 'Vries' || b.temperature === 'Koel' || b.isReefer) ? 1 : 0;

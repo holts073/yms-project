@@ -1,1 +1,13 @@
-Command is only available in WSL or inside a Visual Studio Code terminal.
+YMS Control Tower - Login Credentials (TEST)
+-------------------------------------------
+Role: Admin
+Email: admin@ilgfood.com
+Password: ilg2026!
+
+Role: Manager
+Email: manager@ilgfood.com
+Password: manager123
+
+Role: Staff
+Email: staff@ilgfood.com
+Password: welkom123

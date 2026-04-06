@@ -5,6 +5,8 @@ import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { YmsDelivery, YmsTemperature, YmsWarehouse } from '../../types';
 import { Combobox } from '../ui/Combobox';
+import { useSocket } from '../../SocketContext';
+import { cn } from '../../lib/utils';
 
 interface YmsDeliveryModalProps {
   isOpen: boolean;
@@ -33,6 +35,14 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
   waitingAreas,
   palletRates = { 'EUR': 13, 'DPD': 22.5, 'CHEP': 0, 'BLOK': 15 }
 }) => {
+  const { currentUser } = useSocket();
+  
+  const isOperator = currentUser?.role === 'operator';
+  const isLeadOperator = currentUser?.role === 'lead_operator';
+  const hidePII = isOperator || isLeadOperator;
+  const hideFinance = isOperator || isLeadOperator;
+  const canChangePriority = !isOperator; // Lead-Operator, Staff, Manager, Admin can change
+
   return (
     <Modal
       isOpen={isOpen}
@@ -57,33 +67,36 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-1">
-            <label className="text-sm font-bold text-foreground">Leverancier</label>
-            <Combobox 
-              value={delivery?.supplierId || ''}
-              onChange={(val) => {
-                const s = suppliers.find(sup => sup.id === val);
-                onUpdateEditing({
-                  ...delivery, 
-                  supplierId: val,
-                  palletRate: (delivery?.palletRate === undefined || delivery?.palletRate === 0) ? (s?.pallet_rate || 13) : delivery?.palletRate
-                });
-              }}
-              options={suppliers.map(s => ({ value: s.id, label: s.name }))}
-              placeholder="Zoek leverancier..."
-            />
+        {!hidePII && (
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <label className="text-sm font-bold text-foreground">Leverancier</label>
+              <Combobox 
+                value={delivery?.supplierId || ''}
+                onChange={(val) => {
+                  const s = suppliers.find(sup => sup.id === val);
+                  onUpdateEditing({
+                    ...delivery, 
+                    supplierId: val,
+                    palletRate: (delivery?.palletRate === undefined || delivery?.palletRate === 0) ? (s?.pallet_rate || 13) : delivery?.palletRate
+                  });
+                }}
+                options={suppliers.map(s => ({ value: s.id, label: s.name }))}
+                placeholder="Zoek leverancier..."
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-bold text-foreground">Transporteur</label>
+              <Combobox 
+                value={delivery?.transporterId || ''}
+                onChange={(val) => onUpdateEditing({...delivery, transporterId: val})}
+                options={transporters.map(t => ({ value: t.id, label: t.name }))}
+                placeholder="Zoek transporteur..."
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-sm font-bold text-foreground">Transporteur</label>
-            <Combobox 
-              value={delivery?.transporterId || ''}
-              onChange={(val) => onUpdateEditing({...delivery, transporterId: val})}
-              options={transporters.map(t => ({ value: t.id, label: t.name }))}
-              placeholder="Zoek transporteur..."
-            />
-          </div>
-        </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input 
             label="Tijd (HH:mm)"
@@ -97,7 +110,7 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
               onUpdateEditing({...delivery, scheduledTime: d.toISOString()});
             }}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Input 
               as="select"
               label="Temperatuur"
@@ -117,46 +130,65 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
               <option value="INBOUND">Inbound</option>
               <option value="OUTBOUND">Outbound</option>
             </Input>
+            <div className="space-y-1">
+              <label className="text-xs font-black uppercase tracking-tight text-indigo-600">Prioriteit</label>
+              <select 
+                value={delivery?.priority || 0}
+                disabled={!canChangePriority}
+                onChange={(e) => onUpdateEditing({...delivery, priority: parseInt(e.target.value)})}
+                className={cn(
+                  "w-full p-2 bg-[var(--muted)] border-border rounded-xl text-xs font-bold",
+                  !canChangePriority && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <option value={0}>Normaal</option>
+                <option value={10}>Prio (10)</option>
+                <option value={50}>Hoog (50)</option>
+                <option value={100}>CRITIEK (100)</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
-          <Input 
-            as="select"
-            label="Pallet Type"
-            value={delivery?.palletType || 'EUR'}
-            onChange={(e) => {
-              const type = e.target.value;
-              const rates: any = palletRates;
-              onUpdateEditing({
-                ...delivery, 
-                palletType: type as any,
-                palletRate: rates[type] || 0
-              });
-            }}
-          >
-            <option value="EUR">EUR (€{(palletRates?.EUR || 13).toFixed(2)})</option>
-            <option value="DPD">DPD (€{(palletRates?.DPD || 22.5).toFixed(2)})</option>
-            <option value="CHEP">CHEP (€{(palletRates?.CHEP || 0).toFixed(2)})</option>
-            <option value="BLOK">BLOK (€{(palletRates?.BLOK || 15).toFixed(2)})</option>
-          </Input>
-          <div className="grid grid-cols-2 gap-4">
-             <Input 
-                type="number"
-                label="Aantal"
-                data-testid="input-pallets"
-                value={delivery?.palletCount || 0}
-                onChange={(e) => onUpdateEditing({...delivery, palletCount: parseInt(e.target.value) || 0})}
-              />
-              <Input 
-                type="number"
-                step="0.01"
-                label="Tarief (€)"
-                value={delivery?.palletRate || 0}
-                onChange={(e) => onUpdateEditing({...delivery, palletRate: parseFloat(e.target.value) || 0})}
-              />
+        {!hideFinance && (
+          <div className="grid grid-cols-2 gap-6 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10">
+            <Input 
+              as="select"
+              label="Pallet Type"
+              value={delivery?.palletType || 'EUR'}
+              onChange={(e) => {
+                const type = e.target.value;
+                const rates: any = palletRates;
+                onUpdateEditing({
+                  ...delivery, 
+                  palletType: type as any,
+                  palletRate: rates[type] || 0
+                });
+              }}
+            >
+              <option value="EUR">EUR (€{(palletRates?.EUR || 13).toFixed(2)})</option>
+              <option value="DPD">DPD (€{(palletRates?.DPD || 22.5).toFixed(2)})</option>
+              <option value="CHEP">CHEP (€{(palletRates?.CHEP || 0).toFixed(2)})</option>
+              <option value="BLOK">BLOK (€{(palletRates?.BLOK || 15).toFixed(2)})</option>
+            </Input>
+            <div className="grid grid-cols-2 gap-4">
+               <Input 
+                  type="number"
+                  label="Aantal"
+                  data-testid="input-pallets"
+                  value={delivery?.palletCount || 0}
+                  onChange={(e) => onUpdateEditing({...delivery, palletCount: parseInt(e.target.value) || 0})}
+                />
+                <Input 
+                  type="number"
+                  step="0.01"
+                  label="Tarief (€)"
+                  value={delivery?.palletRate || 0}
+                  onChange={(e) => onUpdateEditing({...delivery, palletRate: parseFloat(e.target.value) || 0})}
+                />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-6">
           <Input 

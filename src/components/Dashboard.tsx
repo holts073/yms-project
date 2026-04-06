@@ -125,7 +125,6 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             isOpen={!!editingDelivery}
             onClose={() => setEditingDelivery(null)}
             delivery={editingDelivery}
-            state={state}
             onSave={(data) => {
               dispatch('UPDATE_DELIVERY', data);
               setEditingDelivery(null);
