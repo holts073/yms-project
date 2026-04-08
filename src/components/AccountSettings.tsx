@@ -163,11 +163,11 @@ export const AccountSettings = () => {
             {isSettingUp && (
               <div className="w-full md:w-80 space-y-6 p-6 bg-[var(--muted)]/50 rounded-3xl border border-indigo-500/20 shadow-inner">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-200">
+                  <div className="bg-white p-4 rounded-2xl shadow-xl border border-border">
                     {qrCode ? (
                       <img src={qrCode} alt="QR Code" className="w-48 h-48" />
                     ) : (
-                      <div className="w-48 h-48 flex items-center justify-center bg-slate-50">
+                      <div className="w-48 h-48 flex items-center justify-center bg-[var(--muted)]">
                         <RefreshCw className="animate-spin text-slate-300" />
                       </div>
                     )}
@@ -181,9 +181,9 @@ export const AccountSettings = () => {
                 <div className="space-y-4 pt-4 border-t border-border">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest pl-1">Handmatige Sleutel</label>
-                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl border border-border shadow-sm">
+                    <div className="flex items-center gap-2 bg-card p-2 rounded-xl border border-border shadow-sm">
                       <code className="flex-1 text-[10px] font-mono font-bold truncate text-indigo-600 uppercase pr-2">{secret}</code>
-                      <button onClick={copySecret} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-500">
+                      <button onClick={copySecret} className="p-1.5 hover:bg-[var(--muted)] rounded-lg transition-colors text-[var(--muted-foreground)]">
                         {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                       </button>
                     </div>
@@ -196,7 +196,7 @@ export const AccountSettings = () => {
                       placeholder="000000"
                       value={verificationCode}
                       onChange={e => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0,6))}
-                      className="w-full p-4 bg-white dark:bg-slate-800 border border-border rounded-2xl text-center text-2xl font-mono tracking-[0.3em] font-black focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
+                      className="w-full p-4 bg-card border border-border rounded-2xl text-center text-2xl font-mono tracking-[0.3em] font-black focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
                     />
                   </div>
 

@@ -13,36 +13,46 @@ import { sortPriorityQueue } from '../services/queueService';
 // Function to build standard static state for Socket sync (also used via API)
 export const buildStaticState = (io?: Server, selectedWarehouseId?: string, user?: any) => {
   const activeUsers = io ? io.sockets.sockets.size : 0;
-  const ymsDeliveries = getYmsDeliveries(selectedWarehouseId);
   
-  return {
-    deliveries: getAllDeliveries().deliveries,
-    addressBook: getAddressBook(),
-    palletBalances: getPalletBalances(),
-    logs: getLogs().filter((l: any) => !selectedWarehouseId || l.warehouseId === selectedWarehouseId || !l.warehouseId),
-    users: getUsers().map((u: any) => {
-      const { passwordHash, twoFactorSecret, ...safeUser } = u;
-      // GDPR: Only admins see emails of other users
-      if (user?.role !== 'admin' && safeUser.id !== user?.id) {
-        return { id: safeUser.id, name: safeUser.name, role: safeUser.role };
-      }
-      return safeUser;
-    }),
-    companySettings: getSetting('companySettings', {}),
-    settings: getSetting('settings', {}),
-    yms: {
-      warehouses: getYmsWarehouses(),
-      docks: getYmsDocks(selectedWarehouseId), 
-      waitingAreas: getYmsWaitingAreas(selectedWarehouseId),
-      deliveries: ymsDeliveries,
-      priorityQueue: sortPriorityQueue(ymsDeliveries),
-      dockOverrides: getYmsDockOverrides(selectedWarehouseId),
-      alerts: getYmsAlerts(selectedWarehouseId),
-      ymsSlots: getYmsSlots(selectedWarehouseId || 'W01'),
-      selectedWarehouseId: selectedWarehouseId || null
-    },
-    activeUsers
-  };
+  try {
+    const ymsDeliveries = getYmsDeliveries(selectedWarehouseId);
+    
+    return {
+      deliveries: getAllDeliveries().deliveries,
+      addressBook: getAddressBook(),
+      palletBalances: getPalletBalances(),
+      logs: getLogs().filter((l: any) => !selectedWarehouseId || l.warehouseId === selectedWarehouseId || !l.warehouseId),
+      users: getUsers().map((u: any) => {
+        const { passwordHash, twoFactorSecret, ...safeUser } = u;
+        // GDPR: Only admins see emails of other users
+        if (user?.role !== 'admin' && safeUser.id !== user?.id) {
+          return { id: safeUser.id, name: safeUser.name, role: safeUser.role };
+        }
+        return safeUser;
+      }),
+      companySettings: getSetting('companySettings', {}),
+      settings: {
+        ...getSetting('settings', {}),
+        featureFlags: getSetting('feature_flags', { enableFinance: true })
+      },
+      yms: {
+        warehouses: getYmsWarehouses(),
+        docks: getYmsDocks(selectedWarehouseId), 
+        waitingAreas: getYmsWaitingAreas(selectedWarehouseId),
+        deliveries: ymsDeliveries,
+        priorityQueue: sortPriorityQueue(ymsDeliveries),
+        dockOverrides: getYmsDockOverrides(selectedWarehouseId),
+        alerts: getYmsAlerts(selectedWarehouseId),
+        ymsSlots: getYmsSlots(selectedWarehouseId || 'W01'),
+        selectedWarehouseId: selectedWarehouseId || null
+      },
+      activeUsers
+    };
+  } catch (error: any) {
+    console.error("[CRITICAL] Error building state:", error);
+    // Log context to help identify which partial call failed
+    throw error;
+  }
 };
 
 router.get("/state", (req, res) => {

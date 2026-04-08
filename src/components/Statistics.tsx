@@ -164,7 +164,7 @@ const Statistics = () => {
         <Card className="flex flex-col items-center justify-center space-y-6" padding="xl">
           <h3 className="text-xl font-bold text-foreground w-full">Type Verdeling</h3>
           <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
               <PieChart>
                 <Pie data={typeData} cx="50%" cy="50%" innerRadius={80} outerRadius={110} paddingAngle={10} dataKey="value">
                   {typeData.map((_, i) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
@@ -195,7 +195,7 @@ const Statistics = () => {
              <span className="text-2xl font-black text-indigo-600">{ymsStats.dockOccupancy}%</span>
           </div>
           <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
               <BarChart data={dockData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
@@ -215,7 +215,7 @@ const Statistics = () => {
              <span className="text-2xl font-black text-amber-500">{ymsStats.avgDwellHours}u</span>
           </div>
           <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
               <AreaChart data={dwellData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorUren" x1="0" y1="0" x2="0" y2="1">
@@ -240,7 +240,7 @@ const Statistics = () => {
              <span className="text-2xl font-black text-rose-500">{ymsStats.exWorksDelayRate}%</span>
           </div>
           <div className="h-[250px] w-full flex flex-col items-center">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
               <PieChart>
                 <Pie data={delayData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
                   <Cell key="cell-0" fill="#10b981" />
