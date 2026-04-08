@@ -1,5 +1,5 @@
 # ROADMAP v3 - ILG Foodgroup YMS Control Tower
-*Versie: v3.14.2 — Bijgewerkt: 2026-04-06 door @System-Architect*
+*Versie: v3.14.0 — Bijgewerkt: 2026-04-08 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.

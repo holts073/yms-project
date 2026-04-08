@@ -159,7 +159,7 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.reference = payload.reference;
             logEntry.warehouseId = newDelivery.warehouseId || socket.data.selectedWarehouseId;
             
-            broadcastDelta(io, 'DELIVERY_ADDED', newDelivery, logEntry.warehouseId);
+            broadcastState(io); 
             io.emit('notification', { 
               message: `Nieuwe vracht aangemaakt: ${payload.reference}`, 
               type: 'info',
@@ -260,8 +260,7 @@ export const setupSocketHandlers = (io: Server) => {
             addAuditEntry(newPayload.id, user.name, logEntry.action || "Bijgewerkt", logEntry.details || `Details bijgewerkt voor ${newPayload.reference}`);
             
             logEntry.reference = newPayload.reference;
-            logEntry.warehouseId = newPayload.warehouseId || socket.data.selectedWarehouseId;
-            broadcastDelta(io, 'DELIVERY_UPDATED', newPayload, logEntry.warehouseId);
+            broadcastState(io);
 
             // Auto-YMS Creation Logic
             const isAtLastStep = (newPayload.type === 'container' && newPayload.status >= 75 && newPayload.status < 100) ||
@@ -518,7 +517,7 @@ export const setupSocketHandlers = (io: Server) => {
             logEntry.details = hasGate 
               ? `Levering ${delivery.reference} is aangemeld bij de gate.`
               : `Levering ${delivery.reference} is direct aangemeld (Geen Gate). Status: ${newStatus}`;
-            broadcastDelta(io, 'YMS_DELIVERY_UPDATED', updated);
+            broadcastState(io);
             io.emit('notification', { 
               message: hasGate ? `Chauffeur aangemeld bij de gate: ${delivery.reference}` : `Direct door naar dock/yard: ${delivery.reference}`, 
               type: 'success',
@@ -655,6 +654,14 @@ export const setupSocketHandlers = (io: Server) => {
                 break;
               }
          }
+
+        if (type === "SAVE_SETTING") {
+          if (!isAdmin) throw new Error("Alleen admins kunnen instellingen wijzigen");
+          saveSetting(payload.key, payload.value);
+          logEntry.action = "Systeeminstelling Opgeslagen";
+          logEntry.details = `Instelling ${payload.key} bijgewerkt`;
+          broadcastState(io);
+        }
 
         if (logEntry.action) {
           if (!logEntry.id) logEntry.id = Math.random().toString(36).substr(2, 9);

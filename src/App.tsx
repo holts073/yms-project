@@ -585,7 +585,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           
           <div className="px-6 pb-2 pt-2 border-t border-border/50 flex justify-between items-center opacity-40">
             <span className="text-[10px] font-black tracking-widest uppercase italic">YMS Control Tower</span>
-            <span className="text-[10px] font-bold tracking-widest">v3.13.2</span>
+            <span className="text-[10px] font-bold tracking-widest">v3.14.0</span>
           </div>
         </div>
       </aside>

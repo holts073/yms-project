@@ -69,7 +69,7 @@ const DeliveryManager = ({ initialFilter = '', initialSelectedId }: { initialFil
     dispatch('YMS_SAVE_DELIVERY', {
       id: ymsId,
       mainDeliveryId: delivery.id,
-      warehouseId: 'W01',
+      warehouseId: delivery.warehouseId || 'W01',
       reference: delivery.reference,
       licensePlate: delivery.containerNumber || 'NR ONBEKEND',
       supplier: state?.addressBook?.suppliers.find((s:any) => s.id === delivery.supplierId)?.name || 'Onbekend',

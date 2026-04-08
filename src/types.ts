@@ -40,6 +40,7 @@ export interface Delivery {
   documents: Document[];
   createdAt: string;
   updatedAt: string;
+  warehouseId?: string;
   eta?: string;
   statusHistory?: number[];
   notes?: string;

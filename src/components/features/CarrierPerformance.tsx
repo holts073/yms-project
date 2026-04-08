@@ -29,13 +29,31 @@ export const CarrierPerformance: React.FC<{ warehouseId?: string }> = ({ warehou
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/yms/performance${warehouseId ? `?warehouseId=${warehouseId}` : ''}`)
+    const token = localStorage.getItem('token');
+    fetch(`/api/yms/performance${warehouseId ? `?warehouseId=${warehouseId}` : ''}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(res => res.json())
-      .then(setData)
+      .then(resData => {
+        if (Array.isArray(resData)) {
+          setData(resData);
+        } else {
+          console.error('Invalid performance data format:', resData);
+          setData([]);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch performance data:', err);
+        setData([]);
+      })
       .finally(() => setLoading(false));
   }, [warehouseId]);
 
   const stats = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    
     const groups: Record<string, PerformanceRecord[]> = {};
     data.forEach(r => {
       const key = r.transporterId || r.supplierId || 'Onbekend';

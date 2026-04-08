@@ -1,5 +1,5 @@
 # ARCHITECTUUR: ILG Foodgroup Control Tower
-*Versie: v3.13.2 — Bijgewerkt: 2026-04-06 door @System-Architect*
+*Versie: v3.14.0 — Bijgewerkt: 2026-04-08 door @System-Architect*
 
 > [!NOTE]
 > Bijgewerkt na v3.10.2 UI & Navigation Refactor: Direct Dashboard Editing, Shared Modal Pattern en Gecentraliseerde Capaciteitsinstellingen.

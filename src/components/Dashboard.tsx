@@ -6,8 +6,11 @@ import { useDeliveries } from '../hooks/useDeliveries';
 import { DashboardKPIs } from './features/DashboardKPIs';
 import { DashboardTable } from './features/DashboardTable';
 import { Card } from './shared/Card';
+import { Button } from './shared/Button';
+import { Plus } from 'lucide-react';
 import { TransportMailModal } from './features/TransportMailModal';
 import { DeliveryDetailModal } from './features/DeliveryDetailModal';
+import { YmsDeliveryModal } from './features/YmsDeliveryModal';
 
 const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: string, id?: string) => void }) => {
   const { state, dispatch, currentUser } = useSocket();
@@ -15,6 +18,9 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
   const [filterType, setFilterType] = useState<'action' | 'today' | 'enroute' | 'customs' | 'in_transit'>('action');
   const [mailDelivery, setMailDelivery] = useState<any>(null);
   const [editingDelivery, setEditingDelivery] = useState<any>(null);
+  const [isNewDeliveryModalOpen, setIsNewDeliveryModalOpen] = useState(false);
+  const [isYmsPlanningModalOpen, setIsYmsPlanningModalOpen] = useState(false);
+  const [editingYmsDelivery, setEditingYmsDelivery] = useState<any>(null);
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
@@ -67,7 +73,7 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
     dispatch('YMS_SAVE_DELIVERY', {
       id: ymsId,
       mainDeliveryId: delivery.id,
-      warehouseId: 'W01',
+      warehouseId: delivery.warehouseId || 'W01',
       reference: delivery.reference,
       licensePlate: delivery.containerNumber || 'NR ONBEKEND',
       supplier: state?.addressBook?.suppliers.find(s => s.id === delivery.supplierId)?.name || 'Onbekend',
@@ -94,6 +100,30 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
             <h2 className="text-4xl font-black text-foreground tracking-tight italic uppercase">Supply Chain Dashboard</h2>
             <p className="text-[var(--muted-foreground)] mt-1 font-medium tracking-widest uppercase text-xs">Real-time overzicht van logistieke operaties en yard management.</p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button 
+             variant="secondary" 
+             leftIcon={<Plus size={18} />} 
+             onClick={() => setIsNewDeliveryModalOpen(true)}
+             className="bg-indigo-600/10 text-indigo-600 border-indigo-600/20 hover:bg-indigo-600/20"
+          >
+             Nieuwe Vracht
+          </Button>
+          <Button 
+             leftIcon={<Plus size={18} />} 
+             onClick={() => {
+                setEditingYmsDelivery({
+                   id: Math.random().toString(36).substr(2, 9),
+                   status: 'EXPECTED',
+                   scheduledTime: new Date().toISOString(),
+                   warehouseId: state?.yms?.selectedWarehouseId || 'W01'
+                });
+                setIsYmsPlanningModalOpen(true);
+             }}
+          >
+             Plan Levering
+          </Button>
         </div>
       </header>
 
@@ -140,6 +170,45 @@ const Dashboard = ({ onNavigate }: { onNavigate?: (tab: string, reference?: stri
         delivery={mailDelivery}
         transporter={state?.addressBook?.transporters?.find((t: any) => t.id === mailDelivery?.transporterId)}
         supplier={state?.addressBook?.suppliers?.find((s: any) => s.id === mailDelivery?.supplierId)}
+      />
+
+      <DeliveryDetailModal 
+         isOpen={isNewDeliveryModalOpen}
+         onClose={() => setIsNewDeliveryModalOpen(false)}
+         delivery={null}
+         onSave={(data) => {
+           const finalData = {
+             ...data,
+             id: Math.random().toString(36).substr(2, 9),
+             status: 0,
+             updatedAt: new Date().toISOString(),
+             createdAt: new Date().toISOString()
+           };
+           dispatch('ADD_DELIVERY', finalData);
+           setIsNewDeliveryModalOpen(false);
+           toast.success('Nieuwe vracht aangemaakt.');
+         }}
+      />
+
+      <YmsDeliveryModal 
+         isOpen={isYmsPlanningModalOpen}
+         onClose={() => {
+           setIsYmsPlanningModalOpen(false);
+           setEditingYmsDelivery(null);
+         }}
+         delivery={editingYmsDelivery}
+         onUpdateEditing={setEditingYmsDelivery}
+         onSave={(data) => {
+           dispatch('YMS_SAVE_DELIVERY', data);
+           setIsYmsPlanningModalOpen(false);
+           setEditingYmsDelivery(null);
+           toast.success('Levering gepland.');
+         }}
+         suppliers={state?.addressBook?.suppliers || []}
+         transporters={state?.addressBook?.transporters || []}
+         warehouses={state?.yms?.warehouses || []}
+         docks={state?.yms?.docks || []}
+         waitingAreas={state?.yms?.waitingAreas || []}
       />
     </div>
   );

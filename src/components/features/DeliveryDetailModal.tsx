@@ -163,7 +163,19 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
                  placeholder="Zoek transporteur..." 
                />
             </div>
-            <Input label="ETA Magazijn" name="etaWarehouse" type="date" defaultValue={editingDelivery.etaWarehouse?.split('T')[0]} />
+          <div className="space-y-2">
+             <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Bestemming Magazijn</label>
+             <select 
+               name="warehouseId" 
+               defaultValue={editingDelivery.warehouseId || 'W01'} 
+               className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold"
+             >
+                {(state.yms?.warehouses || []).map((w: any) => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+             </select>
+          </div>
+          <Input label="ETA Magazijn" name="etaWarehouse" type="date" defaultValue={editingDelivery.etaWarehouse?.split('T')[0]} />
             
              <div className="space-y-2">
                  <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)] flex justify-between">

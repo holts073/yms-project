@@ -51,7 +51,7 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
       maxWidth="3xl"
     >
       <div className="space-y-6 pb-4">
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-3 gap-6">
           <Input 
             label="Referentie"
             data-testid="input-reference"
@@ -65,6 +65,16 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
             value={delivery?.licensePlate || ''}
             onChange={(e) => onUpdateEditing({...delivery, licensePlate: e.target.value})}
           />
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-foreground">Magazijn</label>
+            <select 
+              value={delivery?.warehouseId || ''}
+              onChange={(e) => onUpdateEditing({...delivery, warehouseId: e.target.value})}
+              className="w-full p-2.5 bg-[var(--muted)] border-border rounded-xl text-sm font-bold h-[42px]"
+            >
+              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+          </div>
         </div>
 
         {!hidePII && (

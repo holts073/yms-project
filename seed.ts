@@ -37,7 +37,8 @@ const seedDatabase = async () => {
     { id: 'u3', name: 'Staff User', email: 'staff@ilgfood.com', role: 'staff', passwordHash: staffHash },
     { id: 'u4', name: 'Viewer User', email: 'viewer@ilgfood.com', role: 'viewer', passwordHash: viewerHash },
     { id: 'u5', name: 'Poortwachter', email: 'gate@ilgfood.com', role: 'gate_guard', passwordHash: gateHash },
-    { id: 'u6', name: 'Financieel Auditeur', email: 'finance@ilgfood.com', role: 'finance_auditor', passwordHash: financeHash }
+    { id: 'u6', name: 'Financieel Auditeur', email: 'finance@ilgfood.com', role: 'finance_auditor', passwordHash: financeHash },
+    { id: 'u7', name: 'Demo Gebruiker', email: 'demo@ilgfood.com', role: 'staff', passwordHash: await bcrypt.hash('demo123', 10) }
   ];
   users.forEach(saveUser);
 

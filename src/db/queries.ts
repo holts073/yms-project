@@ -25,12 +25,12 @@ const stmts = {
   getAuditBatch: (ids: string[]) => db.prepare(`SELECT * FROM audit_logs WHERE deliveryId IN (${ids.map(() => '?').join(',')})`),
   insertDelivery: db.prepare(`
     INSERT OR REPLACE INTO deliveries (
-      id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt,
+      id, type, reference, supplierId, transporterId, forwarderId, status, eta, createdAt, updatedAt, warehouseId,
       transportCost, weight, palletType, palletCount, palletRate, cargoType, loadingCountry, loadingCity, palletExchange,
       etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
       notes, statusHistory, loadingTime, dockId, customsStatus, dischargeTerminal, incoterm, readyForPickupDate, requiresQA,
       demurrageDailyRate, standingTimeCost, thcCost, customsCost
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
   insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required, blocksMilestone) VALUES (?, ?, ?, ?, ?, ?)'),
@@ -111,8 +111,8 @@ export function getAllDeliveries(page: number = 1, limit: number = 1000, search:
   }
 
   if (search) {
-    query += ' AND (reference LIKE ? OR billOfLading LIKE ?)';
-    params.push(`%${search}%`, `%${search}%`);
+    query += ' AND (reference LIKE ? OR billOfLading LIKE ? OR containerNumber LIKE ?)';
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
 
   if (typeFilter && typeFilter !== 'all') {
@@ -189,7 +189,7 @@ export function getAllDeliveries(page: number = 1, limit: number = 1000, search:
 export function insertDelivery(d: Delivery) {
   db.transaction(() => {
     stmts.insertDelivery.run(
-      d.id, d.type, d.reference, d.supplierId, d.transporterId, d.forwarderId, d.status, d.eta, d.createdAt, d.updatedAt,
+      d.id, d.type, d.reference, d.supplierId, d.transporterId, d.forwarderId, d.status, d.eta, d.createdAt, d.updatedAt, d.warehouseId || 'W01',
       d.transportCost, d.weight, d.palletType || null, d.palletCount || 0, d.palletRate || 0, d.cargoType, d.loadingCountry, d.loadingCity, d.palletExchange ? 1 : 0,
       d.etd, d.etaPort, d.etaWarehouse, d.originalEtaWarehouse, d.portOfArrival, d.billOfLading, d.containerNumber,
       d.notes, d.statusHistory ? JSON.stringify(d.statusHistory) : null, d.loadingTime, d.dockId || null,

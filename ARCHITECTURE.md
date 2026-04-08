@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.13.2 — Bijgewerkt: 2026-04-06 door @System-Architect*
+*Versie: v3.14.0 — Bijgewerkt: 2026-04-08 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.
@@ -138,12 +138,19 @@ yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, incoterm, dem
 pallet_transactions (id PK, entityId, balanceChange, createdAt, palletType, palletRate)
 ```
 
-## 6. Multi-Warehouse Isolatie
-Isolatie## 6. Gecentraliseerd Rechtenbeheer (Dynamic RBAC) (v3.13.0)
+## 6. Multi-Warehouse Isolatie (v3.13.5)
+
+Het systeem ondersteunt meerdere magazijnen (warehouses) binnen één database-instantie. Isolatie wordt op drie niveaus afgedwongen:
+
+1.  **Data-tagging**: Alle operationele records (`yms_deliveries`, `logs`, `yms_slots`) bevatten verplicht een `warehouseId`.
+2.  **Socket Filtering**: Sinds v3.13.0 filtert de backend alle broadcasts op `warehouseId`. Gebruikers ontvangen alleen updates voor het magazijn dat zij momenteel 'actief' hebben staan.
+3.  **Default Routing**: Bij het aanmaken van een nieuwe vracht wordt de `warehouseId` opgeslagen. Wanneer deze vracht arriveert op de yard (`GATE_IN`), wordt deze automatisch gerouteerd naar de infrastructuur (docks/wachtruimtes) van het betreffende magazijn.
+
+## 7. Gecentraliseerd Rechtenbeheer (Dynamic RBAC) (v3.13.0)
 
 Om flexibiliteit te bieden zonder de code te vervuilen met `if (role === '...')`, hanteert het systeem een **Capability-Based** model. Rechten worden niet langer hardcoded gecontroleerd op rol-naam, maar op specifieke actie-keys (**Capabilities**).
 
-### 6.1 De Capability Matrix
+### 7.1 De Capability Matrix
 Alle mogelijke acties zijn gedefinieerd als unieke keys. Rollen zijn simpelweg templates die een set van deze keys bevatten.
 
 | Categorie | Capability Key | Omschrijving |
@@ -158,10 +165,10 @@ Alle mogelijke acties zijn gedefinieerd als unieke keys. Rollen zijn simpelweg t
 | **Beheer** | `SYSTEM_SETTINGS_EDIT` | Wijzigen van magazijn-instellingen en systeem-flags. |
 | **Beheer** | `SYSTEM_USER_MANAGE` | Aanmaken en beheren van gebruikers en hun rollen. |
 
-### 6.2 Role Templates in Settings
+### 7.2 Role Templates in Settings
 De mapping van rollen naar capabilities is opgeslagen in de `settings` tabel onder de key `role_permissions`. Dit stelt beheerders in staat om per magazijn de rechten van een 'Staff' of 'Operator' aan te passen zonder code-wijzigingen.
 
-### 6.3 Socket & UI Enforcement
+### 7.3 Socket & UI Enforcement
 De controle vindt plaats op twee niveaus:
 1. **Frontend**: Componenten gebruiken de `hasPermission(key)` helper om knoppen of velden te verbergen.
 2. **Backend**: De `hasPermission` helper in `server/sockets/socketHandlers.ts` valideert elke inkomende actie tegen de rechten van de gebruiker (inclusief individuele user-overrides).
@@ -173,7 +180,7 @@ if (!hasPermission(user, 'YMS_PRIORITY_OVERRIDE')) {
 }
 ```
 
-## 7. UI & UX Patterns (v3.10.2)
+## 8. UI & UX Patterns (v3.10.2)
 - **Shared Modal Logic**: In plaats van pagina-navigatie gebruiken we de `DeliveryDetailModal` voor CRUD-acties op zowel het Dashboard als in het Vrachtbeheer.
 - **Color-Coded Visuals**: De sidebar iconen zijn kleurgecodeerd per categorie (bv. Blauw voor Dashboard, Amber voor Pipeline, Groen voor Yard) voor snellere herkenning.
 - **Centralized Admin**: Capaciteitsinstellingen (minutes per pallet, threshold, hasGate) staan gecentraliseerd onder `YmsSettings.tsx` (Tab: Capaciteit).
@@ -185,18 +192,18 @@ Het systeem voorkomt dubbele dock-boekingen op database-niveau en via socket-val
 - Informatiedichtheid geoptimaliseerd voor 4K en breedbeeld monitoren.
 - Volledige theme-synchronisatie via CSS variabelen.
 
-## 8. Beveiliging & Compliance
+## 9. Beveiliging & Compliance
 - **JWT**: Alle communicatie is versleuteld en geautoriseerd.
 - **Audit Trail**: Elke actie is herleidbaar naar een gebruiker en timestamp.
 - **Bcrypt**: Wachtwoorden worden nooit in plaintext opgeslagen.
 - **RBAC Guard (v3.10.0)**: Middleware die elke socket-actie valideert tegen de permissies van de gebruiker.
 
-## 9. E2E & Layout Resilience
+## 10. E2E & Layout Resilience
 Om 100% betrouwbaarheid in geautomatiseerde testen te garanderen, hanteren we de **Invisible Sidebar Rule**:
 - In 'Planning Mode' wordt de sidebar niet verwijderd (`hidden`), maar verborgen via `invisible opacity-0`.
 - Dit zorgt ervoor dat Playwright-locators altijd toegang hebben tot navigatie-elementen, wat timeouts voorkomt.
 - Test-helpers in `helpers.ts` maken gebruik van `includeHidden: true` voor robuuste interactie.
 
-## 10. Shell-First UI & Performance
+## 11. Shell-First UI & Performance
 - **Shell-First Rendering**: Sidebar en navigatie renderen onmiddellijk; content-area toont skeletons tijdens sync.
 - **Null-State Resilience**: Componenten zijn bestand tegen initieel ontbrekende data via optional chaining.
