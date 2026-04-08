@@ -24,10 +24,29 @@ test.describe('RBAC & Security Hardening (v3.10.0)', () => {
         const addDockButton = page.locator('button:has-text("Dock Toevoegen")');
         await expect(addDockButton).not.toBeVisible();
         
-        // 4. Try to access arrivals and check for read-only status
+        // 4. Try to access arrivals and check for Access Denied (since Viewer has NO capabilities by default)
         await navigateTo(page, 'Aankomst & Inspectie');
-        const completeButton = page.locator('[data-testid="btn-complete"]').first();
-        await expect(completeButton).not.toBeVisible();
+        
+        // Wait for Access Denied view
+        const accessDenied = page.locator('[data-testid="access-denied-view"]');
+        await expect(accessDenied).toBeVisible({ timeout: 10000 });
+        await expect(accessDenied).toContainText('Toegang Geweigerd');
+        await expect(accessDenied).toContainText('Upgrade');
+    });
+
+    test('Staff should see locked items for Finance features', async ({ page }) => {
+        // 1. Login as Staff
+        await loginAsRole(page, 'staff');
+        
+        // 2. Check sidebar for locked Finance item
+        const financeItem = page.locator('button:has-text("Pallet Reconciliatie")');
+        await expect(financeItem).toBeVisible();
+        await expect(financeItem.locator('text=PRO')).toBeVisible(); // Check for PRO badge
+        
+        // 3. Click locked item -> Access Denied
+        await financeItem.click();
+        const accessDenied = page.locator('[data-testid="access-denied-view"]');
+        await expect(accessDenied).toBeVisible();
     });
 
     test('Admin should have full access to management features', async ({ page }) => {

@@ -1,8 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { getUsers, saveUser } from '../../src/db/queries';
-import { db } from '../../src/db/sqlite';
+import { db, dbReady } from '../../src/db/sqlite';
 
 describe('Authentication & Security', () => {
+    beforeAll(async () => {
+        await dbReady;
+    });
     beforeEach(() => {
         // Clear and re-seed users for testing
         db.prepare('DELETE FROM users').run();

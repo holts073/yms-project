@@ -22,7 +22,7 @@ async function resetTestData() {
   // 0. Reset Users
   db.prepare('DELETE FROM users').run();
   const hashes = {
-    admin: await bcrypt.hash('admin123', 10),
+    admin: await bcrypt.hash('ilg2026!', 10),
     manager: await bcrypt.hash('manager123', 10),
     staff: await bcrypt.hash('welkom123', 10),
     viewer: await bcrypt.hash('viewer123', 10)

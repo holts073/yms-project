@@ -1,6 +1,5 @@
 -- v3.12.0: Modular Finance & Incoterm Integration
--- 1. Add Incoterm to all delivery tables
-ALTER TABLE deliveries ADD COLUMN incoterm TEXT DEFAULT 'EXW';
+-- 1. Add Incoterm to all delivery tables (deliveries already has it in 001)
 ALTER TABLE yms_deliveries ADD COLUMN incoterm TEXT DEFAULT 'EXW';
 
 -- 2. Add Detailed Logistics Costs (Financial)

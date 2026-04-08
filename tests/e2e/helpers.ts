@@ -19,7 +19,7 @@ export async function login(page: Page) {
  */
 export async function loginAsRole(page: Page, role: UserRole) {
   const credentials = {
-    admin: { email: 'admin@ilgfood.com', pass: 'admin123' },
+    admin: { email: 'admin@ilgfood.com', pass: 'ilg2026!' },
     manager: { email: 'manager@ilgfood.com', pass: 'manager123' },
     staff: { email: 'staff@ilgfood.com', pass: 'welkom123' },
     viewer: { email: 'viewer@ilgfood.com', pass: 'viewer123' },

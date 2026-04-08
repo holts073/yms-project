@@ -36,32 +36,34 @@ export async function runMigrations(db: Database) {
     const isApplied = db.prepare('SELECT 1 FROM _migrations WHERE name = ?').get(file);
 
     if (!isApplied) {
-      console.log(`[YMS MIGRATOR] Applying migration: ${file}`);
       const filePath = path.join(migrationsDir, file);
 
       try {
-        // We gebruiken handmatige transacties omdat import() asynchroon is 
-        // en de db.transaction wrapper van better-sqlite3 synchroon moet zijn.
-        db.exec('BEGIN TRANSACTION');
-
         if (file.endsWith('.sql')) {
-          const sql = fs.readFileSync(filePath, 'utf8');
-          db.exec(sql);
+           // SQL migrations: Apply Synchronously within a formal transaction
+           console.log(`[YMS MIGRATOR] Applying SQL migration (Sync): ${file}`);
+           const sql = fs.readFileSync(filePath, 'utf8');
+           db.transaction(() => {
+             db.exec(sql);
+             db.prepare('INSERT INTO _migrations (name, applied_at) VALUES (?, ?)')
+               .run(file, new Date().toISOString());
+           })();
+           console.log(`[YMS MIGRATOR] Success: ${file}`);
         } else if (file.endsWith('.ts')) {
-          // Gebruik dynamische import buiten de formele wrapper
+          // TS migrations: Use dynamic import (Async)
+          console.log(`[YMS MIGRATOR] Applying TS migration (Async): ${file}`);
           const migrationContent = await import(pathToFileURL(filePath).href);
-          if (typeof migrationContent.up === 'function') {
-            migrationContent.up(db);
-          }
+          
+          db.transaction(() => {
+             if (typeof migrationContent.up === 'function') {
+               migrationContent.up(db);
+             }
+             db.prepare('INSERT INTO _migrations (name, applied_at) VALUES (?, ?)')
+               .run(file, new Date().toISOString());
+          })();
+          console.log(`[YMS MIGRATOR] Success: ${file}`);
         }
-
-        db.prepare('INSERT INTO _migrations (name, applied_at) VALUES (?, ?)')
-          .run(file, new Date().toISOString());
-        
-        db.exec('COMMIT');
-        console.log(`[YMS MIGRATOR] Success: ${file}`);
       } catch (error) {
-        db.exec('ROLLBACK');
         console.error(`[YMS MIGRATOR] FAILED: ${file}`, error);
         throw error; // Stop the server if a migration fails
       }

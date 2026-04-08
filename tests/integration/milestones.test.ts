@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { io as Client } from 'socket.io-client';
-import { db } from '../../src/db/sqlite';
+import { db, dbReady } from '../../src/db/sqlite';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = 'fallback_secret_key_for_dev_only';
@@ -11,6 +11,7 @@ describe('Milestone Automation Integration', () => {
   const PORT = 3000;
 
   beforeAll(async () => {
+    await dbReady;
     clientSocket = Client(`http://localhost:${PORT}`, {
       auth: { token: testToken },
       transports: ['websocket']
