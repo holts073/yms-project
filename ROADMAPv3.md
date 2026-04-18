@@ -1,5 +1,5 @@
 # ROADMAP v3 - ILG Foodgroup YMS Control Tower
-*Versie: v3.14.0 — Bijgewerkt: 2026-04-08 door @System-Architect*
+*Versie: v3.15.0 — Bijgewerkt: 2026-04-18 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.
@@ -101,13 +101,104 @@
 
 ---
 
-## 🔮 Volgende Sprint: v3.15.0 — Predictive Yard Analytics
-*Verantwoordelijke agent: @Yard-Strategist, @UX-Visual-Director*
+## 🔮 Geplande Sprint: v3.15.0 — Inkomend Pipeline & Telex Release Uitbreiding
+*Verantwoordelijke agent: @System-Architect, @Data-Specialist, @Frontend-Specialist, @UX-Visual-Director, @Yard-Strategist*
+*Geschatte doorlooptijd: 1–2 sprints*
+
+> [!IMPORTANT]
+> Deze sprint bouwt voort op de bestaande "Inkomend (pipeline)" module voor container-leveringen. Het doel is de module operationeel compleet te maken voor alle gangbare import-scenario's in de voedingsmiddelenlogistiek.
+
+### Aanleiding
+In de huidige praktijk worden Sea Waybills (SWB) gebruikt als alternatief voor de traditionele Bill of Lading (B/L). Een SWB kan via een **Telex Release** vrijgegeven worden, waarbij de rederij per telex de agent instrueert de lading zonder origineel papier af te geven. Dit proces moet volledig beheerst kunnen worden vanuit de YMS Control Tower.
 
 ### Scope
-- [ ] **Arrival Prognosis**: 7-daagse werklastvoorspelling op basis van de pipeline (ETA's).
-- [ ] **Dock Heatmap 2.0**: Verbeterde visualisatie van dock-efficiëntie en knelpunten.
-- [ ] **Smart Slot Recommender**: Automatische suggesties voor optimale lostijden op basis van vracht-type.
+
+#### 1. Documenttype: Seaway Bill (SWB) vs. Bill of Lading (B/L)
+- [ ] **Veld `documentType`**: Toevoegen aan het `Delivery` type — keuze tussen `'B/L'` (origineel cognossement) en `'SWB'` (Sea Waybill).
+- [ ] **UI Schakelaar**: In de `DeliveryDetailModal` bij container-type een selector voor `B/L` vs `SWB` (bepaalt welk documentenflow actief is).
+- [ ] **Database Migratie**: `014_add_swb_and_telex_fields.sql` — kolommen `documentType`, `telexReleaseStatus`, `telexReleaseDate`, `telexReleaseReference`, `telexReleasedBy`.
+
+#### 2. Telex Release Workflow
+- [ ] **Status-veld `telexReleaseStatus`**: Enum `'Niet van toepassing' | 'In aanvraag' | 'Vrijgegeven'`.
+- [ ] **Telex Release Actie**: Knop in de pipeline-kaart (alleen bij `documentType === 'SWB'`) om de status te wijzigen naar `'In aanvraag'` of te bevestigen als `'Vrijgegeven'`.
+- [ ] **Datum & Referentie logging**: Vastleggen van `telexReleaseDate` (ISO timestamp), telex-referentienummer en de naam van de bevestiger (`telexReleasedBy`).
+- [ ] **Milestone Koppeling**: Telex Release `'Vrijgegeven'` triggert dezelfde milestone-sprong als het ontvangen van het originele B/L — configureerbaar via de Document Instellingen.
+- [ ] **Visuele Indicator**: Badge/statuslabel in de pipeline-tabel die de Telex-status toont (Kleur: amber bij 'In aanvraag', groen bij 'Vrijgegeven').
+- [ ] **Audit Trail**: Elke wijziging in de Telex Release status wordt gelogd met gebruiker, datum en referentie.
+
+#### 3. Container Pipeline Verrijking
+- [ ] **Veld `dischargeTerminal`**: Al aanwezig in de types maar ontbreekt in de UI — toevoegen aan de container-formulierveld in `DeliveryDetailModal`.
+- [ ] **Veld `portOfDischarge`**: Nieuw veld voor de loshaven (los van `portOfArrival`), relevant bij transshipments.
+- [ ] **Veld `shippingLine`**: Rederij (bijv. MSC, Maersk, CMA-CGM) — nuttig voor Telex Release tracking en demurrage-contact.
+- [ ] **Veld `vesselName`**: Naam van het schip — standaard in import-administratie.
+- [ ] **Veld `voyageNumber`**: Voyage/vaart-nummer voor tracing bij de terminal.
+- [ ] **Veld `containerSealNumber`**: Zegel-nummer — relevant voor gate-in controle en QA.
+- [ ] **Incoterms Uitbreiding**: Toevoegen van CIP, CFR, DPU aan de dropdownlijst (ontbreken nu).
+
+#### 4. Customs (Douane) Module Uitbreiding
+- [ ] **Veld `customsDeclarationNumber`**: MRN (Movement Reference Number) uit de douaneaangifte — **optioneel veld**, niet verplicht voor de operatie.
+- [ ] **Veld `customsClearedDate`**: Datum en tijd waarop de douanestatus op 'Cleared' is gezet.
+- [ ] **Automatische Milestone**: Wanneer `customsStatus` wijzigt naar `'Cleared'`, springt de levering automatisch naar milestone 75 (Onderweg naar Magazijn). Het invullen van een MRN is hiervoor **niet vereist** tenzij de instelling `requireMrnForClearance` actief is (zie v3.16.0).
+
+> [!NOTE]
+> Op locaties waar containerimports (nog) niet centraal staan, blijven alle douane-velden volledig optioneel. De operatie loopt via `customsStatus` (Pending/Cleared/Inspection) zonder dat een MRN nodig is.
+
+#### 5. Pipeline Tabelweergave Verbeteringen
+- [ ] **Kolom "SWB/B/L"**: Toon het documenttype compact in de pipeline-tabel.
+- [ ] **Kolom "Telex Status"**: Toon de telex-statusbadge naast het documenttype.
+- [ ] **Kolom "Rederij"**: Toon de `shippingLine` in de compacte tabelweergave.
+- [ ] **Quick-action "Telex Bevestigen"**: Inline actie-knop in de tabelrij voor snelle statuswijziging.
+
+### Design Rules (Sprint-specifiek)
+- De telex-workflow is **uitsluitend zichtbaar** bij `type === 'container'` en `documentType === 'SWB'`.
+- `telexReleaseStatus` is **nooit verplicht** bij `documentType === 'B/L'` — de logica schakelt automatisch.
+- Alle nieuwe velden zijn nullable in de DB en worden gracefully afgehandeld bij `null`.
+
+---
+
+## 🔮 Geplande Sprint: v3.16.0 — Geavanceerde Systeeminstellingen
+*Verantwoordelijke agent: @System-Architect, @Data-Specialist, @UX-Visual-Director, @Text-Director*
+*Geschatte doorlooptijd: 1 sprint*
+
+> [!NOTE]
+> Het doel van deze sprint is de "Instellingen"-sectie te transformeren van een basis-configuratiePanel naar een volwaardig, operationeel beheercentrum. Elke instelling dient een directe impact te hebben op de dagelijkse operatie.
+
+### Scope
+
+#### 1. Bedrijfsprofiel & Branding
+- [ ] **Logo Upload**: Mogelijkheid om een eigen bedrijfslogo te uploaden (wordt gebruikt in Transport Orders en eventueel de header).
+- [ ] **Bedrijfsgegevens**: KvK-nummer, BTW-nummer — relevant voor door het systeem gegenereerde documenten.
+- [ ] **Standaard Incoterm per Leveringstype**: Per type (container/exworks) een standaard Incoterm instellen die automatisch wordt vooringevuld.
+
+#### 2. Documentsjablonen & Milestone Configuratie
+- [ ] **Per-type Document Templates**: De huidige `shipment_settings` uitbreiden zodat per `documentType` (SWB vs B/L) een aparte documentenlijst geconfigureerd kan worden.
+- [ ] **Telex Release Sjabloon**: Configureerbaar e-mailsjabloon voor de Telex Release aanvraag (naar rederij of agent).
+- [ ] **Milestone Labels aanpassen**: Mogelijkheid om de stap-labels (bijv. "In Transit" → "Op zee") per leverings-type aan te passen via de UI.
+
+#### 3. Notificaties & Alerting
+- [ ] **E-mail Triggers instellen**: Configureerbaar welke events een e-mailnotificatie triggeren (bijv. bij Telex Release, bij douane-clearance, bij Gate-In).
+- [ ] **Drempelwaardes voor Alerts**: Instelbare drempelwaardes voor wachttijd-alerts (bijv. "Waarschuw na X minuten wachten in de wachtrij").
+- [ ] **Demurrage Waarschuwingstermijn**: Instelling voor hoeveel dagen vóór de vrije-termijn-einddatum een demurrage-alert verzonden wordt.
+
+#### 4. Gebruikers & Rollen Uitbreiding
+- [ ] **Rol-specifieke Standaardweergave**: Configureren welke module (Dashboard, Pipeline, YMS) de standaard landingspagina is per rol.
+- [ ] **Sessiebeheer**: Instellen van de inactiviteits-timeout (standaard 60 min) per rol.
+- [ ] **IP Allowlist (Optioneel)**: Whitelisting van IP-ranges voor extra beveiliging (Enterprise-feature).
+
+#### 5. Douane & Container Configuratie
+- [ ] **Instelling `requireMrnForClearance`**: Schakelaar die bepaalt of een MRN (douane-aangifte nummer) verplicht is voordat de douanestatus op 'Cleared' gezet kan worden. Standaard: **uitgeschakeld** (optioneel).
+- [ ] **Instelling `enableContainerImportFields`**: Schakelaar om container-specifieke velden (scheepsnaam, voyage, rederij, zegelnummer) zichtbaar/verplicht te maken. Handig voor locaties die (nog) weinig met containerimports werken — standaard: **uitgeschakeld**.
+
+#### 6. Operationele Configuratie
+- [ ] **Standaard Lading Types configureren**: De `cargoType`-opties (Droog/Koel/Vries) uitbreiden met eigen labels (bijv. "Diepvries" als extra optie).
+- [ ] **Priority Queue Gewichten**: Instellen van de gewichten in het prioriteitsalgoritme (bijv. verhoging bij reefer, verlaging bij OUTBOUND).
+- [ ] **Wachtrij-regels zichtbaar maken**: Een uitleg/samenvatting van de actieve prioriteitsregels tonen in de instellingen, zodat operationeel personeel begrijpt wat de prioriteit bepaalt.
+- [ ] **Archivering-termijn**: Instellen hoelang afgeronde leveringen (`status: 100`) zichtbaar blijven voor het dagelijks overzicht.
+
+### Design Rules (Sprint-specifiek)
+- Alle nieuwe instellingen worden opgeslagen via het bestaande `SAVE_SETTING` + `settings`-mechanisme.
+- Geen nieuwe database-tabellen — uitbreiding van bestaande JSON-instellingswaarden.
+- Elke instelling heeft een duidelijke standaardwaarde en een reset-knop per sectie.
 
 ---
 

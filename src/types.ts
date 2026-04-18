@@ -73,12 +73,30 @@ export interface Delivery {
   dockId?: number;
   delayRisk?: 'low' | 'medium' | 'high';
   predictionReason?: string;
-  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'CIF' | 'DDP' | 'DAP';
+  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'CIF' | 'DDP' | 'DAP' | 'CIP' | 'CFR' | 'DPU';
   readyForPickupDate?: string;
   demurrageDailyRate?: number;
   standingTimeCost?: number;
   thcCost?: number;
   customsCost?: number;
+
+  // v3.15.0 SWB & Telex Release
+  documentType?: 'B/L' | 'SWB';
+  telexReleaseStatus?: 'In aanvraag' | 'Vrijgegeven';
+  telexReleaseDate?: string;
+  telexReleaseReference?: string;
+  telexReleasedBy?: string;
+
+  // v3.15.0 Container Details
+  shippingLine?: string;
+  vesselName?: string;
+  voyageNumber?: string;
+  portOfDischarge?: string;
+  containerSealNumber?: string;
+
+  // v3.15.0 Douane
+  customsDeclarationNumber?: string;
+  customsClearedDate?: string;
 }
 
 export interface LogEntry {
@@ -249,12 +267,30 @@ export interface YmsDelivery {
   palletRate?: number;
   palletsExchanged?: number;
   isPalletExchangeConfirmed?: boolean;
-  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'CIF' | 'DDP' | 'DAP';
+  incoterm?: 'EXW' | 'FCA' | 'FOB' | 'CIF' | 'DDP' | 'DAP' | 'CIP' | 'CFR' | 'DPU';
   demurrageDailyRate?: number;
   standingTimeCost?: number;
   thcCost?: number;
   customsCost?: number;
   
+  // v3.15.0 SWB & Telex Release
+  documentType?: 'B/L' | 'SWB';
+  telexReleaseStatus?: 'In aanvraag' | 'Vrijgegeven';
+  telexReleaseDate?: string;
+  telexReleaseReference?: string;
+  telexReleasedBy?: string;
+
+  // v3.15.0 Container Details
+  shippingLine?: string;
+  vesselName?: string;
+  voyageNumber?: string;
+  portOfDischarge?: string;
+  containerSealNumber?: string;
+
+  // v3.15.0 Douane
+  customsDeclarationNumber?: string;
+  customsClearedDate?: string;
+
   // Reefer Features
   estimatedDuration?: number;
   isReefer?: boolean;

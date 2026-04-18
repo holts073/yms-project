@@ -587,6 +587,90 @@ export const setupSocketHandlers = (io: Server) => {
             break;
 
 
+          case "YMS_INITIALIZE_INFRASTRUCTURE": {
+            if (!isAdmin) throw new Error("Alleen admins kunnen infrastructuur herstellen");
+            initializeWarehouseInfrastructure(payload);
+            broadcastState(io);
+            logEntry.action = "Infrastructuur Hersteld";
+            logEntry.details = `Standaard docks/wachtruimtes aangemaakt voor magazijn ${payload}`;
+            break;
+          }
+          case "GET_LAST_INCOTERM": {
+            const { supplierId } = payload;
+            const { deliveries } = getAllDeliveries(1, 10, '', 'all', 'createdAt', false);
+            const last = deliveries
+              .filter(d => d.supplierId === supplierId && d.incoterm)
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+            
+            socket.emit("last_incoterm_result", { 
+              supplierId, 
+              incoterm: last?.incoterm || 'EXW' 
+            });
+            break;
+          }
+          case "SAVE_SETTING":
+            if (!isAdmin) throw new Error("Alleen admins kunnen instellingen wijzigen");
+            saveSetting(payload.key, payload.value);
+            logEntry.action = "Systeeminstelling Opgeslagen";
+            logEntry.details = `Instelling ${payload.key} bijgewerkt`;
+            broadcastState(io);
+            break;
+
+          case "UPGRADE_REQUEST":
+            logEntry.action = "Upgrade Aangevraagd";
+            logEntry.details = `Gebruiker heeft interesse getoond in upgrade voor feature: ${payload?.feature || 'Onbekend'}`;
+            // Voorlopig alleen loggen, geen verdere actie vereist
+            break;
+
+          case "TELEX_RELEASE_UPDATE": {
+            const userRole = socket.data.userRole;
+            const userName = socket.data.userName;
+            
+            if (userRole !== 'admin' && userRole !== 'manager')
+              throw new Error("Onvoldoende rechten voor Telex Release update");
+
+            const { deliveryId, status, reference, releasedBy } = payload;
+            const { deliveries: allDels } = getAllDeliveries();
+            const delivery = allDels.find(d => d.id === deliveryId);
+            if (!delivery) throw new Error("Levering niet gevonden");
+
+            const updated = {
+              ...delivery,
+              telexReleaseStatus: status,
+              telexReleaseDate: status === 'Vrijgegeven' ? new Date().toISOString() : delivery.telexReleaseDate,
+              telexReleaseReference: reference || delivery.telexReleaseReference,
+              telexReleasedBy: status === 'Vrijgegeven' ? (releasedBy || userName) : delivery.telexReleasedBy,
+              updatedAt: new Date().toISOString()
+            };
+
+            // Milestone sprong: Telex 'Vrijgegeven' = zelfde effect als B/L ontvangen
+            if (status === 'Vrijgegeven') {
+              const settings = getSetting('settings', {});
+              const shipmentSettings = settings.shipment_settings || {};
+              const containerSettings = shipmentSettings.container || [];
+              
+              // Zoek de regel die B/L of SWB afhandelt
+              const triggerValue = containerSettings.find(
+                (r: any) => r.name.toLowerCase().includes('seaway') || r.name.toLowerCase().includes('b/l')
+              )?.triggers_status_value;
+
+              if (triggerValue && triggerValue > (updated.status || 0)) {
+                updated.status = triggerValue;
+              }
+            }
+
+            insertDelivery(updated);
+            addAuditEntry(deliveryId, userName || 'Systeem', `Telex Release: ${status}`,
+              `Telex status bijgewerkt naar "${status}" (ref: ${reference || 'geen'})`);
+            broadcastState(io);
+            break;
+          }
+
+          case "YMS_RESOLVE_ALERT":
+            resolveYmsAlert(payload);
+            broadcastState(io);
+            break;
+
           default:
             // Generic save actions that don't need complex logic
             if (type.startsWith("YMS_SAVE_")) {
@@ -627,41 +711,12 @@ export const setupSocketHandlers = (io: Server) => {
               }
               broadcastState(io);
               logEntry.action = `Systeemconfiguratie: ${table} verwijderd`;
-            } else if (type === "YMS_RESOLVE_ALERT") {
-               resolveYmsAlert(payload);
-               broadcastState(io);
-               break;
-             }
-             case "YMS_INITIALIZE_INFRASTRUCTURE": {
-               if (!isAdmin) throw new Error("Alleen admins kunnen infrastructuur herstellen");
-               initializeWarehouseInfrastructure(payload);
-               broadcastState(io);
-               logEntry.action = "Infrastructuur Hersteld";
-               logEntry.details = `Standaard docks/wachtruimtes aangemaakt voor magazijn ${payload}`;
-               break;
-             }
-             case "GET_LAST_INCOTERM": {
-                const { supplierId } = payload;
-                const { deliveries } = getAllDeliveries(1, 10, '', 'all', 'createdAt', false);
-                const last = deliveries
-                  .filter(d => d.supplierId === supplierId && d.incoterm)
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-                
-                socket.emit("last_incoterm_result", { 
-                  supplierId, 
-                  incoterm: last?.incoterm || 'EXW' 
-                });
-                break;
-              }
-         }
-
-        if (type === "SAVE_SETTING") {
-          if (!isAdmin) throw new Error("Alleen admins kunnen instellingen wijzigen");
-          saveSetting(payload.key, payload.value);
-          logEntry.action = "Systeeminstelling Opgeslagen";
-          logEntry.details = `Instelling ${payload.key} bijgewerkt`;
-          broadcastState(io);
+            } else {
+              console.warn(`[YMS SOCKET] Onbekend actie type ontvangen: ${type}`);
+            }
+            break;
         }
+
 
         if (logEntry.action) {
           if (!logEntry.id) logEntry.id = Math.random().toString(36).substr(2, 9);

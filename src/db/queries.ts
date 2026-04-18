@@ -29,8 +29,11 @@ const stmts = {
       transportCost, weight, palletType, palletCount, palletRate, cargoType, loadingCountry, loadingCity, palletExchange,
       etd, etaPort, etaWarehouse, originalEtaWarehouse, portOfArrival, billOfLading, containerNumber,
       notes, statusHistory, loadingTime, dockId, customsStatus, dischargeTerminal, incoterm, readyForPickupDate, requiresQA,
-      demurrageDailyRate, standingTimeCost, thcCost, customsCost
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      demurrageDailyRate, standingTimeCost, thcCost, customsCost,
+      documentType, telexReleaseStatus, telexReleaseDate, telexReleaseReference, telexReleasedBy,
+      shippingLine, vesselName, voyageNumber, portOfDischarge, containerSealNumber,
+      customsDeclarationNumber, customsClearedDate
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
   insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required, blocksMilestone) VALUES (?, ?, ?, ?, ?, ?)'),
@@ -195,7 +198,10 @@ export function insertDelivery(d: Delivery) {
       d.notes, d.statusHistory ? JSON.stringify(d.statusHistory) : null, d.loadingTime, d.dockId || null,
       d.customsStatus || null, d.dischargeTerminal || null, d.incoterm || null, d.readyForPickupDate || null,
       d.requiresQA ? 1 : 0,
-      d.demurrageDailyRate || 0, d.standingTimeCost || 0, d.thcCost || 0, d.customsCost || 0
+      d.demurrageDailyRate || 0, d.standingTimeCost || 0, d.thcCost || 0, d.customsCost || 0,
+      d.documentType || 'B/L', d.telexReleaseStatus || null, d.telexReleaseDate || null, d.telexReleaseReference || null, d.telexReleasedBy || null,
+      d.shippingLine || null, d.vesselName || null, d.voyageNumber || null, d.portOfDischarge || null, d.containerSealNumber || null,
+      d.customsDeclarationNumber || null, d.customsClearedDate || null
     );
 
     // Documents

@@ -57,7 +57,7 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Referentie</th>
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Leverancier</th>
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">ETA Magazijn</th>
-              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Bill of Lading</th>
+              <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Doc / Telex</th>
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Pallets</th>
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)]">Status / Milestones</th>
               <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)] text-center">Opmerking</th>
@@ -102,12 +102,26 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                   <td className="px-6 py-3 text-xs font-bold text-foreground tabular-nums">
                     {d.etaWarehouse ? new Date(d.etaWarehouse).toLocaleDateString('nl-NL') : '-'}
                   </td>
-                  <td className="px-6 py-3">
-                    {d.billOfLading ? (
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">{d.billOfLading}</span>
-                    ) : (
-                      <span className="text-[10px] text-slate-300">-</span>
-                    )}
+                   <td className="px-6 py-3">
+                    <div className="flex flex-col gap-1 text-left">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                          {d.documentType || 'B/L'}
+                        </span>
+                        {d.billOfLading && (
+                          <span className="text-[9px] font-bold text-[var(--muted-foreground)] truncate max-w-[80px]">{d.billOfLading}</span>
+                        )}
+                      </div>
+                      {d.documentType === 'SWB' && d.telexReleaseStatus && (
+                        <Badge 
+                          variant={d.telexReleaseStatus === 'Vrijgegeven' ? 'success' : 'warning'} 
+                          size="xs"
+                          className="w-fit"
+                        >
+                          TELEX: {d.telexReleaseStatus === 'Vrijgegeven' ? 'VRIJ' : 'INV'}
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex flex-col">
@@ -190,9 +204,19 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                          <div title="Te laat aangemeld (<24u)" className="text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-1 rounded-full animate-pulse"><Clock size={12} /></div>
                        )}
                     </div>
-                    {d.billOfLading && (
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">B/L: {d.billOfLading}</p>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                        {d.documentType || 'B/L'}: {d.billOfLading || 'GEEN'}
+                      </p>
+                      {d.documentType === 'SWB' && (
+                        <Badge 
+                          variant={d.telexReleaseStatus === 'Vrijgegeven' ? 'success' : d.telexReleaseStatus === 'In aanvraag' ? 'warning' : 'outline'} 
+                          size="xs"
+                        >
+                          TELEX: {d.telexReleaseStatus || 'N.V.T.'}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">{d.containerNumber || (d as any).licensePlate || 'GEEN NR'}</p>
                     <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] line-clamp-1 mt-1">{s?.name || 'Onbekend Leverancier'}</p>
                  </div>

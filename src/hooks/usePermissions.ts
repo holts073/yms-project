@@ -40,8 +40,16 @@ export const usePermissions = () => {
 
   /**
    * Comprehensive access check combining RBAC and Feature Toggles.
+   * Admins always get access regardless of feature flags —
+   * they control those flags and must always be able to toggle them.
    */
   const canAccess = (capability?: AppCapability, feature?: keyof NonNullable<AppSettings['featureFlags']>) => {
+    // Admins bypass ALL feature flags – they are the ones who configure them.
+    const isAdmin = currentUser?.role === 'admin';
+    if (isAdmin) {
+      return { authorized: true, enabled: true, granted: true };
+    }
+
     const authorized = capability ? hasCapability(capability) : true;
     const enabled = feature ? isFeatureEnabled(feature) : true;
 
