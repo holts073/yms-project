@@ -318,6 +318,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
       case 'settings-company': 
       case 'settings-documents': 
       case 'settings-users': 
+      case 'settings-notifications':
+      case 'settings-security':
         return (
           <FeatureGate capability="SYSTEM_SETTINGS_EDIT" mode="gate">
             <SettingsPage currentSegment={activeTab.split('-')[1] as any} />
@@ -538,6 +540,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
               items={[
                 { id: 'settings-company', label: 'Bedrijfsgegevens', active: activeTab === 'settings-company' },
                 { id: 'settings-documents', label: 'Documentinstellingen', active: activeTab === 'settings-documents' },
+                { id: 'settings-notifications', label: 'Notificaties & Alerts', active: activeTab === 'settings-notifications' },
+                { id: 'settings-security', label: 'Beveiliging & Rollen', active: activeTab === 'settings-security' },
                 { id: 'settings-yms', label: 'YMS Instellingen', active: activeTab === 'settings-yms' },
                 { id: 'settings-users', label: 'Gebruikersbeheer', active: activeTab === 'settings-users' }
               ]}
@@ -585,7 +589,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           
           <div className="px-6 pb-2 pt-2 border-t border-border/50 flex justify-between items-center opacity-40">
             <span className="text-[10px] font-black tracking-widest uppercase italic">YMS Control Tower</span>
-            <span className="text-[10px] font-bold tracking-widest">v3.14.0</span>
+            <span className="text-[10px] font-bold tracking-widest">v3.16.0</span>
           </div>
         </div>
       </aside>

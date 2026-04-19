@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.14.0 — Bijgewerkt: 2026-04-08 door @System-Architect*
+*Versie: v3.16.0 — Bijgewerkt: 2026-04-18 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.

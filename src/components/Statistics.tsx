@@ -13,6 +13,7 @@ import { StatCard } from './shared/StatCard';
 import { Card } from './shared/Card';
 import { isRegisteredOnTime } from '../lib/logistics';
 import { CarrierPerformance } from './features/CarrierPerformance';
+import { DemurrageRiskBoard } from './features/DemurrageRiskBoard';
 import { cn } from '../lib/utils';
 
 const Statistics = () => {
@@ -122,7 +123,11 @@ const Statistics = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="mb-8">
+        <DemurrageRiskBoard />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-12">
         <StatCard 
           title="Gem. Lead Time"
           value={statsData.avgLeadTime}

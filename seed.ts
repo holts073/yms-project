@@ -154,10 +154,10 @@ const seedDatabase = async () => {
     };
   };
 
-  console.log("Seeding 40 Pipeline deliveries (30 active, 10 delivered)...");
+  console.log("Seeding 200 Pipeline deliveries (150 active, 50 delivered)...");
   const seededDeliveries: Delivery[] = [];
-  for (let i = 1; i <= 40; i++) {
-    const d = generateDelivery(i, i > 30);
+  for (let i = 1; i <= 200; i++) {
+    const d = generateDelivery(i, i > 150);
     insertDelivery(d);
     seededDeliveries.push(d);
   }
@@ -174,8 +174,8 @@ const seedDatabase = async () => {
     4: 'COMPLETED'
   };
 
-  ymsCandidates.slice(0, 15).forEach((d, i) => {
-    const ymsStatus = i < 5 ? 'EXPECTED' : (i < 8 ? 'IN_YARD' : (i < 12 ? 'DOCKED' : 'UNLOADING'));
+  ymsCandidates.slice(0, 50).forEach((d, i) => {
+    const ymsStatus = i < 15 ? 'EXPECTED' : (i < 25 ? 'IN_YARD' : (i < 40 ? 'DOCKED' : 'UNLOADING'));
     const isReefer = d.cargoType === 'Cool' || d.cargoType === 'Frozen';
     
     // License plate generation

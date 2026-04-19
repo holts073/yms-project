@@ -82,7 +82,7 @@ router.get("/deliveries/all", (req, res) => {
   res.json(data);
 });
 
-router.post("/deliveries/:id/send-transport-order", async (req, res) => {
+router.get("/deliveries/:id/transport-order-pdf", async (req, res) => {
   const { id } = req.params;
   const { deliveries } = getAllDeliveries();
   const delivery = deliveries.find(d => d.id === id);
@@ -97,41 +97,15 @@ router.post("/deliveries/:id/send-transport-order", async (req, res) => {
 
   try {
     const pdfBuffer = await generateTransportOrderPDF(delivery, supplier, transporter);
-
-    const companySettings = getSetting('companySettings', {});
-    const mailServer = companySettings?.mailServer;
-
-    if (!mailServer || !mailServer.host || !mailServer.port || !mailServer.user || !mailServer.pass) {
-      return res.status(500).json({ error: "SMTP instellingen zijn niet geconfigureerd" });
-    }
-
-    const mailTransporter = nodemailer.createTransport({
-      host: mailServer.host,
-      port: mailServer.port,
-      secure: mailServer.port === 465,
-      auth: {
-        user: mailServer.user,
-        pass: mailServer.pass
-      }
-    });
-
-    await mailTransporter.sendMail({
-      from: mailServer.from || mailServer.user,
-      to: companySettings.email || mailServer.user, // Send internally to office
-      subject: `Transport Order - ${delivery.reference}`,
-      text: `Beste collega,\n\nHierbij de Transport Order voor rit ${delivery.reference}.\n\nReferentie: ${delivery.reference}\nLeverancier: ${supplier?.name || delivery.supplierId}\n\nMet vriendelijke groet,\nILG Foodgroup YMS`,
-      attachments: [
-        {
-          filename: `TransportOrder_${delivery.reference}.pdf`,
-          content: pdfBuffer
-        }
-      ]
-    });
-
-    res.json({ success: true, message: "Transport Order PDF verzonden" });
+    
+    // Notifications via email are disabled for now
+    // Return PDF stream to client directly
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="TransportOrder_${delivery.reference}.pdf"`);
+    res.send(pdfBuffer);
   } catch (error) {
-    console.error("PDF/Mail Error:", error);
-    res.status(500).json({ error: "Fout bij genereren of verzenden van PDF" });
+    console.error("PDF Error:", error);
+    res.status(500).json({ error: "Fout bij genereren van PDF" });
   }
 });
 

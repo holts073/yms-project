@@ -1,0 +1,454 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img "ILG Logo" [ref=e6]
+        - heading "ILG Foodgroup" [level=1] [ref=e7]
+      - navigation [ref=e8]:
+        - button "Dashboard" [ref=e9]:
+          - img [ref=e12]
+          - generic [ref=e17]: Dashboard
+        - paragraph [ref=e20]: Logistieke Flow
+        - button "Inkomend (Pipeline)" [ref=e21]:
+          - img [ref=e23]
+          - generic [ref=e28]: Inkomend (Pipeline)
+        - paragraph [ref=e30]: Yard Management
+        - button "Aankomst & Inspectie" [ref=e31]:
+          - img [ref=e33]
+          - generic [ref=e36]: Aankomst & Inspectie
+        - button "Dock Planning" [ref=e37]:
+          - img [ref=e39]
+          - generic [ref=e41]: Dock Planning
+        - button "Archief (Historie)" [ref=e42]:
+          - img [ref=e44]
+          - generic [ref=e48]: Archief (Historie)
+        - paragraph [ref=e50]: Overig
+        - button "Adressenboek" [ref=e51]:
+          - img [ref=e53]
+          - generic [ref=e57]: Adressenboek
+        - button "Publieke Monitor" [ref=e58]:
+          - img [ref=e60]
+          - generic [ref=e62]: Publieke Monitor
+        - paragraph [ref=e64]: Financiën
+        - button "Pallet Reconciliatie" [ref=e65]:
+          - img [ref=e67]
+          - generic [ref=e70]: Pallet Reconciliatie
+        - button "Analyse & Rapportage" [ref=e72]:
+          - generic [ref=e73]:
+            - img [ref=e75]
+            - generic [ref=e77]: Analyse & Rapportage
+          - img [ref=e79]
+        - button "Instellingen" [ref=e82]:
+          - generic [ref=e83]:
+            - img [ref=e85]
+            - generic [ref=e88]: Instellingen
+          - img [ref=e90]
+      - generic [ref=e92]:
+        - generic [ref=e93]:
+          - img [ref=e95]
+          - generic [ref=e98]:
+            - paragraph [ref=e99]: Admin User
+            - paragraph [ref=e100]: admin
+          - generic [ref=e101]:
+            - button "Account Beveiliging" [ref=e102]:
+              - img [ref=e103]
+            - 'button "Huidig thema: light" [ref=e105]':
+              - img [ref=e106]
+        - button "Uitloggen" [ref=e112]:
+          - img [ref=e113]
+          - generic [ref=e116]: Uitloggen
+        - generic [ref=e117]:
+          - generic [ref=e118]: YMS Control Tower
+          - generic [ref=e119]: v3.16.0
+    - main [ref=e120]:
+      - generic [ref=e123]:
+        - generic [ref=e124]:
+          - generic [ref=e125]:
+            - img [ref=e127]
+            - generic [ref=e132]:
+              - heading "Supply Chain Dashboard" [level=2] [ref=e133]
+              - paragraph [ref=e134]: Real-time overzicht van logistieke operaties en yard management.
+          - generic [ref=e135]:
+            - button "Nieuwe Vracht" [ref=e136]:
+              - img [ref=e138]
+              - text: Nieuwe Vracht
+            - button "Plan Levering" [ref=e139]:
+              - img [ref=e141]
+              - text: Plan Levering
+        - generic [ref=e142]:
+          - generic [ref=e143]:
+            - generic [ref=e144] [cursor=pointer]:
+              - generic [ref=e145]:
+                - heading "Actie Vereist" [level=3] [ref=e146]
+                - img [ref=e148]
+              - generic [ref=e151]: "11"
+              - paragraph [ref=e153]: Documenten missen
+            - generic [ref=e154] [cursor=pointer]:
+              - generic [ref=e155]:
+                - heading "In Transit" [level=3] [ref=e156]
+                - img [ref=e158]
+              - generic [ref=e162]: "31"
+              - paragraph [ref=e164]: Niet geladen / Onderweg
+            - generic [ref=e165] [cursor=pointer]:
+              - generic [ref=e166]:
+                - heading "Douane" [level=3] [ref=e167]
+                - img [ref=e169]
+              - generic [ref=e172]: "33"
+              - paragraph [ref=e174]: Inklaring lopende
+            - generic [ref=e175] [cursor=pointer]:
+              - generic [ref=e176]:
+                - heading "Onderweg" [level=3] [ref=e177]
+                - img [ref=e179]
+              - generic [ref=e185]: "46"
+              - paragraph [ref=e187]: Naar magazijn
+          - generic [ref=e188]:
+            - generic [ref=e189] [cursor=pointer]:
+              - generic [ref=e190]:
+                - heading "YMS Aankomst" [level=3] [ref=e191]
+                - img [ref=e193]
+              - generic [ref=e197]: "0"
+            - generic [ref=e198] [cursor=pointer]:
+              - generic [ref=e199]:
+                - heading "Vertragingen" [level=3] [ref=e200]
+                - img [ref=e202]
+              - generic [ref=e206]: "0"
+            - generic [ref=e207] [cursor=pointer]:
+              - generic [ref=e208]:
+                - heading "Docks" [level=3] [ref=e209]
+                - img [ref=e211]
+              - generic [ref=e214]: 10%
+            - generic [ref=e215]:
+              - generic [ref=e216]:
+                - heading "Site Stay" [level=3] [ref=e217]
+                - img [ref=e219]
+              - generic [ref=e223]: 0m
+            - generic [ref=e224] [cursor=pointer]:
+              - generic [ref=e225]:
+                - heading "Yard" [level=3] [ref=e226]
+                - img [ref=e228]
+              - generic [ref=e232]: 0%
+            - generic [ref=e233] [cursor=pointer]:
+              - generic [ref=e234]:
+                - heading "Laat" [level=3] [ref=e235]
+                - img [ref=e237]
+              - generic [ref=e240]: "5"
+        - generic [ref=e241]:
+          - heading "Actie Vereist" [level=3] [ref=e242]
+          - generic [ref=e243]:
+            - table [ref=e246]:
+              - rowgroup [ref=e247]:
+                - row "Referentie Indicaties Status ETA Actie" [ref=e248]:
+                  - columnheader "Referentie" [ref=e249]
+                  - columnheader "Indicaties" [ref=e250]
+                  - columnheader "Status" [ref=e251]
+                  - columnheader "ETA" [ref=e252]
+                  - columnheader "Actie" [ref=e253]
+              - rowgroup [ref=e254]:
+                - row "TRUK-1104 exworks • Mediterranean Oils SL Docs Besteld 19-4-2026 Aanvraag" [ref=e255] [cursor=pointer]:
+                  - cell "TRUK-1104 exworks • Mediterranean Oils SL" [ref=e256]:
+                    - generic [ref=e257]:
+                      - img [ref=e259]
+                      - generic [ref=e264]:
+                        - paragraph [ref=e265]: TRUK-1104
+                        - paragraph [ref=e266]: exworks • Mediterranean Oils SL
+                  - cell "Docs" [ref=e267]:
+                    - generic [ref=e268]:
+                      - generic [ref=e269]: Docs
+                      - img [ref=e271]
+                  - cell "Besteld" [ref=e273]:
+                    - generic [ref=e275]: Besteld
+                  - cell "19-4-2026" [ref=e281]
+                  - cell "Aanvraag" [ref=e282]:
+                    - generic [ref=e283]:
+                      - button "Aanvraag" [ref=e284]
+                      - button [ref=e285]:
+                        - img [ref=e286]
+                - row "CONT-1115 container • Global Foods Trading Docs Besteld 22-4-2026" [ref=e288] [cursor=pointer]:
+                  - cell "CONT-1115 container • Global Foods Trading" [ref=e289]:
+                    - generic [ref=e290]:
+                      - img [ref=e292]
+                      - generic [ref=e296]:
+                        - paragraph [ref=e297]: CONT-1115
+                        - paragraph [ref=e298]: container • Global Foods Trading
+                  - cell "Docs" [ref=e299]:
+                    - generic [ref=e300]:
+                      - generic [ref=e301]: Docs
+                      - img [ref=e303]
+                  - cell "Besteld" [ref=e305]:
+                    - generic [ref=e307]: Besteld
+                  - cell "22-4-2026" [ref=e314]
+                  - cell [ref=e315]:
+                    - button [ref=e317]:
+                      - img [ref=e318]
+                - row "TRUK-1141 exworks • Euro Meats BV Docs Besteld 22-4-2026 Aanvraag" [ref=e320] [cursor=pointer]:
+                  - cell "TRUK-1141 exworks • Euro Meats BV" [ref=e321]:
+                    - generic [ref=e322]:
+                      - img [ref=e324]
+                      - generic [ref=e329]:
+                        - paragraph [ref=e330]: TRUK-1141
+                        - paragraph [ref=e331]: exworks • Euro Meats BV
+                  - cell "Docs" [ref=e332]:
+                    - generic [ref=e334]: Docs
+                  - cell "Besteld" [ref=e335]:
+                    - generic [ref=e337]: Besteld
+                  - cell "22-4-2026" [ref=e343]
+                  - cell "Aanvraag" [ref=e344]:
+                    - generic [ref=e345]:
+                      - button "Aanvraag" [ref=e346]
+                      - button [ref=e347]:
+                        - img [ref=e348]
+                - row "TRUK-1040 exworks • Mediterranean Oils SL Docs Besteld 23-4-2026 Aanvraag" [ref=e350] [cursor=pointer]:
+                  - cell "TRUK-1040 exworks • Mediterranean Oils SL" [ref=e351]:
+                    - generic [ref=e352]:
+                      - img [ref=e354]
+                      - generic [ref=e359]:
+                        - paragraph [ref=e360]: TRUK-1040
+                        - paragraph [ref=e361]: exworks • Mediterranean Oils SL
+                  - cell "Docs" [ref=e362]:
+                    - generic [ref=e364]: Docs
+                  - cell "Besteld" [ref=e365]:
+                    - generic [ref=e367]: Besteld
+                  - cell "23-4-2026" [ref=e373]
+                  - cell "Aanvraag" [ref=e374]:
+                    - generic [ref=e375]:
+                      - button "Aanvraag" [ref=e376]
+                      - button [ref=e377]:
+                        - img [ref=e378]
+                - row "CONT-1047 container • Mediterranean Oils SL Docs Besteld 24-4-2026" [ref=e380] [cursor=pointer]:
+                  - cell "CONT-1047 container • Mediterranean Oils SL" [ref=e381]:
+                    - generic [ref=e382]:
+                      - img [ref=e384]
+                      - generic [ref=e388]:
+                        - paragraph [ref=e389]: CONT-1047
+                        - paragraph [ref=e390]: container • Mediterranean Oils SL
+                  - cell "Docs" [ref=e391]:
+                    - generic [ref=e392]:
+                      - generic [ref=e393]: Docs
+                      - img [ref=e395]
+                  - cell "Besteld" [ref=e397]:
+                    - generic [ref=e399]: Besteld
+                  - cell "24-4-2026" [ref=e406]
+                  - cell [ref=e407]:
+                    - button [ref=e409]:
+                      - img [ref=e410]
+                - row "TRUK-1004 exworks • Asian Spice Co Docs Besteld 28-4-2026 Aanvraag" [ref=e412] [cursor=pointer]:
+                  - cell "TRUK-1004 exworks • Asian Spice Co" [ref=e413]:
+                    - generic [ref=e414]:
+                      - img [ref=e416]
+                      - generic [ref=e421]:
+                        - paragraph [ref=e422]: TRUK-1004
+                        - paragraph [ref=e423]: exworks • Asian Spice Co
+                  - cell "Docs" [ref=e424]:
+                    - generic [ref=e426]: Docs
+                  - cell "Besteld" [ref=e427]:
+                    - generic [ref=e429]: Besteld
+                  - cell "28-4-2026" [ref=e435]
+                  - cell "Aanvraag" [ref=e436]:
+                    - generic [ref=e437]:
+                      - button "Aanvraag" [ref=e438]
+                      - button [ref=e439]:
+                        - img [ref=e440]
+                - row "CONT-1083 container • Euro Meats BV Docs Besteld 28-4-2026" [ref=e442] [cursor=pointer]:
+                  - cell "CONT-1083 container • Euro Meats BV" [ref=e443]:
+                    - generic [ref=e444]:
+                      - img [ref=e446]
+                      - generic [ref=e450]:
+                        - paragraph [ref=e451]: CONT-1083
+                        - paragraph [ref=e452]: container • Euro Meats BV
+                  - cell "Docs" [ref=e453]:
+                    - generic [ref=e455]: Docs
+                  - cell "Besteld" [ref=e456]:
+                    - generic [ref=e458]: Besteld
+                  - cell "28-4-2026" [ref=e465]
+                  - cell [ref=e466]:
+                    - button [ref=e468]:
+                      - img [ref=e469]
+                - row "CONT-1135 container • Euro Meats BV Docs Besteld 29-4-2026" [ref=e471] [cursor=pointer]:
+                  - cell "CONT-1135 container • Euro Meats BV" [ref=e472]:
+                    - generic [ref=e473]:
+                      - img [ref=e475]
+                      - generic [ref=e479]:
+                        - paragraph [ref=e480]: CONT-1135
+                        - paragraph [ref=e481]: container • Euro Meats BV
+                  - cell "Docs" [ref=e482]:
+                    - generic [ref=e483]:
+                      - generic [ref=e484]: Docs
+                      - img [ref=e486]
+                  - cell "Besteld" [ref=e488]:
+                    - generic [ref=e490]: Besteld
+                  - cell "29-4-2026" [ref=e497]
+                  - cell [ref=e498]:
+                    - button [ref=e500]:
+                      - img [ref=e501]
+                - row "CONT-1096 container • Mediterranean Oils SL Docs Besteld 30-4-2026" [ref=e503] [cursor=pointer]:
+                  - cell "CONT-1096 container • Mediterranean Oils SL" [ref=e504]:
+                    - generic [ref=e505]:
+                      - img [ref=e507]
+                      - generic [ref=e511]:
+                        - paragraph [ref=e512]: CONT-1096
+                        - paragraph [ref=e513]: container • Mediterranean Oils SL
+                  - cell "Docs" [ref=e514]:
+                    - generic [ref=e515]:
+                      - generic [ref=e516]: Docs
+                      - img [ref=e518]
+                  - cell "Besteld" [ref=e520]:
+                    - generic [ref=e522]: Besteld
+                  - cell "30-4-2026" [ref=e529]
+                  - cell [ref=e530]:
+                    - button [ref=e532]:
+                      - img [ref=e533]
+                - row "TRUK-1018 exworks • Asian Spice Co Docs Besteld 4-5-2026 Aanvraag" [ref=e535] [cursor=pointer]:
+                  - cell "TRUK-1018 exworks • Asian Spice Co" [ref=e536]:
+                    - generic [ref=e537]:
+                      - img [ref=e539]
+                      - generic [ref=e544]:
+                        - paragraph [ref=e545]: TRUK-1018
+                        - paragraph [ref=e546]: exworks • Asian Spice Co
+                  - cell "Docs" [ref=e547]:
+                    - generic [ref=e548]:
+                      - generic [ref=e549]: Docs
+                      - img [ref=e551]
+                  - cell "Besteld" [ref=e553]:
+                    - generic [ref=e555]: Besteld
+                  - cell "4-5-2026" [ref=e561]
+                  - cell "Aanvraag" [ref=e562]:
+                    - generic [ref=e563]:
+                      - button "Aanvraag" [ref=e564]
+                      - button [ref=e565]:
+                        - img [ref=e566]
+                - row "CONT-1075 container • Global Foods Trading Docs Besteld 4-5-2026" [ref=e568] [cursor=pointer]:
+                  - cell "CONT-1075 container • Global Foods Trading" [ref=e569]:
+                    - generic [ref=e570]:
+                      - img [ref=e572]
+                      - generic [ref=e576]:
+                        - paragraph [ref=e577]: CONT-1075
+                        - paragraph [ref=e578]: container • Global Foods Trading
+                  - cell "Docs" [ref=e579]:
+                    - generic [ref=e580]:
+                      - generic [ref=e581]: Docs
+                      - img [ref=e583]
+                  - cell "Besteld" [ref=e585]:
+                    - generic [ref=e587]: Besteld
+                  - cell "4-5-2026" [ref=e594]
+                  - cell [ref=e595]:
+                    - button [ref=e597]:
+                      - img [ref=e598]
+            - generic [ref=e603]:
+              - generic [ref=e604]:
+                - heading "Levering Aanpassen" [level=3] [ref=e605]
+                - button [ref=e606]:
+                  - img [ref=e607]
+              - generic [ref=e610]:
+                - generic [ref=e611]:
+                  - button "Basis" [ref=e612]
+                  - button "Financieel" [ref=e613]
+                - generic [ref=e614]:
+                  - generic [ref=e615]:
+                    - generic [ref=e616]:
+                      - text: Type
+                      - combobox [ref=e617]:
+                        - option "Container"
+                        - option "Ex-Works" [selected]
+                    - generic [ref=e618]:
+                      - text: Referentie
+                      - textbox "Bestelnummer / Ref" [ref=e621]: TRUK-1104
+                    - generic [ref=e622]:
+                      - text: Leverancier
+                      - button "Mediterranean Oils SL" [ref=e625]:
+                        - generic [ref=e626]: Mediterranean Oils SL
+                        - img [ref=e627]
+                    - generic [ref=e629]:
+                      - text: Transporteur
+                      - button "Heavy Load Haulage" [ref=e632]:
+                        - generic [ref=e633]: Heavy Load Haulage
+                        - img [ref=e634]
+                    - generic [ref=e636]:
+                      - text: Bestemming Magazijn
+                      - combobox [ref=e637]:
+                        - option "Magazijn 01" [selected]
+                        - option "CAP"
+                    - generic [ref=e638]:
+                      - generic [ref=e639]: ETA Magazijn
+                      - textbox [ref=e641]: 2026-04-19
+                    - generic [ref=e642]:
+                      - generic [ref=e643]: Incoterms
+                      - combobox [ref=e644]:
+                        - option "EXW" [selected]
+                        - option "FCA"
+                        - option "FOB"
+                        - option "CIF"
+                        - option "DDP"
+                        - option "DAP"
+                        - option "CIP"
+                        - option "CFR"
+                        - option "DPU"
+                    - generic [ref=e645]:
+                      - generic [ref=e646]:
+                        - generic [ref=e647]: Aantal Pallets
+                        - spinbutton [ref=e649]: "12"
+                      - generic [ref=e650]:
+                        - text: Lading Type
+                        - combobox [ref=e651]:
+                          - option "Droog" [selected]
+                          - option "Koel"
+                          - option "Vries"
+                    - generic [ref=e652]:
+                      - generic [ref=e653]: Gewicht (kg)
+                      - spinbutton [ref=e655]: "8809"
+                    - generic [ref=e656]:
+                      - generic [ref=e657]: Kenteken
+                      - textbox [ref=e659]
+                    - generic [ref=e660]:
+                      - generic [ref=e661]: Laadstad
+                      - textbox [ref=e663]: Naples
+                    - generic [ref=e664]:
+                      - generic [ref=e665]: Laadland
+                      - textbox [ref=e667]: IT
+                    - generic [ref=e668]:
+                      - generic [ref=e669]: Opmerkingen
+                      - textbox "Voeg eventuele instructies of bijzonderheden toe..." [ref=e671]: Spoedlevering voor klant-order X.
+                    - generic [ref=e672]:
+                      - generic [ref=e673]:
+                        - checkbox "Palletruil Toepassen" [checked] [ref=e674]
+                        - generic [ref=e675]: Palletruil Toepassen
+                      - generic [ref=e676]:
+                        - checkbox "QA Inspectie benodigd" [ref=e677]
+                        - generic [ref=e678]:
+                          - text: QA Inspectie benodigd
+                          - img [ref=e679]
+                  - generic [ref=e681]:
+                    - generic [ref=e682]:
+                      - heading "Documenten Checklist" [level=4] [ref=e683]:
+                        - img [ref=e684]
+                        - text: Documenten Checklist
+                      - generic [ref=e687]: Verplicht gemarkeerd met *
+                    - generic [ref=e688]:
+                      - generic [ref=e689]:
+                        - generic [ref=e690]:
+                          - checkbox [ref=e691]
+                          - generic [ref=e692]:
+                            - paragraph [ref=e693]: CMR / Vrachtbrief *
+                            - paragraph [ref=e694]: Benodigd voor In Transit
+                        - generic [ref=e695]: Verplicht
+                      - generic [ref=e696]:
+                        - generic [ref=e697]:
+                          - checkbox [ref=e698]
+                          - generic [ref=e699]:
+                            - paragraph [ref=e700]: Commercial Invoice *
+                            - paragraph [ref=e701]: Benodigd voor Inchecken
+                        - generic [ref=e702]: Verplicht
+                      - generic [ref=e703]:
+                        - generic [ref=e704]:
+                          - checkbox [ref=e705]
+                          - generic [ref=e706]:
+                            - paragraph [ref=e707]: Packing List *
+                            - paragraph [ref=e708]: Benodigd voor Inchecken
+                        - generic [ref=e709]: Verplicht
+                  - generic [ref=e710]:
+                    - button "Annuleren" [ref=e711]
+                    - button "Opslaan" [ref=e712]
+```

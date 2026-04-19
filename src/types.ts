@@ -79,6 +79,7 @@ export interface Delivery {
   standingTimeCost?: number;
   thcCost?: number;
   customsCost?: number;
+  freeTimeDays?: number;
 
   // v3.15.0 SWB & Telex Release
   documentType?: 'B/L' | 'SWB';
@@ -119,7 +120,8 @@ export type AppCapability =
   | 'FINANCE_SETTLE_TRANSACTION' 
   | 'ADDR_BOOK_CRUD' 
   | 'SYSTEM_SETTINGS_EDIT' 
-  | 'SYSTEM_USER_MANAGE';
+  | 'SYSTEM_USER_MANAGE'
+  | 'STRATEGIC_COST_VIEW';
 
 export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer' | 'operator' | 'lead_operator' | 'gate_guard' | 'finance_auditor';
 
@@ -146,13 +148,44 @@ export interface AppSettings {
     [key: string]: string;
   };
   shipment_settings?: {
+    container?: any[];
+    container_swb?: any[];
+    exworks?: any[];
     default_carrier?: string;
     notification_email?: string;
-    auto_archive_days?: number;
+    auto_archive_days?: number; // legacy, moved to root
   };
+  milestone_labels?: {
+    container?: Record<number, string>;
+    container_swb?: Record<number, string>;
+    exworks?: Record<number, string>;
+  };
+  notification_triggers?: {
+    telexRelease: boolean;
+    customsClearance: boolean;
+    gateIn: boolean;
+  };
+  alert_thresholds?: {
+    queueWaitMinutes: number;
+    demurrageWarningDays: number;
+  };
+  default_incoterms?: {
+    container: string;
+    exworks: string;
+  };
+  requireMrnForClearance?: boolean;
+  enableContainerImportFields?: boolean;
+  cargo_types?: string[];
+  priority_weights?: {
+    reefer: number;
+    outbound: number;
+  };
+  role_settings?: Partial<Record<UserRole, { defaultPage: string, sessionTimeout: number }>>;
+  archive_days?: number;
   pallet_rates?: Record<string, number>;
   featureFlags?: {
     enableFinance: boolean;
+    enableCostControl?: boolean;
   };
   role_permissions?: Record<UserRole, AppCapability[]>;
 }
@@ -162,6 +195,8 @@ export interface CompanySettings {
   email: string;
   phone: string;
   address: string;
+  kvk?: string;
+  btw?: string;
   logoUrl?: string;
   transportTemplate?: string;
   mailServer?: {
@@ -269,6 +304,9 @@ export interface YmsDelivery {
   isPalletExchangeConfirmed?: boolean;
   incoterm?: 'EXW' | 'FCA' | 'FOB' | 'CIF' | 'DDP' | 'DAP' | 'CIP' | 'CFR' | 'DPU';
   demurrageDailyRate?: number;
+  freeTimeDays?: number;
+  // Let op: geen re-declaratie van logistics/finance velden om dubbele bron van waarheid te vermijden.
+  // Financiële logging via PalletTransaction (v3.8.0), demurrage via 'deliveries' db.
   standingTimeCost?: number;
   thcCost?: number;
   customsCost?: number;

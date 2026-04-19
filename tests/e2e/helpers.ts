@@ -29,7 +29,7 @@ export async function loginAsRole(page: Page, role: UserRole) {
   const { email, pass } = credentials[role] || credentials.admin;
 
   // Navigate to login page if not already there
-  if (page.url().includes('/dashboard') || page.url().includes('/api')) {
+  if (page.url() === 'about:blank' || page.url().includes('/dashboard') || page.url().includes('/api')) {
     await page.goto('/');
   }
 

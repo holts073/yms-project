@@ -10,7 +10,7 @@ test.describe('Bugfix: Stuck Edit Popup', () => {
         // 1. Navigate to deliveries with a specific ID to trigger the auto-open
         // We know from reset-db.ts that the first delivery ID is usually something like 'D001' or similar.
         // Let's go to Dashboard first to see a delivery.
-        await page.goto('http://localhost:5173');
+        await page.goto('/');
         await page.waitForSelector('text=Dashboard');
 
         // Click on a delivery in the DashboardTable to navigate and auto-open

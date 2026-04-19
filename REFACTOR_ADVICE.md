@@ -1,5 +1,5 @@
 # REFACTOR_ADVICE: Kwaliteit & Stabiliteit
-*Versie: v3.14.0 — Bijgewerkt: 2026-04-08 door @System-Architect*
+*Versie: v3.16.0 — Bijgewerkt: 2026-04-18 door @System-Architect*
 
 Dit document is de "strafexpeditie-lijst" van het team. Onderstaande punten moeten worden geadresseerd voordat nieuwe epics starten.
 

@@ -58,7 +58,7 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
       const defaultDocs = (state.settings?.shipment_settings?.[formType || 'container'] || []).map((d: any) => ({
         id: Math.random().toString(36).substring(2, 11),
         name: d.name,
-        status: 'pending',
+        status: 'pending' as const,
         required: d.required,
         blocksMilestone: d.blocksMilestone || 100
       }));
@@ -108,6 +108,7 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
       standingTimeCost: parseFloat(data.standingTimeCost as string) || 0,
       thcCost: parseFloat(data.thcCost as string) || 0,
       customsCost: parseFloat(data.customsCost as string) || 0,
+      freeTimeDays: parseInt(data.freeTimeDays as string) || 0,
       telexReleaseStatus: telexStatus,
       documents: editingDelivery?.documents || []
     };
@@ -251,7 +252,7 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
                  <select 
                    id="incoterm-select"
                    name="incoterm" 
-                   defaultValue={editingDelivery.incoterm || lastIncoterm || 'EXW'} 
+                   defaultValue={editingDelivery.incoterm || lastIncoterm || (formType === 'container' ? state.settings?.default_incoterms?.container : state.settings?.default_incoterms?.exworks) || 'EXW'} 
                    className="w-full p-4 bg-[var(--muted)] border-border rounded-2xl text-sm font-bold"
                  >
                     <option value="EXW">EXW</option>
@@ -357,13 +358,19 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
 
             <Input label="Container nummer" name="containerNumber" defaultValue={editingDelivery.containerNumber} placeholder="MSCU1234567" />
             <Input label="Bill of Lading (B/L)" name="billOfLading" defaultValue={editingDelivery.billOfLading} />
-            <Input label="Rederij" name="shippingLine" defaultValue={editingDelivery.shippingLine} placeholder=" bijv. Maersk, MSC" />
-            <Input label="Scheepsnaam" name="vesselName" defaultValue={editingDelivery.vesselName} />
-            <Input label="Reisno. (Voyage)" name="voyageNumber" defaultValue={editingDelivery.voyageNumber} />
+            
+            {state.settings?.enableContainerImportFields && (
+              <>
+                <Input label="Rederij" name="shippingLine" defaultValue={editingDelivery.shippingLine} placeholder=" bijv. Maersk, MSC" />
+                <Input label="Scheepsnaam" name="vesselName" defaultValue={editingDelivery.vesselName} />
+                <Input label="Reisno. (Voyage)" name="voyageNumber" defaultValue={editingDelivery.voyageNumber} />
+                <Input label="Terminal" name="dischargeTerminal" defaultValue={editingDelivery.dischargeTerminal} />
+                <Input label="Haven van Aankomst" name="portOfArrival" defaultValue={editingDelivery.portOfArrival} />
+                <Input label="Loshaven (Discharge)" name="portOfDischarge" defaultValue={editingDelivery.portOfDischarge} />
+              </>
+            )}
+            
             <Input label="Zegelnummer (Seal)" name="containerSealNumber" defaultValue={editingDelivery.containerSealNumber} />
-            <Input label="Haven van Aankomst" name="portOfArrival" defaultValue={editingDelivery.portOfArrival} />
-            <Input label="Loshaven (Discharge)" name="portOfDischarge" defaultValue={editingDelivery.portOfDischarge} />
-            <Input label="Terminal" name="dischargeTerminal" defaultValue={editingDelivery.dischargeTerminal} />
             <Input label="ETA Port" name="etaPort" type="date" defaultValue={editingDelivery.etaPort?.split('T')[0]} />
           </div>
         )}
@@ -438,6 +445,16 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
                       step="0.01" 
                       defaultValue={editingDelivery.demurrageDailyRate || 0} 
                     />
+                    
+                    {state.settings?.featureFlags?.enableCostControl && (
+                      <Input 
+                        label="Vrije Dagen (Free Time)" 
+                        name="freeTimeDays" 
+                        type="number" 
+                        step="1" 
+                        defaultValue={editingDelivery.freeTimeDays || 0} 
+                      />
+                    )}
                   </div>
                   
                   <div className="space-y-4">

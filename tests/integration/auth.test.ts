@@ -7,10 +7,10 @@ describe('Authentication & Security', () => {
         await dbReady;
     });
     beforeEach(() => {
-        // Clear and re-seed users for testing
-        db.prepare('DELETE FROM users').run();
+        // Re-seed specific test user
+        db.prepare('DELETE FROM users WHERE id = ?').run('test-admin');
         db.prepare('INSERT INTO users (id, name, email, passwordHash, role, requiresReset) VALUES (?, ?, ?, ?, ?, ?)').run(
-            'test-admin', 'Admin', 'admin@ilgfood.com', 'dummy-hash', 'admin', 0
+            'test-admin', 'Admin', 'test-admin@ilgfood.com', 'dummy-hash', 'admin', 0
         );
     });
 

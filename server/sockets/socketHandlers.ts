@@ -206,6 +206,26 @@ export const setupSocketHandlers = (io: Server) => {
                throw new Error(`Validatiefout: Kan levering ${payload.id} niet bijwerken. Record bestaat niet en payload is incompleet (mis type/reference).`);
             }
             
+            // MRN Clearance Validation & Toast Notification
+            if (newPayload.type === 'container' && newPayload.customsStatus === 'Cleared') {
+               const settings = getSetting('settings', {});
+               if (settings.requireMrnForClearance && !newPayload.customsDeclarationNumber) {
+                 throw new Error("MRN nummer (Douane) is verplicht voordat de status naar 'Cleared' mag.");
+               }
+               
+               if (settings.notification_triggers?.customsClearance && existing?.customsStatus !== 'Cleared') {
+                  io.emit('notification', { 
+                    message: `Douane Inklaring voltooid voor ${newPayload.reference}`, 
+                    type: 'success',
+                    timestamp
+                  });
+               }
+               
+               if (existing?.customsStatus !== 'Cleared') {
+                 newPayload.customsClearedDate = new Date().toISOString();
+               }
+            }
+
             if (existing && existing.status !== newPayload.status) {
               const getStatusLabel = (p: any) => {
                 if (p.status === 100) return 'Afgeleverd';
@@ -513,6 +533,16 @@ export const setupSocketHandlers = (io: Server) => {
             };
             saveYmsDelivery(updated);
             syncDockStatus(updated.id, updated.dockId || null, updated.status, updated.warehouseId);
+            
+            const settings = getSetting('settings', {});
+            if (settings.notification_triggers?.gateIn && hasGate) {
+               io.emit('notification', { 
+                 message: `Gate-In voltooid voor vracht ${delivery.reference}`, 
+                 type: 'info',
+                 timestamp
+               });
+            }
+
             logEntry.action = "Aankomst Geregistreerd";
             logEntry.details = hasGate 
               ? `Levering ${delivery.reference} is aangemeld bij de gate.`
@@ -616,6 +646,14 @@ export const setupSocketHandlers = (io: Server) => {
             broadcastState(io);
             break;
 
+          case "UPDATE_COMPANY_SETTINGS":
+            if (!isAdmin) throw new Error("Alleen admins kunnen instellingen wijzigen");
+            saveSetting('companySettings', payload);
+            logEntry.action = "Systeeminstelling Opgeslagen";
+            logEntry.details = `Bedrijfsgegevens bijgewerkt`;
+            broadcastState(io);
+            break;
+
           case "UPGRADE_REQUEST":
             logEntry.action = "Upgrade Aangevraagd";
             logEntry.details = `Gebruiker heeft interesse getoond in upgrade voor feature: ${payload?.feature || 'Onbekend'}`;
@@ -660,6 +698,16 @@ export const setupSocketHandlers = (io: Server) => {
             }
 
             insertDelivery(updated);
+            
+            const notificationSettings = getSetting('settings', {});
+            if (notificationSettings.notification_triggers?.telexRelease && status === 'Vrijgegeven' && delivery.telexReleaseStatus !== 'Vrijgegeven') {
+                io.emit('notification', { 
+                  message: `Telex Vrijgave verleend voor B/L ${updated.billOfLading || updated.reference}`, 
+                  type: 'success',
+                  timestamp: new Date().toISOString()
+                });
+            }
+            
             addAuditEntry(deliveryId, userName || 'Systeem', `Telex Release: ${status}`,
               `Telex status bijgewerkt naar "${status}" (ref: ${reference || 'geen'})`);
             broadcastState(io);

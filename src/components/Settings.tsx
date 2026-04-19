@@ -9,7 +9,7 @@ import { Card } from './shared/Card';
 import { Badge } from './shared/Badge';
 import { cn } from '../lib/utils';
 
-const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'company' | 'users' | 'documents' }) => {
+const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'company' | 'users' | 'documents' | 'notifications' | 'security' }) => {
   const { state, dispatch, currentUser } = useSocket();
   const isAdmin = currentUser.role === 'admin';
 
@@ -64,8 +64,8 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
 </div>`
   });
 
-  const [docSettings, setDocSettings] = useState(state?.settings?.shipment_settings || { container: [], exworks: [] });
-  const [newDoc, setNewDoc] = useState<{ name: string; required: boolean; blocksMilestone: number; type: 'container' | 'exworks' | null }>({ name: '', required: false, blocksMilestone: 100, type: null });
+  const [docSettings, setDocSettings] = useState(state?.settings?.shipment_settings || { container: [], container_swb: [], exworks: [] });
+  const [newDoc, setNewDoc] = useState<{ name: string; required: boolean; blocksMilestone: number; type: 'container' | 'container_swb' | 'exworks' | null }>({ name: '', required: false, blocksMilestone: 100, type: null });
 
   useEffect(() => {
     if (state?.companySettings) setLocalSettings(state.companySettings);
@@ -82,7 +82,7 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
     toast.success('Documentinstellingen opgeslagen');
   };
 
-  const addDocument = (type: 'container' | 'exworks') => {
+  const addDocument = (type: 'container' | 'container_swb' | 'exworks') => {
     if (!newDoc.name) return;
     setDocSettings({ 
       ...docSettings, 
@@ -91,13 +91,13 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
     setNewDoc({ name: '', required: false, blocksMilestone: 100, type: null });
   };
 
-  const toggleRequired = (type: 'container' | 'exworks', index: number) => {
+  const toggleRequired = (type: 'container' | 'container_swb' | 'exworks', index: number) => {
     const newList = [...docSettings[type]];
     newList[index] = { ...newList[index], required: !newList[index].required };
     setDocSettings({ ...docSettings, [type]: newList });
   };
 
-  const removeDoc = (type: 'container' | 'exworks', index: number) => {
+  const removeDoc = (type: 'container' | 'container_swb' | 'exworks', index: number) => {
     const newList = [...docSettings[type]];
     newList.splice(index, 1);
     setDocSettings({ ...docSettings, [type]: newList });
@@ -105,6 +105,12 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
 
   const MILESTONE_OPTIONS = {
     container: [
+      { label: 'DOUANE (40)', value: 40 },
+      { label: 'In Transit (50)', value: 50 },
+      { label: 'Aankomst (75)', value: 75 },
+      { label: 'Ingecheckt (100)', value: 100 },
+    ],
+    container_swb: [
       { label: 'DOUANE (40)', value: 40 },
       { label: 'In Transit (50)', value: 50 },
       { label: 'Aankomst (75)', value: 75 },
@@ -127,7 +133,10 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
           </div>
           <div>
             <h2 className="text-4xl font-black text-foreground tracking-tight italic uppercase">
-              {currentSegment === 'company' ? 'Organisatie' : currentSegment === 'users' ? 'Team' : 'Documenten'}
+              {currentSegment === 'company' ? 'Organisatie' : 
+               currentSegment === 'users' ? 'Team' : 
+               currentSegment === 'documents' ? 'Documenten' :
+               currentSegment === 'notifications' ? 'Notificaties & Alerts' : 'Beveiliging & Rollen'}
             </h2>
             <p className="text-[var(--muted-foreground)] mt-1 font-medium tracking-widest uppercase text-xs">Beheer de globale configuratie en standaarden van het systeem.</p>
           </div>
@@ -167,7 +176,34 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
                 <Input label="Bedrijfsnaam" value={localSettings.name} onChange={e => setLocalSettings({...localSettings, name: e.target.value})} />
                 <Input label="Contact Email" type="email" value={localSettings.email} onChange={e => setLocalSettings({...localSettings, email: e.target.value})} />
                 <Input label="Telefoon" value={localSettings.phone} onChange={e => setLocalSettings({...localSettings, phone: e.target.value})} />
-                <Input label="Hoofdkantoor" as="textarea" rows={1} value={localSettings.address} onChange={e => setLocalSettings({...localSettings, address: e.target.value})} />
+                <Input label="Hoofdkantoor" value={localSettings.address} onChange={e => setLocalSettings({...localSettings, address: e.target.value})} />
+                <Input label="KvK Nummer" value={localSettings.kvk || ''} onChange={e => setLocalSettings({...localSettings, kvk: e.target.value})} />
+                <Input label="BTW Nummer" value={localSettings.btw || ''} onChange={e => setLocalSettings({...localSettings, btw: e.target.value})} />
+                
+                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-6 border-t border-border">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Default Incoterm (Zeevracht)</label>
+                    <select className="w-full p-3 bg-[var(--muted)] border-border rounded-xl text-sm font-bold"
+                            value={state.settings?.default_incoterms?.container || ''}
+                            onChange={e => dispatch('SAVE_SETTING', { key: 'default_incoterms', value: { ...state.settings?.default_incoterms, container: e.target.value }})}>
+                      <option value="">- Geen -</option>
+                      <option value="FOB">FOB</option>
+                      <option value="CIF">CIF</option>
+                      <option value="EXW">EXW</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Default Incoterm (Wegtransport)</label>
+                    <select className="w-full p-3 bg-[var(--muted)] border-border rounded-xl text-sm font-bold"
+                            value={state.settings?.default_incoterms?.exworks || ''}
+                            onChange={e => dispatch('SAVE_SETTING', { key: 'default_incoterms', value: { ...state.settings?.default_incoterms, exworks: e.target.value }})}>
+                      <option value="">- Geen -</option>
+                      <option value="FCA">FCA</option>
+                      <option value="CIP">CIP</option>
+                      <option value="EXW">EXW</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </Card>
 
@@ -187,13 +223,115 @@ const SettingsPage = ({ currentSegment = 'company' }: { currentSegment?: 'compan
 
       {currentSegment === 'users' && isAdmin && <UserManagement embedded={true} />}
 
+      {currentSegment === 'notifications' && isAdmin && (
+        <div className="space-y-8">
+           <Card padding="xl" className="space-y-6">
+              <h3 className="text-xl font-bold text-foreground">Systeem Notificaties (Banners/Toasts)</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">Kies bij welke processtappen gebruikers een actieve pop-up melding in de applicatie moeten ontvangen.</p>
+              
+              <div className="space-y-3 pt-4 border-t border-border">
+                {['gateIn', 'telexRelease', 'customsClearance'].map((key) => (
+                  <div key={key} className="flex items-center gap-3 p-4 bg-[var(--muted)]/50 rounded-2xl border border-border">
+                    <input 
+                      type="checkbox" 
+                      id={`notif-${key}`}
+                      checked={state.settings?.notification_triggers?.[key as keyof typeof state.settings.notification_triggers] || false}
+                      onChange={e => dispatch('SAVE_SETTING', { 
+                        key: 'notification_triggers', 
+                        value: { ...state.settings?.notification_triggers, [key]: e.target.checked }
+                      })}
+                      className="w-5 h-5 rounded-md border-border text-indigo-600 focus:ring-indigo-500" 
+                    />
+                    <label htmlFor={`notif-${key}`} className="text-sm font-bold text-foreground cursor-pointer">
+                      {key === 'gateIn' ? 'Aankomst Poort (Gate-In)' : key === 'telexRelease' ? 'Telex Vrijgave' : 'Douane Inklaring (MRN Cleared)'}
+                    </label>
+                  </div>
+                ))}
+              </div>
+           </Card>
+
+           <Card padding="xl" className="space-y-6">
+             <h3 className="text-xl font-bold text-foreground">Waarschuwingsdrempels</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <Input 
+                 label="Wachttijd Alert (minuten)" 
+                 type="number"
+                 value={state.settings?.alert_thresholds?.queueWaitMinutes || 60}
+                 onChange={e => dispatch('SAVE_SETTING', { 
+                   key: 'alert_thresholds', 
+                   value: { ...state.settings?.alert_thresholds, queueWaitMinutes: parseInt(e.target.value) || 60 }
+                 })}
+               />
+               <Input 
+                 label="Demurrage Waarschuwing (dagen vooraf)" 
+                 type="number"
+                 value={state.settings?.alert_thresholds?.demurrageWarningDays || 3}
+                 onChange={e => dispatch('SAVE_SETTING', { 
+                   key: 'alert_thresholds', 
+                   value: { ...state.settings?.alert_thresholds, demurrageWarningDays: parseInt(e.target.value) || 3 }
+                 })}
+               />
+             </div>
+           </Card>
+        </div>
+      )}
+
+      {currentSegment === 'security' && isAdmin && (
+        <div className="space-y-8">
+           <Card padding="xl" className="space-y-6">
+              <h3 className="text-xl font-bold text-foreground">Rollen & Sessiebeheer</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">Configureer timeouts en landingspagina's per rol.</p>
+
+              <div className="space-y-4 pt-4 border-t border-border">
+                {['admin', 'manager', 'staff', 'operator', 'lead_operator', 'finance_auditor', 'viewer'].map(role => (
+                  <div key={role} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-card border border-border rounded-2xl shadow-sm">
+                    <div className="flex-1">
+                      <p className="font-bold text-foreground capitalize">{role.replace('_', ' ')}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)] block mb-1">Startpagina</label>
+                        <select 
+                          className="p-2 bg-[var(--muted)] border border-border rounded-xl text-sm font-bold min-w-[150px] outline-none"
+                          value={state.settings?.role_settings?.[role as any]?.defaultPage || 'dashboard'}
+                          onChange={e => dispatch('SAVE_SETTING', {
+                            key: 'role_settings',
+                            value: { ...state.settings?.role_settings, [role]: { ...state.settings?.role_settings?.[role as any], defaultPage: e.target.value } }
+                          })}
+                        >
+                          <option value="dashboard">Dashboard</option>
+                          <option value="deliveries">Pipeline</option>
+                          <option value="yms-arrivals">YMS aankomst</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--muted-foreground)] block mb-1">Timeout (min)</label>
+                        <input 
+                          type="number"
+                          className="p-2 bg-[var(--muted)] border border-border rounded-xl text-sm font-bold w-24 outline-none"
+                          value={state.settings?.role_settings?.[role as any]?.sessionTimeout || 60}
+                          onChange={e => dispatch('SAVE_SETTING', {
+                            key: 'role_settings',
+                            value: { ...state.settings?.role_settings, [role]: { ...state.settings?.role_settings?.[role as any], sessionTimeout: parseInt(e.target.value) || 60 } }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+           </Card>
+        </div>
+      )}
+
+
       {currentSegment === 'documents' && isAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {(['container', 'exworks'] as const).map(type => (
+          {(['container', 'container_swb', 'exworks'] as const).map(type => (
             <div key={type} className="space-y-6">
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <h3 className="text-xl font-black text-foreground uppercase tracking-tight">
-                  {type === 'container' ? 'Zeevracht' : 'Wegtransport'}
+                  {type === 'container' ? 'Zeevracht (B/L)' : type === 'container_swb' ? 'Zeevracht (SWB)' : 'Wegtransport'}
                 </h3>
               </div>
 

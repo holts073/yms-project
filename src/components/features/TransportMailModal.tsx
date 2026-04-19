@@ -42,9 +42,8 @@ ILG Foodgroup Logistiek
   `.trim();
 
   const handleSend = () => {
-    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoUrl;
-    toast.success('Mail client geopend.');
+    toast.info('Transport Order PDF wordt gegenereerd...');
+    window.open(`/api/deliveries/${delivery.id}/transport-order-pdf`, '_blank');
     onClose();
   };
 
@@ -53,11 +52,11 @@ ILG Foodgroup Logistiek
       <div className="space-y-6">
         <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800 flex items-start gap-4">
           <div className="bg-white dark:bg-indigo-900 p-2 rounded-xl text-indigo-600 shadow-sm">
-            <Mail size={20} />
+            <User size={20} />
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-indigo-600 mb-1">Ontvanger</p>
-            <p className="font-bold text-foreground">{transporter.name} ({email})</p>
+            <p className="text-xs font-black uppercase tracking-widest text-indigo-600 mb-1">Transporteur</p>
+            <p className="font-bold text-foreground">{transporter.name}</p>
           </div>
         </div>
 
@@ -87,16 +86,16 @@ ILG Foodgroup Logistiek
           </div>
         </div>
 
-        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-800 flex items-center gap-3">
-          <Info size={18} className="text-amber-600" />
-          <p className="text-[10px] font-bold text-amber-800 dark:text-amber-400 leading-tight">
-            Let op: Dit opent uw standaard e-mailprogramma met de bovenstaande gegevens.
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800 flex items-center gap-3">
+          <Info size={18} className="text-indigo-600" />
+          <p className="text-[10px] font-bold text-indigo-800 dark:text-indigo-400 leading-tight">
+            De PDF wordt gegenereerd in een nieuw venster voor verwerking.
           </p>
         </div>
 
         <div className="flex gap-4 pt-4">
           <Button variant="secondary" className="flex-1" onClick={onClose}>Annuleren</Button>
-          <Button className="flex-1" leftIcon={<Send size={18} />} onClick={handleSend}>Mail Versturen</Button>
+          <Button className="flex-1" leftIcon={<Send size={18} />} onClick={handleSend}>Genereer PDF</Button>
         </div>
       </div>
     </Modal>

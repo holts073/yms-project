@@ -8,12 +8,13 @@ import { WaitingAreaManager } from './features/WaitingAreaManager';
 import { Modal } from './shared/Modal';
 import { Input } from './shared/Input';
 import { Button } from './shared/Button';
+import { Card } from './shared/Card';
 import { Badge } from './shared/Badge';
 import { YmsWarehouse } from '../types';
 
 export default function YmsSettings() {
   const { state, dispatch } = useSocket();
-  const [activeTab, setActiveTab] = useState<'warehouses' | 'capacity' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets' | 'modules'>('warehouses');
+  const [activeTab, setActiveTab] = useState<'warehouses' | 'capacity' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets' | 'operation' | 'modules'>('warehouses');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('W01');
   const [editingWarehouse, setEditingWarehouse] = useState<Partial<YmsWarehouse> | null>(null);
   const [palletRates, setPalletRates] = useState<Record<string, number>>(state.settings?.pallet_rates || { EUR: 13, DPD: 22.5, CHEP: 0, BLOK: 15 });
@@ -43,6 +44,7 @@ export default function YmsSettings() {
             { id: 'waitingAreas', label: 'Wachtruimtes' },
             { id: 'overrides', label: 'Overrides' },
             { id: 'pallets', label: 'Pallets' },
+            { id: 'operation', label: 'Operatie' },
             { id: 'modules', label: 'Modules' }
           ].map((tab) => (
             <button
@@ -289,6 +291,84 @@ export default function YmsSettings() {
             </div>
           )}
           
+          {activeTab === 'operation' && (
+            <div className="max-w-3xl space-y-8">
+               <header>
+                 <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Operationele Configuratie</h3>
+                 <p className="text-[var(--muted-foreground)] text-sm">Beheer de regels voor de Priority Queue, data-cycli en douane workflow.</p>
+               </header>
+               
+               <div className="grid grid-cols-1 gap-8">
+                 <Card padding="xl" className="space-y-6">
+                    <h4 className="text-lg font-bold text-foreground">Aankomst & Douane</h4>
+                    <div className="space-y-4 pt-4 border-t border-border">
+                      <div className="flex items-center justify-between p-4 bg-[var(--muted)]/50 rounded-2xl border border-border">
+                        <div className="space-y-1">
+                          <p className="font-bold text-foreground uppercase tracking-tight text-sm">MRN Clearance Verplicht</p>
+                          <p className="text-xs text-[var(--muted-foreground)] font-medium">Vereist registratie van een MRN nummer (Douane) voordat een levering naar 'Cleared' kan springen.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={!!state.settings?.requireMrnForClearance} 
+                            onChange={e => dispatch('SAVE_SETTING', { key: 'requireMrnForClearance', value: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-[var(--muted)]/50 rounded-2xl border border-border">
+                        <div className="space-y-1">
+                          <p className="font-bold text-foreground uppercase tracking-tight text-sm">Uitgebreide Zeevracht Velden</p>
+                          <p className="text-xs text-[var(--muted-foreground)] font-medium">Toon rederij, scheepsnaam, terminal en reisnummer in het leveringsformulier.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={!!state.settings?.enableContainerImportFields} 
+                            onChange={e => dispatch('SAVE_SETTING', { key: 'enableContainerImportFields', value: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                 </Card>
+
+                 <Card padding="xl" className="space-y-6">
+                    <h4 className="text-lg font-bold text-foreground">Priority Queue Scoring</h4>
+                    <p className="text-xs text-[var(--muted-foreground)]">De Smart Score in de wachtrij wordt berekend door o.a. het temperatuur-type en eventuele uitgaande flow prioriteit.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
+                      <Input 
+                        label="Gewicht: Reefer (Koel/Vries) (+)" 
+                        type="number"
+                        value={state.settings?.priority_weights?.reefer || 50}
+                        onChange={e => dispatch('SAVE_SETTING', { key: 'priority_weights', value: { ...state.settings?.priority_weights, reefer: parseInt(e.target.value) || 50 }})}
+                      />
+                      <Input 
+                        label="Gewicht: Outbound Lading (+)" 
+                        type="number"
+                        value={state.settings?.priority_weights?.outbound || 30}
+                        onChange={e => dispatch('SAVE_SETTING', { key: 'priority_weights', value: { ...state.settings?.priority_weights, outbound: parseInt(e.target.value) || 30 }})}
+                      />
+                    </div>
+                 </Card>
+                 
+                 <Card padding="xl" className="space-y-6">
+                    <h4 className="text-lg font-bold text-foreground">Automatische Archivering</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
+                      <Input 
+                        label="Verberg na voltooiing (dagen)" 
+                        type="number"
+                        value={state.settings?.archive_days || 3}
+                        onChange={e => dispatch('SAVE_SETTING', { key: 'archive_days', value: parseInt(e.target.value) || 3 })}
+                      />
+                    </div>
+                 </Card>
+               </div>
+            </div>
+          )}
+
           {activeTab === 'modules' && (
             <div className="max-w-2xl space-y-8">
                <header>
@@ -311,6 +391,28 @@ export default function YmsSettings() {
                           dispatch('SAVE_SETTING', { 
                             key: 'feature_flags', 
                             value: { ...currentFlags, enableFinance: e.target.checked } 
+                          });
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-[var(--muted)]/50 rounded-2xl border border-border">
+                    <div className="space-y-1">
+                      <p className="font-black text-foreground uppercase tracking-tight text-sm">Strategische Cost Control (Demurrage)</p>
+                      <p className="text-xs text-[var(--muted-foreground)] font-medium">Activeert de Demurrage Risk Board en het beheer van Vrije Dagen (Free Time) per container.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={state.settings?.featureFlags?.enableCostControl === true} 
+                        onChange={e => {
+                          const currentFlags = state.settings?.featureFlags || { enableFinance: true };
+                          dispatch('SAVE_SETTING', { 
+                            key: 'feature_flags', 
+                            value: { ...currentFlags, enableCostControl: e.target.checked } 
                           });
                         }}
                         className="sr-only peer"
