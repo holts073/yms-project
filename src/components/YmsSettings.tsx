@@ -10,13 +10,14 @@ import { Input } from './shared/Input';
 import { Button } from './shared/Button';
 import { Card } from './shared/Card';
 import { Badge } from './shared/Badge';
-import { YmsWarehouse } from '../types';
+import { YmsWarehouse, YmsDockOverride } from '../types';
 
 export default function YmsSettings() {
   const { state, dispatch } = useSocket();
   const [activeTab, setActiveTab] = useState<'warehouses' | 'capacity' | 'docks' | 'waitingAreas' | 'overrides' | 'pallets' | 'operation' | 'modules'>('warehouses');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('W01');
   const [editingWarehouse, setEditingWarehouse] = useState<Partial<YmsWarehouse> | null>(null);
+  const [editingOverride, setEditingOverride] = useState<Partial<YmsDockOverride> | null>(null);
   const [palletRates, setPalletRates] = useState<Record<string, number>>(state.settings?.pallet_rates || { EUR: 13, DPD: 22.5, CHEP: 0, BLOK: 15 });
   
   if (!state?.yms) return null;
@@ -26,6 +27,16 @@ export default function YmsSettings() {
     if (!w.name) return;
     dispatch('YMS_SAVE_WAREHOUSE', { ...w, id: w.id || `W0${warehouses.length + 1}` });
     setEditingWarehouse(null);
+  };
+
+  const handleSaveOverride = (o: Partial<YmsDockOverride>) => {
+    if (!o.startDate || !o.endDate) return;
+    dispatch('YMS_SAVE_DOCKOVERRIDE', { 
+      ...o, 
+      id: o.id || Math.random().toString(36).substr(2, 9),
+      warehouseId: selectedWarehouseId
+    });
+    setEditingOverride(null);
   };
 
   return (
@@ -195,14 +206,14 @@ export default function YmsSettings() {
             <div className="space-y-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-black text-foreground">Dock Overrides</h3>
-                <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={() => dispatch('YMS_SAVE_DOCKOVERRIDE', {
-                  id: Math.random().toString(36).substr(2, 9),
-                  dockId: docks[0]?.id || 1,
+                <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={() => setEditingOverride({
+                  id: '',
+                  dockId: docks.find(d => d.warehouseId === selectedWarehouseId)?.id || 1,
                   warehouseId: selectedWarehouseId,
-                  startDate: new Date().toISOString().split('T')[0],
-                  endDate: new Date().toISOString().split('T')[0],
+                  startDate: new Date().toISOString().substring(0, 16),
+                  endDate: new Date(Date.now() + 86400000).toISOString().substring(0, 16),
                   status: 'Blocked',
-                  allowedTemperatures: ['Droog']
+                  allowedTemperatures: ['Droog', 'Koel', 'Vries']
                 })}>
                   Override Toevoegen
                 </Button>
@@ -220,7 +231,7 @@ export default function YmsSettings() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-[var(--muted-foreground)] uppercase tracking-widest">Periode</p>
-                        <p className="font-bold text-foreground">{override.startDate} t/m {override.endDate}</p>
+                        <p className="font-bold text-foreground">{override.startDate.replace('T', ' ')} t/m {override.endDate.replace('T', ' ')}</p>
                       </div>
                       <Badge variant={override.status === 'Blocked' ? 'danger' : 'success'}>
                         {override.status === 'Blocked' ? 'GEBLOKKEERD' : 'BESCHIKBAAR'}
@@ -462,6 +473,59 @@ export default function YmsSettings() {
           <div className="flex gap-4 pt-4">
             <Button variant="secondary" className="flex-1" onClick={() => setEditingWarehouse(null)}>Annuleren</Button>
             <Button className="flex-1" onClick={() => handleSaveWarehouse(editingWarehouse!)}>Opslaan</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal 
+        isOpen={!!editingOverride} 
+        onClose={() => setEditingOverride(null)}
+        title={editingOverride?.id ? 'Override Aanpassen' : 'Nieuwe Override'}
+      >
+        <div className="space-y-6">
+          <div className="space-y-1">
+            <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Selecteer Dock</label>
+            <select 
+              value={editingOverride?.dockId || ''} 
+              onChange={e => setEditingOverride({...editingOverride, dockId: parseInt(e.target.value)})}
+              className="w-full bg-[var(--muted)] border border-border text-sm font-bold text-foreground py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {docks.filter(d => d.warehouseId === selectedWarehouseId).map(d => (
+                <option key={d.id} value={d.id}>{d.name} (Huidige Status: {d.status})</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input 
+              label="Start Datum/Tijd" 
+              type="datetime-local" 
+              value={editingOverride?.startDate || ''} 
+              onChange={e => setEditingOverride({...editingOverride, startDate: e.target.value})} 
+            />
+            <Input 
+              label="Eind Datum/Tijd" 
+              type="datetime-local" 
+              value={editingOverride?.endDate || ''} 
+              onChange={e => setEditingOverride({...editingOverride, endDate: e.target.value})} 
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-black uppercase tracking-widest text-[var(--muted-foreground)]">Nieuwe Status</label>
+            <select 
+              value={editingOverride?.status || 'Blocked'} 
+              onChange={e => setEditingOverride({...editingOverride, status: e.target.value as any})}
+              className="w-full bg-[var(--muted)] border border-border text-sm font-bold text-foreground py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="Blocked">Geblokkeerd (Onderhoud/Storing)</option>
+              <option value="Available">Beschikbaar Maken</option>
+            </select>
+          </div>
+          
+          <div className="flex gap-4 pt-4">
+            <Button variant="secondary" className="flex-1" onClick={() => setEditingOverride(null)}>Annuleren</Button>
+            <Button className="flex-1" onClick={() => handleSaveOverride(editingOverride!)}>Opslaan</Button>
           </div>
         </div>
       </Modal>
