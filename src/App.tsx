@@ -8,6 +8,7 @@ import {
   BarChart3, 
   History, 
   Plus, 
+  BookOpen,
   Bell,
   Search,
   Settings,
@@ -45,6 +46,7 @@ import YmsSettings from './components/YmsSettings';
 import YmsPublic from './components/YmsPublic';
 import { Reconciliation } from './components/features/Reconciliation';
 import { AccountSettings } from './components/AccountSettings';
+import { GlossaryWikiModal } from './components/features/GlossaryWikiModal';
 
 import { Toaster } from 'sonner';
 
@@ -215,6 +217,7 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
     const [searchFilter, setSearchFilter] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const [isWikiOpen, setIsWikiOpen] = useState(false);
     const { state, currentUser, isAuthenticated, logout } = useSocket();
     const { theme, toggleTheme } = useTheme();
     const { canAccess: checkAccess } = usePermissions();
@@ -577,6 +580,13 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
               >
                 {getThemeIcon()}
               </button>
+              <button 
+                onClick={() => setIsWikiOpen(true)}
+                className="p-2 hover:bg-slate-200 hover:dark:bg-slate-700 rounded-full transition-colors text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 flex items-center justify-center"
+                title="Logistieke Wiki"
+              >
+                <BookOpen size={16} />
+              </button>
             </div>
           </div>
           <button 
@@ -612,6 +622,8 @@ const SidebarDropdown = ({ icon: Icon, label, active, items, onSelect, isOpen, o
           </AnimatePresence>
         </div>
       </main>
+
+      <GlossaryWikiModal isOpen={isWikiOpen} onClose={() => setIsWikiOpen(false)} />
     </div>
   );
 };

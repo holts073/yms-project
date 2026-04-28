@@ -4,6 +4,7 @@ import { Card } from '../shared/Card';
 import { Badge } from '../shared/Badge';
 import { AlertTriangle, Ship, Calendar, Euro, Clock } from 'lucide-react';
 import { Delivery } from '../../types';
+import { GlossaryTerm } from '../shared/GlossaryTerm';
 
 export const DemurrageRiskBoard = () => {
   const { state } = useSocket();
@@ -86,7 +87,7 @@ export const DemurrageRiskBoard = () => {
             <tr className="border-b border-border/50 text-[10px] uppercase tracking-widest text-[var(--muted-foreground)]">
               <th className="pb-3 font-semibold">Container / Ref</th>
               <th className="pb-3 font-semibold">ETA Port</th>
-              <th className="pb-3 font-semibold text-center">Free Time</th>
+              <th className="pb-3 font-semibold text-center"><GlossaryTerm id="free_time">Free Time</GlossaryTerm></th>
               <th className="pb-3 font-semibold">Deadline</th>
               <th className="pb-3 font-semibold text-center">Status</th>
               <th className="pb-3 font-semibold text-right">Projected Cost</th>

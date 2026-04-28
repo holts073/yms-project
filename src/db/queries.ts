@@ -32,8 +32,9 @@ const stmts = {
       demurrageDailyRate, standingTimeCost, thcCost, customsCost, freeTimeDays,
       documentType, telexReleaseStatus, telexReleaseDate, telexReleaseReference, telexReleasedBy,
       shippingLine, vesselName, voyageNumber, portOfDischarge, containerSealNumber,
-      customsDeclarationNumber, customsClearedDate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      customsDeclarationNumber, customsClearedDate,
+      palletsExchanged, isPalletExchangeConfirmed
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteDocs: db.prepare('DELETE FROM documents WHERE deliveryId = ?'),
   insertDoc: db.prepare('INSERT INTO documents (id, deliveryId, name, status, required, blocksMilestone) VALUES (?, ?, ?, ?, ?, ?)'),
@@ -71,8 +72,9 @@ const stmts = {
       scheduledTime, arrivalTime, registrationTime, isLate, dockId, waitingAreaId, transporterId, status, statusTimestamps,
       estimatedDuration, isReefer, tempAlertThreshold, lastEtaUpdate,
       direction, palletCount, palletType, palletRate, notes, requiresQA,
-      incoterm, demurrageDailyRate, standingTimeCost, thcCost, customsCost, freeTimeDays
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      incoterm, demurrageDailyRate, standingTimeCost, thcCost, customsCost, freeTimeDays,
+      palletsExchanged, isPalletExchangeConfirmed
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   deleteYmsDelivery: db.prepare('DELETE FROM yms_deliveries WHERE id = ?'),
   deleteYmsDock: db.prepare('DELETE FROM yms_docks WHERE id = ? AND warehouseId = ?'),
@@ -178,7 +180,8 @@ export function getAllDeliveries(page: number = 1, limit: number = 1000, search:
     palletExchange: r.palletExchange === 1,
     statusHistory: r.statusHistory ? JSON.parse(r.statusHistory) : [],
     documents: docsMap[r.id] || [],
-    auditTrail: auditMap[r.id] || []
+    auditTrail: auditMap[r.id] || [],
+    isPalletExchangeConfirmed: r.isPalletExchangeConfirmed === 1
   } as Delivery));
 
   return {
@@ -201,7 +204,8 @@ export function insertDelivery(d: Delivery) {
       d.demurrageDailyRate || 0, d.standingTimeCost || 0, d.thcCost || 0, d.customsCost || 0, d.freeTimeDays || 0,
       d.documentType || 'B/L', d.telexReleaseStatus || null, d.telexReleaseDate || null, d.telexReleaseReference || null, d.telexReleasedBy || null,
       d.shippingLine || null, d.vesselName || null, d.voyageNumber || null, d.portOfDischarge || null, d.containerSealNumber || null,
-      d.customsDeclarationNumber || null, d.customsClearedDate || null
+      d.customsDeclarationNumber || null, d.customsClearedDate || null,
+      d.palletsExchanged || 0, d.isPalletExchangeConfirmed ? 1 : 0
     );
 
     // Documents
@@ -397,7 +401,8 @@ export function getYmsDeliveries(warehouseId?: string): YmsDelivery[] {
     isLate: r.isLate === 1,
     statusTimestamps: r.statusTimestamps ? JSON.parse(r.statusTimestamps) : {},
     direction: r.direction || 'INBOUND',
-    palletCount: r.palletCount || 0
+    palletCount: r.palletCount || 0,
+    isPalletExchangeConfirmed: r.isPalletExchangeConfirmed === 1
   } as YmsDelivery));
 }
 
@@ -435,7 +440,9 @@ export function saveYmsDelivery(d: YmsDelivery) {
     d.standingTimeCost || 0,
     d.thcCost || 0,
     d.customsCost || 0,
-    d.freeTimeDays || 0
+    d.freeTimeDays || 0,
+    d.palletsExchanged || 0,
+    d.isPalletExchangeConfirmed ? 1 : 0
   );
 }
 

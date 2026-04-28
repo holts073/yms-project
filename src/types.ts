@@ -98,6 +98,10 @@ export interface Delivery {
   // v3.15.0 Douane
   customsDeclarationNumber?: string;
   customsClearedDate?: string;
+
+  // v3.16.0 Pallet Reconciliation Fix
+  palletsExchanged?: number;
+  isPalletExchangeConfirmed?: boolean;
 }
 
 export interface LogEntry {

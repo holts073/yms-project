@@ -57,7 +57,14 @@ export default function YmsDashboard({
       // 2. Coordinated update to Main Tracker if linked
       if (delivery.mainDeliveryId) {
          if (status === 'COMPLETED') {
-           deliveryActions.updateDeliveryStatus(delivery.mainDeliveryId, 100);
+           deliveryActions.updateDelivery({
+             id: delivery.mainDeliveryId,
+             status: 100,
+             palletsExchanged: delivery.palletsExchanged,
+             isPalletExchangeConfirmed: delivery.isPalletExchangeConfirmed,
+             palletType: delivery.palletType,
+             palletRate: delivery.palletRate
+           });
          } else if (status === 'UNLOADING' || status === 'LOADING') {
            deliveryActions.updateDeliveryStatus(delivery.mainDeliveryId, 90);
          }

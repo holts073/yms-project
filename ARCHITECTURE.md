@@ -1,5 +1,5 @@
 # ARCHITECTURE: ILG Foodgroup Control Tower
-*Versie: v3.16.0 — Bijgewerkt: 2026-04-18 door @System-Architect*
+*Versie: v3.16.0 — Bijgewerkt: 2026-04-28 door @System-Architect*
 
 > [!IMPORTANT]
 > Dit bestand is onderdeel van de automatische versie-synchronisatie. Voer na elke wijziging in dit bestand verplicht `npm run version:sync` uit om project-brede consistentie te borgen.
@@ -121,10 +121,10 @@ Het systeem hanteert een strikte flow om race-conditions te vermijden:
 ### Tabelstructuur — Kern (v3.10.5)
 ```
 users          (id PK, name, email, passwordHash, role, permissions JSON)
-deliveries     (id PK, type, reference, billOfLading, supplierId, status, eta, requiresQA, incoterm, demurrageDailyRate, ...)
+deliveries     (id PK, type, reference, status, eta, requiresQA, incoterm, palletsExchanged, isPalletExchangeConfirmed, freeTimeDays, customsStatus, customsDeclarationNumber, ...)
 documents      (id PK, deliveryId FK, name, status, required, blocksMilestone)
-address_book   (id PK, type, name, contact, email, ...)
-logs           (id PK, timestamp, user, action, details)
+address_book   (id PK, type, name, contact, email, pallet_rate, ...)
+logs           (id PK, timestamp, user, action, details, warehouseId)
 audit_logs     (id PK, deliveryId FK, timestamp, user, action, details)
 settings       (key PK, value JSON)
 ```
@@ -134,8 +134,8 @@ settings       (key PK, value JSON)
 yms_warehouses (id PK, name, descriptor, address, hasGate)
 yms_docks      (id, warehouseId — composite PK)
 yms_waiting_areas (id, warehouseId — composite PK)
-yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, incoterm, demurrageDailyRate, standingTimeCost, thcCost, customsCost, ...)
-pallet_transactions (id PK, entityId, balanceChange, createdAt, palletType, palletRate)
+yms_deliveries (id PK, warehouseId, dockId, status, scheduledTime, palletsExchanged, isPalletExchangeConfirmed, temperature, direction, requiresQA, notes, ...)
+pallet_transactions (id PK, entityId, balanceChange, createdAt, palletType, palletRate, deliveryId)
 ```
 
 ## 6. Multi-Warehouse Isolatie (v3.13.5)

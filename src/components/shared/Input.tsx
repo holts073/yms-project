@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> {
-  label?: string;
+  label?: React.ReactNode;
   error?: string;
   leftIcon?: React.ReactNode;
   as?: 'input' | 'textarea' | 'select';

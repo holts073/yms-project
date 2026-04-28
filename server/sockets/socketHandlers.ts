@@ -128,6 +128,33 @@ export const setupSocketHandlers = (io: Server) => {
 
       const isAdmin = user.role === 'admin';
 
+      const processPalletTransaction = (delivery: any, prevStatus: number) => {
+        if (delivery.status === 100 && prevStatus !== 100 && delivery.isPalletExchangeConfirmed) {
+          const settings = getSetting('feature_flags', { enableFinance: true });
+          if (settings.enableFinance) {
+            const entityId = delivery.supplierId || delivery.transporterId || delivery.customerId;
+            if (entityId) {
+              const isOutbound = delivery?.type === 'exworks' || delivery?.direction === 'OUTBOUND';
+              const sign = isOutbound ? -1 : 1;
+              const actualCount = delivery.palletsExchanged ?? delivery.palletCount ?? 0;
+              
+              if (actualCount !== 0) {
+                savePalletTransaction({
+                  entityId,
+                  entityType: delivery.supplierId ? 'supplier' : (delivery.transporterId ? 'transporter' : 'customer'),
+                  deliveryId: delivery.id,
+                  balanceChange: actualCount * sign,
+                  palletType: delivery.palletType,
+                  palletRate: delivery.palletRate
+                });
+                return ` | Palletruil bevestigd: ${actualCount * sign} pallets (${delivery.palletType || 'EUR'} @ €${delivery.palletRate || 0}).`;
+              }
+            }
+          }
+        }
+        return "";
+      };
+
       const logEntry: any = {
         id: "",
         timestamp,
@@ -250,30 +277,9 @@ export const setupSocketHandlers = (io: Server) => {
             }
 
             // Pallet Exchange Logic (v3.8.1: Requirement for explicit confirmation)
-            if (newPayload.status === 100 && existing?.status !== 100 && newPayload.isPalletExchangeConfirmed) {
-              const settings = getSetting('feature_flags', { enableFinance: true });
-              if (settings.enableFinance) {
-                const entityId = newPayload.supplierId || newPayload.transporterId || newPayload.customerId;
-                if (entityId) {
-                  const isOutbound = newPayload?.type === 'exworks' || newPayload?.direction === 'OUTBOUND';
-                  const sign = isOutbound ? -1 : 1;
-                  const actualCount = newPayload.palletsExchanged ?? newPayload.palletCount ?? 0;
-                  
-                  if (actualCount !== 0) {
-                    savePalletTransaction({
-                      entityId,
-                      entityType: newPayload.supplierId ? 'supplier' : (newPayload.transporterId ? 'transporter' : 'customer'),
-                      deliveryId: newPayload.id,
-                      balanceChange: actualCount * sign,
-                      palletType: newPayload.palletType,
-                      palletRate: newPayload.palletRate
-                    });
-                    logEntry.details += ` | Palletruil bevestigd: ${actualCount * sign} pallets (${newPayload.palletType || 'EUR'} @ €${newPayload.palletRate || 0}).`;
-                  }
-                }
-              } else {
-                logEntry.details += ` | Palletruil overgeslagen (Financiële module uitgeschakeld).`;
-              }
+            const palletLog = processPalletTransaction(newPayload, existing?.status ?? 0);
+            if (palletLog) {
+              logEntry.details += palletLog;
             }
 
             insertDelivery(newPayload);
@@ -373,9 +379,18 @@ export const setupSocketHandlers = (io: Server) => {
                   const { deliveries: allDels } = getAllDeliveries();
                   const mainDel = allDels.find(d => d.id === current.mainDeliveryId);
                   if (mainDel) {
-                    const updatedMain = { ...mainDel, status: 100, updatedAt: timestamp };
+                    const updatedMain = { 
+                      ...mainDel, 
+                      status: 100, 
+                      updatedAt: timestamp,
+                      palletsExchanged: current.palletsExchanged,
+                      isPalletExchangeConfirmed: current.isPalletExchangeConfirmed,
+                      palletType: current.palletType,
+                      palletRate: current.palletRate
+                    };
                     insertDelivery(updatedMain);
-                    addAuditEntry(mainDel.id, user.name, "Systeem Voltooid", `Levering automatisch gearchiveerd via YMS status: ${current.status}`);
+                    const palletLog = processPalletTransaction(updatedMain, mainDel.status);
+                    addAuditEntry(mainDel.id, user.name, "Systeem Voltooid", `Levering automatisch gearchiveerd via YMS status: ${current.status}${palletLog}`);
                     broadcastDelta(io, 'DELIVERY_UPDATED', updatedMain);
                   }
                 }

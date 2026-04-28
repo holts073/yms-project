@@ -10,6 +10,7 @@ import { Badge } from '../shared/Badge';
 import { Combobox } from '../ui/Combobox';
 import { Delivery } from '../../types';
 import { cn } from '../../lib/utils';
+import { GlossaryTerm } from '../shared/GlossaryTerm';
 
 interface DeliveryDetailModalProps {
   isOpen: boolean;
@@ -318,7 +319,7 @@ export const DeliveryDetailModal: React.FC<DeliveryDetailModalProps> = ({
             <div className="space-y-4 md:col-span-2 bg-indigo-50/5 p-6 rounded-3xl border border-indigo-500/10 mb-2">
               <h4 className="text-xs font-black uppercase tracking-tight text-foreground flex items-center gap-2">
                 <FileText size={14} className="text-indigo-500" />
-                Transportdocument & Telex Vrijgave
+                Transportdocument & <GlossaryTerm id="telex">Telex Vrijgave</GlossaryTerm>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">

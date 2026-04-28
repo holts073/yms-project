@@ -7,6 +7,7 @@ import { YmsDelivery, YmsTemperature, YmsWarehouse } from '../../types';
 import { Combobox } from '../ui/Combobox';
 import { useSocket } from '../../SocketContext';
 import { cn } from '../../lib/utils';
+import { GlossaryTerm } from '../shared/GlossaryTerm';
 
 interface YmsDeliveryModalProps {
   isOpen: boolean;
@@ -130,6 +131,7 @@ export const YmsDeliveryModal: React.FC<YmsDeliveryModalProps> = ({
               <option value="Droog">Droog</option>
               <option value="Koel">Koel</option>
               <option value="Vries">Vries</option>
+              <option value="Reefer">Reefer</option>
             </Input>
             <Input 
               as="select"
