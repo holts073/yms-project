@@ -42,7 +42,7 @@ interface YmsDeliveryListProps {
 }
 
 export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
-  deliveries,
+  deliveries: propDeliveries,
   getStatusLabel,
   onUpdateStatus,
   onAssignDock,
@@ -54,6 +54,14 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
 }) => {
   const { docks, waitingAreas, actions } = useYmsData();
   const [filterStatus, setFilterStatus] = useState<YmsDeliveryStatus | 'ALL'>('ALL');
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, Partial<YmsDelivery>>>({});
+
+  const deliveries = React.useMemo(() => {
+    return propDeliveries.map(d => ({
+      ...d,
+      ...optimisticUpdates[d.id]
+    }));
+  }, [propDeliveries, optimisticUpdates]);
 
   const calculateWaitTime = (registrationTime?: string) => {
     if (!registrationTime) return '-';
@@ -163,10 +171,14 @@ export const YmsDeliveryList: React.FC<YmsDeliveryListProps> = ({
                                      `Hoeveel pallets zijn er werkelijk geruild?`;
                     const count = prompt(promptMsg, String(d.palletsExchanged ?? d.palletCount ?? 0));
                     if (count !== null) {
-                      onUpdateStatus({ 
-                        ...d, 
+                      const updatedFields = {
                         palletsExchanged: parseInt(count) || 0, 
                         isPalletExchangeConfirmed: true 
+                      };
+                      setOptimisticUpdates(prev => ({ ...prev, [d.id]: { ...prev[d.id], ...updatedFields } }));
+                      onUpdateStatus({ 
+                        ...d, 
+                        ...updatedFields
                       }, d.status);
                     }
                   }} 

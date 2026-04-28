@@ -138,6 +138,7 @@ export const setupSocketHandlers = (io: Server) => {
               const sign = isOutbound ? -1 : 1;
               const actualCount = delivery.palletsExchanged ?? delivery.palletCount ?? 0;
               
+              console.log(`[PALLET_DEBUG] Processing transaction: actualCount=${actualCount}, sign=${sign}, entityId=${entityId}, prevStatus=${prevStatus}`);
               if (actualCount !== 0) {
                 savePalletTransaction({
                   entityId,
